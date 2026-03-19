@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function SignUp() {
+export default function SignUp({ onSwitchToLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [formData, setFormData] = useState({
@@ -45,8 +45,7 @@ export default function SignUp() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-lg w-full max-w-md px-10 py-10">
+    <div className="bg-white rounded-3xl shadow-lg w-full max-w-md mx-auto px-10 py-10">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Register An Account</h1>
@@ -152,11 +151,18 @@ export default function SignUp() {
         {/* Login Link */}
         <p className="text-center text-sm text-gray-500 mt-5">
           Already have an account?{" "}
-          <a href="/login" className="text-gray-800 underline underline-offset-2 hover:text-blue-600 transition">
+          <button
+            type="button"
+            onClick={() => {
+              if (onSwitchToLogin) {
+                onSwitchToLogin();
+              }
+            }}
+            className="text-gray-800 underline underline-offset-2 hover:text-blue-600 transition"
+          >
             Log In
-          </a>
+          </button>
         </p>
-      </div>
     </div>
   );
 }

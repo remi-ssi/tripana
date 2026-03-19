@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function Login() {
+export default function Login({ onSwitchToSignup }) {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -41,8 +41,7 @@ export default function Login() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-lg w-full max-w-md px-10 py-10">
+    <div className="bg-white rounded-3xl shadow-lg w-full max-w-md mx-auto px-10 py-10">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Log in Account</h1>
@@ -109,11 +108,18 @@ export default function Login() {
         {/* Sign Up Link */}
         <p className="text-center text-sm text-gray-500 mt-5">
           Don't have an account?{" "}
-          <a href="/signup" className="text-gray-800 underline underline-offset-2 hover:text-blue-600 transition">
+          <button
+            type="button"
+            onClick={() => {
+              if (onSwitchToSignup) {
+                onSwitchToSignup();
+              }
+            }}
+            className="text-gray-800 underline underline-offset-2 hover:text-blue-600 transition"
+          >
             Create Account
-          </a>
+          </button>
         </p>
-      </div>
     </div>
   );
 }
