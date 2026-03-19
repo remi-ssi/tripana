@@ -1,9 +1,23 @@
-import { ERROR_MESSAGES } from '../constants/api'
+import { ERROR_MESSAGES } from '../utils/errors'
 import { isEmpty } from '../utils/helpers'
 
-/**
- * Email validation
- */
+// * First name validation
+export const validateFirstName = (firstName) => {
+  if (!firstName || firstName.trim() === '') {
+    return ERROR_MESSAGES.FIRST_NAME_REQUIRED
+  }
+  return null
+}
+
+// * Last name validation
+export const validateLastName = (lastName) => {
+  if (!lastName || lastName.trim() === '') {
+    return ERROR_MESSAGES.LAST_NAME_REQUIRED
+  }
+  return null
+}
+
+// * Email validation
 export const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!email || !emailRegex.test(email)) {
@@ -12,19 +26,27 @@ export const validateEmail = (email) => {
   return null
 }
 
-/**
- * Password validation
- */
+//Password validation
 export const validatePassword = (password) => {
   if (!password || password.length < 8) {
     return ERROR_MESSAGES.PASSWORD_TOO_SHORT
   }
+  if (!/[A-Z]/.test(password)) {
+    return ERROR_MESSAGES.PASSWORD_MISSING_UPPERCASE
+  }
+  if (!/[a-z]/.test(password)) {
+    return ERROR_MESSAGES.PASSWORD_MISSING_LOWERCASE
+  }
+  if (!/[0-9]/.test(password)) {
+    return ERROR_MESSAGES.PASSWORD_MISSING_NUMBER
+  }
+  if (!/[!@#$%^&*]/.test(password)) {
+    return ERROR_MESSAGES.PASSWORD_MISSING_SPECIAL_CHAR
+  }
   return null
 }
 
-/**
- * Confirm password validation
- */
+//Confirm password validation
 export const validatePasswordMatch = (password, confirmPassword) => {
   if (password !== confirmPassword) {
     return ERROR_MESSAGES.PASSWORDS_DONT_MATCH
@@ -32,9 +54,15 @@ export const validatePasswordMatch = (password, confirmPassword) => {
   return null
 }
 
-/**
- * Validate login form
- */
+// Check for empty first and last names
+    const validateName = (fname, lname) => {
+      if ((!fname || fname.trim() === '') && (!lname || lname.trim() === '')) {
+        return ERROR_MESSAGES.NAME_REQUIRED
+      }
+      return null
+    }
+
+//Validate login form
 export const validateLoginForm = (email, password) => {
   const errors = {}
 
@@ -48,11 +76,15 @@ export const validateLoginForm = (email, password) => {
   return Object.keys(errors).length > 0 ? errors : null
 }
 
-/**
- * Validate registration form
- */
-export const validateRegisterForm = (email, password, confirmPassword) => {
+//Validate registration form
+export const validateRegisterForm = (firstName, lastName, email, password, confirmPassword) => {
   const errors = {}
+
+  const firstNameError = validateFirstName(firstName)
+  if (firstNameError) errors.firstName = firstNameError
+
+  const lastNameError = validateLastName(lastName)
+  if (lastNameError) errors.lastName = lastNameError
 
   const emailError = validateEmail(email)
   if (emailError) errors.email = emailError

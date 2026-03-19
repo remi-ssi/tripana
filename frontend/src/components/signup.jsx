@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { validateRegisterForm } from "../validators/authValidators";
 
 export default function SignUp({ onSwitchToLogin }) {
   const [showPassword, setShowPassword] = useState(false);
@@ -10,6 +11,7 @@ export default function SignUp({ onSwitchToLogin }) {
     password: "",
     confirmPassword: "",
   });
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -17,9 +19,26 @@ export default function SignUp({ onSwitchToLogin }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
+    
+    // Validate form
+    const errors = validateRegisterForm(
+      formData.firstName,
+      formData.lastName,
+      formData.email,
+      formData.password,
+      formData.confirmPassword
+    );
+    
+    setErrors(errors || {});
+    
+    // If no errors, submit form
+    if (!errors) {
+      console.log("Form submitted:", formData);
+      // Call API to register user
+    }
   };
 
+  // Eye icon component for password visibility toggle
   const EyeIcon = ({ open }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -66,6 +85,7 @@ export default function SignUp({ onSwitchToLogin }) {
                 className="w-full bg-slate-100 rounded-full px-4 py-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-400 transition"
                 placeholder=""
               />
+              {errors.firstName && <p className="text-red-500 text-xs mt-1 ml-1">{errors.firstName}</p>}
             </div>
             <div className="flex-1">
               <label className="block text-sm text-gray-700 mb-1 ml-1">Last Name</label>
@@ -77,6 +97,7 @@ export default function SignUp({ onSwitchToLogin }) {
                 className="w-full bg-slate-100 rounded-full px-4 py-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-400 transition"
                 placeholder=""
               />
+              {errors.lastName && <p className="text-red-500 text-xs mt-1 ml-1">{errors.lastName}</p>}
             </div>
           </div>
 
@@ -91,6 +112,7 @@ export default function SignUp({ onSwitchToLogin }) {
               className="w-full bg-slate-100 rounded-full px-4 py-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-400 transition"
               placeholder=""
             />
+            {errors.email && <p className="text-red-500 text-xs mt-1 ml-1">{errors.email}</p>}
           </div>
 
           {/* Password */}
@@ -113,6 +135,7 @@ export default function SignUp({ onSwitchToLogin }) {
                 <EyeIcon open={showPassword} />
               </button>
             </div>
+            {errors.password && <p className="text-red-500 text-xs mt-1 ml-1">{errors.password}</p>}
           </div>
 
           {/* Confirm Password */}
@@ -135,6 +158,7 @@ export default function SignUp({ onSwitchToLogin }) {
                 <EyeIcon open={showConfirm} />
               </button>
             </div>
+            {errors.confirmPassword && <p className="text-red-500 text-xs mt-1 ml-1">{errors.confirmPassword}</p>}
           </div>
 
           {/* Submit Button */}

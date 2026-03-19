@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../constants/api'
+import { API_BASE_URL, ERROR_MESSAGES } from '../utils/errors'
 
 /**
  * Authentication service - handles all auth-related API calls
@@ -14,7 +14,7 @@ export const authService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     })
-    if (!response.ok) throw new Error('Login failed')
+    if (!response.ok) throw new Error(ERROR_MESSAGES.LOGIN_FAILED)
     return response.json()
   },
 
@@ -27,7 +27,7 @@ export const authService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData),
     })
-    if (!response.ok) throw new Error('Registration failed')
+    if (!response.ok) throw new Error(ERROR_MESSAGES.REGISTRATION_FAILED)
     return response.json()
   },
 
@@ -50,7 +50,7 @@ export const authService = {
         Authorization: `Bearer ${token}`,
       },
     })
-    if (!response.ok) throw new Error('Failed to fetch profile')
+    if (!response.ok) throw new Error(ERROR_MESSAGES.PROFILE_FETCH_FAILED)
     return response.json()
   },
 }
