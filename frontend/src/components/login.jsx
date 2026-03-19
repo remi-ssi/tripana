@@ -1,11 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { validateLoginForm } from "../validators/authValidators";
+import EarthLoader from "./loadingIndicator";
 
 export default function Login({ onSwitchToSignup }) {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -13,7 +26,18 @@ export default function Login({ onSwitchToSignup }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Login submitted:", formData);
+    
+    // Validate form
+    const errors = validateLoginForm(formData.email, formData.password);
+    
+    setErrors(errors || {});
+    
+    // If no errors, submit form
+    if (!errors) {
+      setIsLoading(true);
+      console.log("Login submitted:", formData);
+      // Call API to login user
+    }
   };
 
   const EyeIcon = ({ open }) => (
@@ -41,7 +65,15 @@ export default function Login({ onSwitchToSignup }) {
   );
 
   return (
-    <div className="bg-white rounded-3xl shadow-lg w-full max-w-md mx-auto px-10 py-10">
+    <>
+      {isLoading && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl p-8">
+            <EarthLoader />
+          </div>
+        </div>
+      )}
+      <div className="bg-white rounded-3xl shadow-lg w-full max-w-md mx-auto px-10 py-10">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Log in Account</h1>
@@ -58,9 +90,14 @@ export default function Login({ onSwitchToSignup }) {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full bg-slate-100 rounded-full px-4 py-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-400 transition"
+              className={`w-full rounded-full px-4 py-3 text-sm outline-none focus:ring-2 transition ${
+                errors.email
+                  ? 'bg-red-100 text-red-800 border-2 border-red-500 focus:ring-red-400'
+                  : 'bg-slate-100 text-gray-800 focus:ring-blue-400'
+              }`}
               placeholder=""
             />
+            {errors.email && <p className="text-red-500 text-xs mt-1 ml-1">{errors.email}</p>}
           </div>
 
           {/* Password */}
@@ -72,7 +109,11 @@ export default function Login({ onSwitchToSignup }) {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full bg-slate-100 rounded-full px-4 py-3 pr-12 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-400 transition"
+                className={`w-full rounded-full px-4 py-3 pr-12 text-sm outline-none focus:ring-2 transition ${
+                  errors.password
+                    ? 'bg-red-100 text-red-800 border-2 border-red-500 focus:ring-red-400'
+                    : 'bg-slate-100 text-gray-800 focus:ring-blue-400'
+                }`}
                 placeholder=""
               />
               <button
@@ -83,6 +124,7 @@ export default function Login({ onSwitchToSignup }) {
                 <EyeIcon open={showPassword} />
               </button>
             </div>
+            {errors.password && <p className="text-red-500 text-xs mt-1 ml-1">{errors.password}</p>}
             {/* Forgot Password */}
             <div className="text-right mt-2">
               <a
@@ -120,6 +162,7 @@ export default function Login({ onSwitchToSignup }) {
             Create Account
           </button>
         </p>
-    </div>
+      </div>
+    </>
   );
 }
