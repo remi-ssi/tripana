@@ -10,12 +10,21 @@ from app.routes import api_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: create database tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Startup: create database tables (if database is available)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        print(f"Warning: Could not initialize database: {e}")
+        print("Database will be available once it's set up.")
+    
     yield
+    
     # Shutdown: dispose the engine
-    await engine.dispose()
+    try:
+        await engine.dispose()
+    except Exception:
+        pass
 
 
 app = FastAPI(

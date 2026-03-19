@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     APP_PORT: int = 8000
     SECRET_KEY: str = "INSECURE-DEV-KEY-CHANGE-IN-PRODUCTION"
 
+    # PostgreSQL for development and production
     DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/tripana_db"
 
     FRONTEND_ORIGIN: str = "http://localhost:5173"
