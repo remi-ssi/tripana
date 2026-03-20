@@ -12,7 +12,6 @@ class Settings(BaseSettings):
 
     # PostgreSQL for development and production
     DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/tripana_db"
-
     FRONTEND_ORIGIN: str = "http://localhost:5173"
 
     JWT_ALGORITHM: str = "HS256"
