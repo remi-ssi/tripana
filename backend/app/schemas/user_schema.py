@@ -24,3 +24,15 @@ class UserRead(UserBase):
 
     # Allow reading from SQLAlchemy model attributes
     model_config = {"from_attributes": True}
+
+class VerifyOTPRequest(BaseModel):
+    email: EmailStr
+    code: str
+    password: str       # send again for final account creation
+        
+class ResendOTPRequest(BaseModel):
+    email: EmailStr
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
