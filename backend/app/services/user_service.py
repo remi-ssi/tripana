@@ -7,8 +7,6 @@ from app.utils.security import hash_password
 
 
 class UserService:
-    """Encapsulates business logic for user operations."""
-
     def __init__(self, db: AsyncSession):
         self.repo = UserRepository(db)
 
@@ -28,3 +26,23 @@ class UserService:
         if not user:
             return None
         return UserRead.model_validate(user)
+
+    async def authenticate_user(self, email: str, password: str):
+        user = await self.repo.get_by_email(email)
+        
+        # User doesn't exist
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password"
+            )
+        
+        # Check if password matches the hash stored in database
+        if not verify_password(password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password"
+            )
+        
+        # Password is correct - return user
+        return user

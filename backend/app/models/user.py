@@ -1,28 +1,29 @@
+# This file defines the User model for the application, representing users in the database.
 from datetime import datetime
+from typing import List, Optional
 
-from sqlalchemy import Boolean, DateTime, Integer, String, func
+from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.models.userPreference import UserPreference
 
 
 class User(Base):
-    """Represents an application user."""
-
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    first_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
-    username: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
 
-    itineraries: Mapped[list["Itinerary"]] = relationship(
-        "Itinerary", back_populates="owner", cascade="all, delete-orphan"
-    )
+    date_created: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    date_deleted: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Relationship to preferences
+    preferences: Mapped[List["UserPreference"]] = relationship(
+        "UserPreference",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )   

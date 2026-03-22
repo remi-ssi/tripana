@@ -1,10 +1,6 @@
-/**
- * Helper functions - general utilities
- */
+// Helper functions - general utilities
 
-/**
- * Format date to readable string
- */
+// Format date to readable string
 export const formatDate = (date) => {
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -13,9 +9,7 @@ export const formatDate = (date) => {
   })
 }
 
-/**
- * Format time to readable string
- */
+// Format time to readable string
 export const formatTime = (date) => {
   return new Date(date).toLocaleTimeString('en-US', {
     hour: '2-digit',
@@ -23,21 +17,15 @@ export const formatTime = (date) => {
   })
 }
 
-/**
- * Capitalize first letter of string
- */
+ //Capitalize first letter of string
 export const capitalize = (str) => {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
-/**
- * Check if string is empty
- */
+//Check if string is empty
 export const isEmpty = (str) => {
   return !str || str.trim().length === 0
 }
 
-/**
- * Sleep function for delays
- */
+//Sleep function for delays
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
