@@ -3,13 +3,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db               # your existing DB session function
-from app.schemas.auth import RegisterRequest, VerifyOTPRequest, ResendOTPRequest
+from app.schemas.user_schema import UserCreate, VerifyOTPRequest, ResendOTPRequest
 from app.services.auth_service import send_registration_otp, verify_otp_and_register
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register")
-def register(data: RegisterRequest, db: Session = Depends(get_db)):
+def register(data: UserCreate, db: Session = Depends(get_db)):
     """Step 1: User submits form → send OTP email."""
     # Check if email already registered
     from app.models.user import User

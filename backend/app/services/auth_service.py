@@ -16,15 +16,12 @@ pwd_context = CryptContext(schemes=["bcrypt"])  # for hashing passwords
 OTP_EXPIRE_MINUTES = 10   # OTP dies after 10 minutes
 RESEND_WAIT_SECONDS = 120 # user must wait 2 minutes before resending
 
+#generate a random 6-digit OTP code
 def generate_otp() -> str:
-    """Make a random 6-digit code like '847291'."""
     return ''.join(random.choices(string.digits, k=6))
 
+#send OTP email and save code to DB, enforcing resend cooldown
 def send_registration_otp(email: str, db: Session) -> dict:
-    """
-    Generate OTP, save it, send email.
-    Enforces the 2-minute resend cooldown.
-    """
     # Check if a recent OTP already exists (resend cooldown)
     recent_otp = db.query(OTPCode).filter(
         OTPCode.email == email,
@@ -32,12 +29,20 @@ def send_registration_otp(email: str, db: Session) -> dict:
         OTPCode.created_at >= datetime.utcnow() - timedelta(seconds=RESEND_WAIT_SECONDS)
     ).first()
 
+    # If there's a recent OTP, tell user to wait before resending
     if recent_otp:
         wait_seconds = int(
             (recent_otp.created_at + timedelta(seconds=RESEND_WAIT_SECONDS)
              - datetime.utcnow()).total_seconds()
         )
         return {"error": f"Please wait {wait_seconds} seconds before resending."}
+
+    # Invalidate all previous unused OTPs for this email
+    db.query(OTPCode).filter(
+        OTPCode.email == email,
+        OTPCode.is_used == False
+    ).update({"is_used": True})
+    db.commit()
 
     # Create new OTP
     code = generate_otp()
@@ -53,11 +58,8 @@ def send_registration_otp(email: str, db: Session) -> dict:
     send_otp_email(email, code)
     return {"message": "OTP sent to email."}
 
-
+# Verify OTP and register user, returning JWT token on success
 def verify_otp_and_register(email: str, code: str, password: str, full_name: str, db: Session) -> dict:
-    """
-    Check OTP is valid, then save user to DB, return JWT.
-    """
     # Find the latest unused, non-expired OTP for this email
     otp = db.query(OTPCode).filter(
         OTPCode.email == email,
