@@ -1,11 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { validateRegisterForm } from "../validators/authValidators";
+import { authService } from "../api/authService";
+import OTPModal from "./otpModal";
 import EarthLoader from "./loadingIndicator";
 
 export default function SignUp({ onSwitchToLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
+  const [registeredPassword, setRegisteredPassword] = useState("");
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -15,24 +20,15 @@ export default function SignUp({ onSwitchToLogin }) {
   });
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    if (isLoading) {
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-      }, 2500);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading]);
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validate form
-    const errors = validateRegisterForm(
+    const formErrors = validateRegisterForm(
       formData.firstName,
       formData.lastName,
       formData.email,
@@ -40,13 +36,57 @@ export default function SignUp({ onSwitchToLogin }) {
       formData.confirmPassword
     );
     
-    setErrors(errors || {});
+    setErrors(formErrors || {});
     
     // If no errors, submit form
-    if (!errors) {
+    if (!formErrors) {
       setIsLoading(true);
-      console.log("Form submitted:", formData);
-      // Call API to register user
+      try {
+        // Step 1: Call register endpoint to send OTP
+        await authService.register({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+        });
+        
+        // Step 2: Show OTP modal
+        setOtpEmail(formData.email);
+        setRegisteredPassword(formData.password);
+        setShowOTPModal(true);
+      } catch (error) {
+        setErrors({ submit: error.message || "Registration failed. Please try again." });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleVerifyOTP = async (otp) => {
+    try {
+      // Step 3: Call verify-otp endpoint
+      const response = await authService.verifyOTP(otpEmail, otp, registeredPassword);
+      
+      // Step 4: Store token and redirect or close modal
+      if (response.token) {
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("user", JSON.stringify(response.user));
+      }
+      
+      setShowOTPModal(false);
+      // Reset form
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+      
+      // You can redirect to dashboard here
+      window.location.href = "/dashboard";
+    } catch (error) {
+      throw new Error(error.message || "OTP verification failed");
     }
   };
 
@@ -129,7 +169,7 @@ export default function SignUp({ onSwitchToLogin }) {
             </div>
           </div>
 
-          {/* Email */}
+          {/* Email Input */}
           <div>
             <label className="block text-sm text-gray-700 mb-1 ml-1">Email</label>
             <input
@@ -146,6 +186,9 @@ export default function SignUp({ onSwitchToLogin }) {
             />
             {errors.email && <p className="text-red-500 text-xs mt-1 ml-1">{errors.email}</p>}
           </div>
+
+          {/* Submit error */}
+          {errors.submit && <p className="text-red-500 text-sm text-center mt-2">{errors.submit}</p>}
 
           {/* Password */}
           <div>
@@ -228,6 +271,14 @@ export default function SignUp({ onSwitchToLogin }) {
           </button>
         </p>
       </div>
+
+      {/* OTP Modal */}
+      <OTPModal
+        isOpen={showOTPModal}
+        onClose={() => setShowOTPModal(false)}
+        email={otpEmail}
+        onVerify={handleVerifyOTP}
+      />
     </>
   );
 }
