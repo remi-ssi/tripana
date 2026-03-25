@@ -5,7 +5,7 @@ import { API_BASE_URL, ERROR_MESSAGES } from '../utils/errors'
 export const authService = {
  //Login user with email and password
   login: async (email, password) => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/login`, {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -16,7 +16,7 @@ export const authService = {
 
   //Register new user
   register: async (userData) => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/register`, {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData),
@@ -45,11 +45,17 @@ export const authService = {
   },
 
   // Verify OTP and complete registration
-  verifyOTP: async (email, otp, password) => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/verify-otp`, {
+  verifyOTP: async (email, otp, password, firstName, lastName) => {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, otp, password }),
+      body: JSON.stringify({
+        email,
+        code: otp,
+        password,
+        first_name: firstName,
+        last_name: lastName,
+      }),
     })
     if (!response.ok) throw new Error(ERROR_MESSAGES.REGISTRATION_FAILED)
     return response.json()
@@ -57,7 +63,7 @@ export const authService = {
 
   //Resend OTP to email
   resendOTP: async (email) => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/resend-otp`, {
+    const response = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),

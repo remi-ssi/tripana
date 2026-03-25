@@ -1,44 +1,78 @@
 # backend/app/routes/auth.py
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db               # your existing DB session function
 from app.schemas.user_schema import UserCreate, VerifyOTPRequest, ResendOTPRequest
 from app.services.auth_service import send_registration_otp, verify_otp_and_register
+from app.models.user import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+legacy_router = APIRouter(prefix="/api/v1", tags=["auth"])
 
-@router.post("/register")
-def register(data: UserCreate, db: Session = Depends(get_db)):
-    """Step 1: User submits form → send OTP email."""
-    # Check if email already registered
-    from app.models.user import User
-    existing = db.query(User).filter(User.email == data.email).first()
+
+async def _register_impl(data: UserCreate, db: AsyncSession):
+    existing = (await db.execute(select(User).where(User.email == data.email))).scalars().first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered.")
 
-    result = send_registration_otp(data.email, db)
+    result = await send_registration_otp(data.email, db)
     if "error" in result:
         raise HTTPException(status_code=429, detail=result["error"])
-
-    # Store password temporarily in OTP record so we can save user after verify
-    # (We do this by stashing it in a temp table or passing it during verify)
-    # For simplicity: store hashed password on the OTP record via a session variable
-    # Better approach: pass password again on /verify-otp (see below)
     return {"message": "OTP sent. Please check your email."}
 
 
-@router.post("/resend-otp")
-def resend_otp(data: ResendOTPRequest, db: Session = Depends(get_db)):
-    """Resend OTP — enforces 2-minute cooldown."""
-    result = send_registration_otp(data.email, db)
+async def _resend_impl(data: ResendOTPRequest, db: AsyncSession):
+    result = await send_registration_otp(data.email, db)
     if "error" in result:
         raise HTTPException(status_code=429, detail=result["error"])
     return {"message": "New OTP sent."}
 
 
+async def _verify_impl(data: VerifyOTPRequest, db: AsyncSession):
+    result = await verify_otp_and_register(
+        email=data.email,
+        code=data.code,
+        password=data.password,
+        first_name=data.first_name,
+        last_name=data.last_name,
+        db=db,
+    )
+
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+@router.post("/register")
+async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
+    """Step 1: User submits form -> send OTP email."""
+    return await _register_impl(data, db)
+
+
+@legacy_router.post("/register")
+async def register_legacy(data: UserCreate, db: AsyncSession = Depends(get_db)):
+    """Backward compatible endpoint for older frontend clients."""
+    return await _register_impl(data, db)
+
+
+@router.post("/resend-otp")
+async def resend_otp(data: ResendOTPRequest, db: AsyncSession = Depends(get_db)):
+    """Resend OTP — enforces 2-minute cooldown."""
+    return await _resend_impl(data, db)
+
+
+@legacy_router.post("/resend-otp")
+async def resend_otp_legacy(data: ResendOTPRequest, db: AsyncSession = Depends(get_db)):
+    return await _resend_impl(data, db)
+
+
 @router.post("/verify-otp")
-def verify_otp(data: VerifyOTPRequest, db: Session = Depends(get_db)):
+async def verify_otp(data: VerifyOTPRequest, db: AsyncSession = Depends(get_db)):
     """Step 2: User enters OTP → verify and create account."""
-    # We need the password here — update VerifyOTPRequest to include it
-    raise HTTPException(status_code=400, detail="Use the full verify endpoint.")
+    return await _verify_impl(data, db)
+
+
+@legacy_router.post("/verify-otp")
+async def verify_otp_legacy(data: VerifyOTPRequest, db: AsyncSession = Depends(get_db)):
+    return await _verify_impl(data, db)

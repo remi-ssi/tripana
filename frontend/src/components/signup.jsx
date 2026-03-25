@@ -44,8 +44,8 @@ export default function SignUp({ onSwitchToLogin }) {
       try {
         // Step 1: Call register endpoint to send OTP
         await authService.register({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
           email: formData.email,
           password: formData.password,
         });
@@ -65,7 +65,13 @@ export default function SignUp({ onSwitchToLogin }) {
   const handleVerifyOTP = async (otp) => {
     try {
       // Step 3: Call verify-otp endpoint
-      const response = await authService.verifyOTP(otpEmail, otp, registeredPassword);
+      const response = await authService.verifyOTP(
+        otpEmail,
+        otp,
+        registeredPassword,
+        formData.firstName,
+        formData.lastName
+      );
       
       // Step 4: Store token and redirect or close modal
       if (response.token) {

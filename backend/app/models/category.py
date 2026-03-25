@@ -1,5 +1,5 @@
 #for user preferences related to categories
-from sqlalchemy import Integer, String, ForeignKey
+from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 from typing import List

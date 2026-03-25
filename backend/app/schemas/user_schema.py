@@ -1,8 +1,6 @@
 from datetime import datetime
 from typing import Optional
-
 from pydantic import BaseModel, EmailStr
-
 
 class UserBase(BaseModel):
     # Basic user information
@@ -10,11 +8,9 @@ class UserBase(BaseModel):
     last_name: str
     email: EmailStr
 
-
 class UserCreate(UserBase):
     # Additional field needed for registration
     password: str
-
 
 class UserRead(UserBase):
     # Fields returned when reading user data from database
@@ -29,6 +25,8 @@ class VerifyOTPRequest(BaseModel):
     email: EmailStr
     code: str
     password: str       # send again for final account creation
+    first_name: str
+    last_name: str
         
 class ResendOTPRequest(BaseModel):
     email: EmailStr

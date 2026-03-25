@@ -1,12 +1,10 @@
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
-
 from app.config import settings
 from app.database import engine, Base
 from app.middleware import setup_cors, setup_error_handlers
 from app.routes import api_router
-
+from app.routes.auth import router as auth_router, legacy_router as legacy_auth_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,6 +37,8 @@ setup_error_handlers(app)
 
 # Include API routes
 app.include_router(api_router)
+app.include_router(auth_router)
+app.include_router(legacy_auth_router)
 
 
 @app.get("/health")
