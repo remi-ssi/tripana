@@ -147,7 +147,7 @@ export default function SignUp({ onSwitchToLogin }) {
                     ? 'bg-red-100 text-red-800 border-2 border-red-500 focus:ring-red-400'
                     : 'bg-slate-100 text-gray-800 focus:ring-blue-400'
                 }`}
-                placeholder=""
+                placeholder="Juan"
               />
               {errors.firstName && <p className="text-red-500 text-xs mt-1 ml-1">{errors.firstName}</p>}
             </div>
@@ -163,7 +163,7 @@ export default function SignUp({ onSwitchToLogin }) {
                     ? 'bg-red-100 text-red-800 border-2 border-red-500 focus:ring-red-400'
                     : 'bg-slate-100 text-gray-800 focus:ring-blue-400'
                 }`}
-                placeholder=""
+                placeholder="Dela Cruz"
               />
               {errors.lastName && <p className="text-red-500 text-xs mt-1 ml-1">{errors.lastName}</p>}
             </div>
@@ -182,7 +182,7 @@ export default function SignUp({ onSwitchToLogin }) {
                   ? 'bg-red-100 text-red-800 border-2 border-red-500 focus:ring-red-400'
                   : 'bg-slate-100 text-gray-800 focus:ring-blue-400'
               }`}
-              placeholder=""
+              placeholder="example@gmail.com"
             />
             {errors.email && <p className="text-red-500 text-xs mt-1 ml-1">{errors.email}</p>}
           </div>
@@ -204,7 +204,7 @@ export default function SignUp({ onSwitchToLogin }) {
                     ? 'bg-red-100 text-red-800 border-2 border-red-500 focus:ring-red-400'
                     : 'bg-slate-100 text-gray-800 focus:ring-blue-400'
                 }`}
-                placeholder=""
+                placeholder="Enter your Password"
               />
               <button
                 type="button"
@@ -231,7 +231,7 @@ export default function SignUp({ onSwitchToLogin }) {
                     ? 'bg-red-100 text-red-800 border-2 border-red-500 focus:ring-red-400'
                     : 'bg-slate-100 text-gray-800 focus:ring-blue-400'
                 }`}
-                placeholder=""
+                placeholder="Confirm your Password"
               />
               <button
                 type="button"
