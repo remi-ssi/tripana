@@ -16,6 +16,8 @@ from app.utils.security import hash_password, verify_password
 OTP_EXPIRE_MINUTES = 10   # OTP dies after 10 minutes
 RESEND_WAIT_SECONDS = 120 # user must wait 2 minutes before resending
 USED_OTP_RETENTION_DAYS = 1  # used OTPs are kept for 1 day then deleted
+MAX_RESEND_ATTEMPTS = 5
+RESEND_WINDOW_MINUTES = 10
 MAX_VERIFY_ATTEMPTS = 5
 ATTEMPT_WINDOW_MINUTES = 10
 VERIFY_BLOCK_MINUTES = 15
@@ -37,14 +39,54 @@ async def cleanup_old_used_otps(db: AsyncSession, now: datetime) -> None:
     )
     await db.commit()
 
+
+async def get_active_block_until(email: str, db: AsyncSession, now: datetime):
+    active_block_stmt = (
+        select(OTPCode.blocked_until)
+        .where(
+            OTPCode.email == email,
+            OTPCode.blocked_until.is_not(None),
+            OTPCode.blocked_until > now,
+        )
+        .order_by(OTPCode.blocked_until.desc())
+    )
+    return (await db.execute(active_block_stmt)).scalars().first()
+
 #generate a random 6-digit OTP code
 def generate_otp() -> str:
     return ''.join(random.choices(string.digits, k=6))
 
 #send OTP email and save code to DB, enforcing resend cooldown
-async def send_registration_otp(email: str, db: AsyncSession) -> dict:
+async def send_registration_otp(email: str, db: AsyncSession, is_resend: bool = False) -> dict:
     now = datetime.now(timezone.utc)
     await cleanup_old_used_otps(db, now)
+
+    blocked_until = await get_active_block_until(email, db, now)
+    if blocked_until:
+        wait_seconds = int((blocked_until - now).total_seconds())
+        wait_minutes = max(1, (wait_seconds + 59) // 60)
+        return {"error": f"Too many attempts. Try again in {wait_minutes} minutes."}
+
+    if is_resend:
+        sends_stmt = (
+            select(func.count(OTPCode.id))
+            .where(
+                OTPCode.email == email,
+                OTPCode.created_at >= now - timedelta(minutes=RESEND_WINDOW_MINUTES),
+            )
+        )
+        total_sends = int((await db.execute(sends_stmt)).scalar_one())
+        resend_count = max(0, total_sends - 1)
+
+        if resend_count >= MAX_RESEND_ATTEMPTS:
+            block_until = now + timedelta(minutes=VERIFY_BLOCK_MINUTES)
+            await db.execute(
+                update(OTPCode)
+                .where(OTPCode.email == email)
+                .values(blocked_until=block_until)
+            )
+            await db.commit()
+            return {"error": f"Resend limit reached. Verification blocked for {VERIFY_BLOCK_MINUTES} minutes."}
 
     # Check if a recent OTP already exists (resend cooldown)
     recent_stmt = (
@@ -104,16 +146,7 @@ async def verify_otp_and_register(
     now = datetime.now(timezone.utc)
     await cleanup_old_used_otps(db, now)
 
-    active_block_stmt = (
-        select(OTPCode.blocked_until)
-        .where(
-            OTPCode.email == email,
-            OTPCode.blocked_until.is_not(None),
-            OTPCode.blocked_until > now,
-        )
-        .order_by(OTPCode.blocked_until.desc())
-    )
-    blocked_until = (await db.execute(active_block_stmt)).scalars().first()
+    blocked_until = await get_active_block_until(email, db, now)
     if blocked_until:
         wait_seconds = int((blocked_until - now).total_seconds())
         wait_minutes = max(1, (wait_seconds + 59) // 60)

@@ -24,7 +24,7 @@ async def _register_impl(data: UserCreate, db: AsyncSession):
 
 
 async def _resend_impl(data: ResendOTPRequest, db: AsyncSession):
-    result = await send_registration_otp(data.email, db)
+    result = await send_registration_otp(data.email, db, is_resend=True)
     if "error" in result:
         raise HTTPException(status_code=429, detail=result["error"])
     return {"message": "New OTP sent."}
