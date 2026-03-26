@@ -15,6 +15,7 @@ class OTPCode(Base):
     # store HASHED otp, not plain text
     hashed_code = Column(String, nullable=False)
     is_used = Column(Boolean, default=False)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
     attempts = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime(timezone=True), nullable=False)

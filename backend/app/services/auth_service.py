@@ -4,7 +4,7 @@ import random
 import string
 from datetime import datetime, timedelta, timezone
 from jose import jwt
-from sqlalchemy import select, update
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.otp import OTPCode
@@ -15,6 +15,24 @@ from app.utils.security import hash_password, verify_password
 
 OTP_EXPIRE_MINUTES = 10   # OTP dies after 10 minutes
 RESEND_WAIT_SECONDS = 120 # user must wait 2 minutes before resending
+USED_OTP_RETENTION_DAYS = 1  # used OTPs are kept for 1 day then deleted
+
+
+async def cleanup_old_used_otps(db: AsyncSession, now: datetime) -> None:
+    await db.execute(
+        delete(OTPCode).where(
+            OTPCode.is_used == True,
+            or_(
+                OTPCode.deleted_at <= now,
+                # Backward compatibility for older rows that predate deleted_at.
+                (
+                    OTPCode.deleted_at.is_(None)
+                    & (OTPCode.created_at <= now - timedelta(days=USED_OTP_RETENTION_DAYS))
+                ),
+            ),
+        )
+    )
+    await db.commit()
 
 #generate a random 6-digit OTP code
 def generate_otp() -> str:
@@ -23,6 +41,7 @@ def generate_otp() -> str:
 #send OTP email and save code to DB, enforcing resend cooldown
 async def send_registration_otp(email: str, db: AsyncSession) -> dict:
     now = datetime.now(timezone.utc)
+    await cleanup_old_used_otps(db, now)
 
     # Check if a recent OTP already exists (resend cooldown)
     recent_stmt = (
@@ -48,7 +67,7 @@ async def send_registration_otp(email: str, db: AsyncSession) -> dict:
     await db.execute(
         update(OTPCode)
         .where(OTPCode.email == email, OTPCode.is_used == False)
-        .values(is_used=True)
+        .values(is_used=True, deleted_at=now + timedelta(days=USED_OTP_RETENTION_DAYS))
     )
     await db.commit()
 
@@ -79,13 +98,16 @@ async def verify_otp_and_register(
     last_name: str,
     db: AsyncSession,
 ) -> dict:
+    now = datetime.now(timezone.utc)
+    await cleanup_old_used_otps(db, now)
+
     # Find unused, non-expired OTPs and verify against hashed code
     otp_stmt = (
         select(OTPCode)
         .where(
             OTPCode.email == email,
             OTPCode.is_used == False,
-            OTPCode.expires_at > datetime.now(timezone.utc),
+            OTPCode.expires_at > now,
         )
         .order_by(OTPCode.created_at.desc())
     )
@@ -97,6 +119,7 @@ async def verify_otp_and_register(
 
     # Mark OTP as used so it can't be reused
     otp.is_used = True
+    otp.deleted_at = now + timedelta(days=USED_OTP_RETENTION_DAYS)
     await db.commit()
 
     # Check if user already exists (edge case)
