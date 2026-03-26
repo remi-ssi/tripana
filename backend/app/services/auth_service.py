@@ -4,7 +4,7 @@ import random
 import string
 from datetime import datetime, timedelta, timezone
 from jose import jwt
-from sqlalchemy import delete, or_, select, update
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.otp import OTPCode
@@ -16,6 +16,9 @@ from app.utils.security import hash_password, verify_password
 OTP_EXPIRE_MINUTES = 10   # OTP dies after 10 minutes
 RESEND_WAIT_SECONDS = 120 # user must wait 2 minutes before resending
 USED_OTP_RETENTION_DAYS = 1  # used OTPs are kept for 1 day then deleted
+MAX_VERIFY_ATTEMPTS = 5
+ATTEMPT_WINDOW_MINUTES = 10
+VERIFY_BLOCK_MINUTES = 15
 
 
 async def cleanup_old_used_otps(db: AsyncSession, now: datetime) -> None:
@@ -101,6 +104,21 @@ async def verify_otp_and_register(
     now = datetime.now(timezone.utc)
     await cleanup_old_used_otps(db, now)
 
+    active_block_stmt = (
+        select(OTPCode.blocked_until)
+        .where(
+            OTPCode.email == email,
+            OTPCode.blocked_until.is_not(None),
+            OTPCode.blocked_until > now,
+        )
+        .order_by(OTPCode.blocked_until.desc())
+    )
+    blocked_until = (await db.execute(active_block_stmt)).scalars().first()
+    if blocked_until:
+        wait_seconds = int((blocked_until - now).total_seconds())
+        wait_minutes = max(1, (wait_seconds + 59) // 60)
+        return {"error": f"Too many attempts. Try again in {wait_minutes} minutes."}
+
     # Find unused, non-expired OTPs and verify against hashed code
     otp_stmt = (
         select(OTPCode)
@@ -115,6 +133,30 @@ async def verify_otp_and_register(
     otp = next((item for item in otp_candidates if verify_password(code, item.hashed_code)), None)
 
     if otp is None:
+        latest_otp = otp_candidates[0] if otp_candidates else None
+        if latest_otp:
+            latest_otp.attempts = (latest_otp.attempts or 0) + 1
+            await db.commit()
+
+        attempts_stmt = (
+            select(func.coalesce(func.sum(OTPCode.attempts), 0))
+            .where(
+                OTPCode.email == email,
+                OTPCode.created_at >= now - timedelta(minutes=ATTEMPT_WINDOW_MINUTES),
+            )
+        )
+        attempt_count = int((await db.execute(attempts_stmt)).scalar_one())
+
+        if attempt_count >= MAX_VERIFY_ATTEMPTS:
+            block_until = now + timedelta(minutes=VERIFY_BLOCK_MINUTES)
+            await db.execute(
+                update(OTPCode)
+                .where(OTPCode.email == email)
+                .values(blocked_until=block_until)
+            )
+            await db.commit()
+            return {"error": f"Too many attempts. Verification blocked for {VERIFY_BLOCK_MINUTES} minutes."}
+
         return {"error": "Invalid or expired code."}
 
     # Mark OTP as used so it can't be reused

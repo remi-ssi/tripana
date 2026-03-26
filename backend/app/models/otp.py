@@ -17,6 +17,7 @@ class OTPCode(Base):
     is_used = Column(Boolean, default=False)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
     attempts = Column(Integer, default=0)
+    blocked_until = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime(timezone=True), nullable=False)
 

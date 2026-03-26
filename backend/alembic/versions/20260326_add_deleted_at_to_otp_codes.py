@@ -18,7 +18,9 @@ depends_on = None
 
 def upgrade() -> None:
     op.add_column("otp_codes", sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True))
+    op.add_column("otp_codes", sa.Column("blocked_until", sa.DateTime(timezone=True), nullable=True))
 
 
 def downgrade() -> None:
+    op.drop_column("otp_codes", "blocked_until")
     op.drop_column("otp_codes", "deleted_at")
