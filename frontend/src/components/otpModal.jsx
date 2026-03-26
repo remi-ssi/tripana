@@ -2,12 +2,21 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function OTPModal({ isOpen, onClose, onVerify, email = "your email" }) {
+const RESEND_WAIT_SECONDS = 120;
+
+export default function OTPModal({
+  isOpen,
+  onClose,
+  onVerify,
+  onResend,
+  email = "your email",
+}) {
   const [otp, setOtp] = useState(Array(6).fill(""));
   const [error, setError] = useState("");
-  const [resendTimer, setResendTimer] = useState(30);
+  const [resendTimer, setResendTimer] = useState(RESEND_WAIT_SECONDS);
   const [canResend, setCanResend] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const inputRefs = useRef([]);
 
   // ── Auto-focus first input when modal opens ──
@@ -15,7 +24,7 @@ export default function OTPModal({ isOpen, onClose, onVerify, email = "your emai
     if (isOpen) {
       setOtp(Array(6).fill(""));
       setError("");
-      setResendTimer(30);
+      setResendTimer(RESEND_WAIT_SECONDS);
       setCanResend(false);
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     }
@@ -89,14 +98,32 @@ export default function OTPModal({ isOpen, onClose, onVerify, email = "your emai
   };
 
   // ── Resend ──
-  const handleResend = () => {
+  const handleResend = async () => {
     if (!canResend) return;
-    setOtp(Array(6).fill(""));
+    setResending(true);
     setError("");
-    setResendTimer(30);
-    setCanResend(false);
-    inputRefs.current[0]?.focus();
-    // call your resend API here
+
+    try {
+      await onResend?.();
+      setOtp(Array(6).fill(""));
+      setResendTimer(RESEND_WAIT_SECONDS);
+      setCanResend(false);
+      inputRefs.current[0]?.focus();
+    } catch (err) {
+      const message = err?.message || "Failed to resend OTP. Please try again.";
+      setError(message);
+
+      const waitMatch = message.match(/(\d+)\s*seconds?/i);
+      if (waitMatch) {
+        const waitSeconds = Number(waitMatch[1]);
+        if (!Number.isNaN(waitSeconds) && waitSeconds > 0) {
+          setResendTimer(waitSeconds);
+          setCanResend(false);
+        }
+      }
+    } finally {
+      setResending(false);
+    }
   };
 
   return (
@@ -189,9 +216,10 @@ export default function OTPModal({ isOpen, onClose, onVerify, email = "your emai
                 {canResend ? (
                   <button
                     onClick={handleResend}
+                    disabled={resending}
                     className="font-semibold underline text-gray-800 hover:text-blue-600 transition-colors"
                   >
-                    Resend
+                    {resending ? "Resending..." : "Resend"}
                   </button>
                 ) : (
                   <span className="font-semibold text-gray-400">
@@ -206,23 +234,3 @@ export default function OTPModal({ isOpen, onClose, onVerify, email = "your emai
     </AnimatePresence>
   );
 }
-
-// ── Usage example ─────────────────────────────────────────────────────────────
-//
-// import OTPModal from "@/components/OTPModal";
-//
-// const [showOTP, setShowOTP] = useState(false);
-//
-// <OTPModal
-//   isOpen={showOTP}
-//   onClose={() => setShowOTP(false)}
-//   email="user@example.com"
-//   onVerify={async (code) => {
-//     const res = await fetch("/api/verify-otp", {
-//       method: "POST",
-//       body: JSON.stringify({ code }),
-//     });
-//     if (!res.ok) throw new Error("Invalid");
-//     setShowOTP(false);
-//   }}
-// />

@@ -3,7 +3,7 @@
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from app.config import settings  # your config file
+from app.config import settings 
 
 def send_otp_email(to_email: str, otp_code: str):
     """Send an OTP code to the user's email."""

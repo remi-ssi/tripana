@@ -96,6 +96,14 @@ export default function SignUp({ onSwitchToLogin }) {
     }
   };
 
+  const handleResendOTP = async () => {
+    try {
+      await authService.resendOTP(otpEmail);
+    } catch (error) {
+      throw new Error(error.message || "Failed to resend OTP");
+    }
+  };
+
   // Eye icon component for password visibility toggle
   const EyeIcon = ({ open }) => (
     <svg
@@ -284,6 +292,7 @@ export default function SignUp({ onSwitchToLogin }) {
         onClose={() => setShowOTPModal(false)}
         email={otpEmail}
         onVerify={handleVerifyOTP}
+        onResend={handleResendOTP}
       />
     </>
   );
