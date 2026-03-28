@@ -55,7 +55,18 @@ export const authService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData),
     })
-    if (!response.ok) throw new Error(ERROR_MESSAGES.REGISTRATION_FAILED)
+    if (!response.ok) {
+      let message = ERROR_MESSAGES.REGISTRATION_FAILED
+      try {
+        const errorData = await response.json()
+        if (errorData?.detail) {
+          message = errorData.detail
+        }
+      } catch {
+        // Ignore parse errors and keep default message
+      }
+      throw new Error(message)
+    }
     return response.json()
   },
 
@@ -91,7 +102,18 @@ export const authService = {
         last_name: lastName,
       }),
     })
-    if (!response.ok) throw new Error(ERROR_MESSAGES.REGISTRATION_FAILED)
+    if (!response.ok) {
+      let message = ERROR_MESSAGES.REGISTRATION_FAILED
+      try {
+        const errorData = await response.json()
+        if (errorData?.detail) {
+          message = errorData.detail
+        }
+      } catch {
+        // Ignore parse errors and keep default message
+      }
+      throw new Error(message)
+    }
     return response.json()
   },
 

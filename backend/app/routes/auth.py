@@ -13,10 +13,10 @@ from app.schemas.user_schema import (
 )
 from app.services.auth_service import (
     send_otp,
-    start_registration_with_otp,
-    verify_otp_and_register,
-    verify_login_otp,
-    start_login_with_otp,
+    start_signup,
+    finish_signup,
+    finish_login,
+    start_login,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -24,7 +24,7 @@ legacy_router = APIRouter(prefix="/api/v1", tags=["auth"])
 
 
 async def _register_impl(data: UserCreate, db: AsyncSession):
-    result = await start_registration_with_otp(data.email, db)
+    result = await start_signup(data.email, db)
     if "error" in result:
         raise HTTPException(status_code=result.get("status_code", 400), detail=result["error"])
     return result
@@ -38,7 +38,7 @@ async def _resend_impl(data: ResendOTPRequest, db: AsyncSession):
 
 
 async def _verify_impl(data: VerifyOTPRequest, db: AsyncSession):
-    result = await verify_otp_and_register(
+    result = await finish_signup(
         email=data.email,
         code=data.code,
         password=data.password,
@@ -53,7 +53,7 @@ async def _verify_impl(data: VerifyOTPRequest, db: AsyncSession):
 
 
 async def _login_impl(data: LoginRequest, db: AsyncSession):
-    result = await start_login_with_otp(data.email, data.password, db)
+    result = await start_login(data.email, data.password, db)
     if "error" in result:
         raise HTTPException(status_code=result.get("status_code", 400), detail=result["error"])
 
@@ -61,7 +61,7 @@ async def _login_impl(data: LoginRequest, db: AsyncSession):
 
 
 async def _verify_login_impl(data: VerifyLoginOTPRequest, db: AsyncSession):
-    result = await verify_login_otp(email=data.email, code=data.code, db=db)
+    result = await finish_login(email=data.email, code=data.code, db=db)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result

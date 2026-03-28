@@ -40,7 +40,7 @@ async def cleanup_old_used_otps(db: AsyncSession, now: datetime) -> None:
     await db.commit()
 
 # Step 1 (data lookup only): return active block timestamp for this email, or None.
-async def get_active_block_until(email: str, db: AsyncSession, now: datetime):
+async def get_block_until(email: str, db: AsyncSession, now: datetime):
     active_block_stmt = (
         select(OTPCode.blocked_until)
         .where(
@@ -53,9 +53,9 @@ async def get_active_block_until(email: str, db: AsyncSession, now: datetime):
     return (await db.execute(active_block_stmt)).scalars().first()
 
 # Step 2 (message adapter): convert active block timestamp to API error payload.
-# This wraps get_active_block_until so callers can reuse the same error message format.
-async def _get_block_error(email: str, db: AsyncSession, now: datetime):
-    blocked_until = await get_active_block_until(email, db, now)
+# This wraps get_block_until so callers can reuse the same error message format.
+async def block_error(email: str, db: AsyncSession, now: datetime):
+    blocked_until = await get_block_until(email, db, now)
     if not blocked_until:
         return None
 
@@ -65,7 +65,7 @@ async def _get_block_error(email: str, db: AsyncSession, now: datetime):
 
 # Step 3 (verification logic): validate submitted code against active OTP rows.
 # On failure it increments attempts and may create a new block.
-async def _get_valid_otp_or_error(email: str, code: str, db: AsyncSession, now: datetime):
+async def validate_otp(email: str, code: str, db: AsyncSession, now: datetime):
     otp_stmt = (
         select(OTPCode)
         .where(
@@ -109,7 +109,7 @@ async def _get_valid_otp_or_error(email: str, code: str, db: AsyncSession, now: 
     return None, {"error": "Invalid or expired code."}
 
 # Mark the OTP as used and set a deletion time so it can't be reused and will eventually be cleaned up.
-async def _mark_otp_used(otp: OTPCode, db: AsyncSession, now: datetime) -> None:
+async def use_otp(otp: OTPCode, db: AsyncSession, now: datetime) -> None:
     otp.is_used = True
     otp.deleted_at = now + timedelta(days=USED_OTP_RETENTION_DAYS)
     await db.commit()
@@ -137,9 +137,9 @@ async def send_otp(email: str, db: AsyncSession, is_resend: bool = False) -> dic
     now = datetime.now(timezone.utc)
     await cleanup_old_used_otps(db, now)
 
-    block_error = await _get_block_error(email, db, now)
-    if block_error:
-        return block_error
+    block_error_result = await block_error(email, db, now)
+    if block_error_result:
+        return block_error_result
 
     if is_resend:
         sends_stmt = (
@@ -208,8 +208,8 @@ async def send_otp(email: str, db: AsyncSession, is_resend: bool = False) -> dic
 
     return {"message": "OTP sent to email."}
 
-
-async def start_registration_with_otp(email: str, db: AsyncSession) -> dict:
+# verify OTP and create user, returning JWT token on success
+async def start_signup(email: str, db: AsyncSession) -> dict:
     user = (await db.execute(select(User).where(User.email == email))).scalars().first()
     if user:
         return {"error": "Email already registered.", "status_code": 400}
@@ -220,8 +220,8 @@ async def start_registration_with_otp(email: str, db: AsyncSession) -> dict:
 
     return {"message": "OTP sent. Please check your email."}
 
-
-async def start_login_with_otp(email: str, password: str, db: AsyncSession) -> dict:
+# Start login process by verifying credentials and sending OTP if valid
+async def start_login(email: str, password: str, db: AsyncSession) -> dict:
     user = (await db.execute(select(User).where(User.email == email))).scalars().first()
     if not user or not verify_password(password, user.hashed_password):
         return {"error": "Invalid Credentials", "status_code": 401}
@@ -233,7 +233,7 @@ async def start_login_with_otp(email: str, password: str, db: AsyncSession) -> d
     return {"message": "OTP sent. Please check your email."}
 
 # Verify OTP and register user, returning JWT token on success
-async def verify_otp_and_register(
+async def finish_signup(
     email: str,
     code: str,
     password: str,
@@ -244,16 +244,16 @@ async def verify_otp_and_register(
     now = datetime.now(timezone.utc)
     await cleanup_old_used_otps(db, now)
 
-    block_error = await _get_block_error(email, db, now)
-    if block_error:
-        return block_error
+    block_error_result = await block_error(email, db, now)
+    if block_error_result:
+        return block_error_result
 
-    otp, otp_error = await _get_valid_otp_or_error(email, code, db, now)
+    otp, otp_error = await validate_otp(email, code, db, now)
     if otp_error:
         return otp_error
 
     # Mark OTP as used so it can't be reused
-    await _mark_otp_used(otp, db, now)
+    await use_otp(otp, db, now)
 
     # Check if user already exists (edge case)
     existing_user = (await db.execute(select(User).where(User.email == email))).scalars().first()
@@ -274,20 +274,20 @@ async def verify_otp_and_register(
     # Create JWT token
     return _build_auth_response(new_user)
 
-
-async def verify_login_otp(email: str, code: str, db: AsyncSession) -> dict:
+# Verify login OTP and return JWT token on success
+async def finish_login(email: str, code: str, db: AsyncSession) -> dict:
     now = datetime.now(timezone.utc)
     await cleanup_old_used_otps(db, now)
 
-    block_error = await _get_block_error(email, db, now)
-    if block_error:
-        return block_error
+    block_error_result = await block_error(email, db, now)
+    if block_error_result:
+        return block_error_result
 
-    otp, otp_error = await _get_valid_otp_or_error(email, code, db, now)
+    otp, otp_error = await validate_otp(email, code, db, now)
     if otp_error:
         return otp_error
 
-    await _mark_otp_used(otp, db, now)
+    await use_otp(otp, db, now)
 
     user = (await db.execute(select(User).where(User.email == email))).scalars().first()
     if not user:
