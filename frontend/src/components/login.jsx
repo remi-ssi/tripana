@@ -95,7 +95,7 @@ export default function Login({ onSwitchToSignup }) {
                   ? 'bg-red-100 text-red-800 border-2 border-red-500 focus:ring-red-400'
                   : 'bg-slate-100 text-gray-800 focus:ring-blue-400'
               }`}
-              placeholder=""
+              placeholder="Email Address"
             />
             {errors.email && <p className="text-red-500 text-xs mt-1 ml-1">{errors.email}</p>}
           </div>
@@ -114,7 +114,7 @@ export default function Login({ onSwitchToSignup }) {
                     ? 'bg-red-100 text-red-800 border-2 border-red-500 focus:ring-red-400'
                     : 'bg-slate-100 text-gray-800 focus:ring-blue-400'
                 }`}
-                placeholder=""
+                placeholder="Password"
               />
               <button
                 type="button"

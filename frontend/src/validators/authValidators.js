@@ -2,7 +2,7 @@ import { ERROR_MESSAGES } from '../utils/errors'
 import { isEmpty } from '../utils/helpers'
 
 // * First name validation
-export const validateFirstName = (firstName) => {
+const validateFirstName = (firstName) => {
   if (!firstName || firstName.trim() === '') {
     return ERROR_MESSAGES.FIRST_NAME_REQUIRED
   }
@@ -10,7 +10,7 @@ export const validateFirstName = (firstName) => {
 }
 
 // * Last name validation
-export const validateLastName = (lastName) => {
+const validateLastName = (lastName) => {
   if (!lastName || lastName.trim() === '') {
     return ERROR_MESSAGES.LAST_NAME_REQUIRED
   }
@@ -18,7 +18,7 @@ export const validateLastName = (lastName) => {
 }
 
 // * Email validation
-export const validateEmail = (email) => {
+const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!email || !emailRegex.test(email)) {
     return ERROR_MESSAGES.INVALID_EMAIL
@@ -27,7 +27,7 @@ export const validateEmail = (email) => {
 }
 
 //Password validation
-export const validatePassword = (password) => {
+const validatePassword = (password) => {
   if (!password || password.length < 8) {
     return ERROR_MESSAGES.PASSWORD_TOO_SHORT
   }
@@ -47,7 +47,7 @@ export const validatePassword = (password) => {
 }
 
 //Confirm password validation
-export const validatePasswordMatch = (password, confirmPassword) => {
+const validatePasswordMatch = (password, confirmPassword) => {
   if (password !== confirmPassword) {
     return ERROR_MESSAGES.PASSWORDS_DONT_MATCH
   }
@@ -72,6 +72,8 @@ export const validateLoginForm = (email, password) => {
   if (isEmpty(password)) {
     errors.password = 'Password is required'
   }
+  const passwordError = validatePassword(password)
+  if (passwordError) errors.password = passwordError  
 
   return Object.keys(errors).length > 0 ? errors : null
 }
