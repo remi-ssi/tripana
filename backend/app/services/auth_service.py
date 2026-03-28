@@ -16,11 +16,9 @@ from app.utils.security import hash_password, verify_password
 OTP_EXPIRE_MINUTES = 10   # OTP dies after 10 minutes
 RESEND_WAIT_SECONDS = 120 # user must wait 2 minutes before resending
 USED_OTP_RETENTION_DAYS = 1  # used OTPs are kept for 1 day then deleted
-MAX_RESEND_ATTEMPTS = 5
-RESEND_WINDOW_MINUTES = 10
-MAX_VERIFY_ATTEMPTS = 5
-ATTEMPT_WINDOW_MINUTES = 10
-VERIFY_BLOCK_MINUTES = 15
+MAX_RESEND_ATTEMPTS = 5 # 5 resend attempts allowed per session before blocking
+MAX_VERIFY_ATTEMPTS = 5 # 5 failed verification attempts allowed per session before blocking
+VERIFY_BLOCK_MINUTES = 15 # 15 minute block after too many failed attempts
 
 # Cleanup old used OTPs to prevent DB bloat. This is called before any OTP generation or verification.
 async def cleanup_old_used_otps(db: AsyncSession, now: datetime) -> None:
@@ -86,12 +84,13 @@ async def validate_otp(email: str, code: str, db: AsyncSession, now: datetime):
         latest_otp.attempts = (latest_otp.attempts or 0) + 1
         await db.commit()
    
-    # Count attempts in the last ATTEMPT_WINDOW_MINUTES
+    # Count failed attempts for active OTP session(s), regardless of elapsed time.
     attempts_stmt = (
         select(func.coalesce(func.sum(OTPCode.attempts), 0))
         .where(
             OTPCode.email == email,
-            OTPCode.created_at >= now - timedelta(minutes=ATTEMPT_WINDOW_MINUTES),
+            OTPCode.is_used == False,
+            OTPCode.expires_at > now,
         )
     )
     attempt_count = int((await db.execute(attempts_stmt)).scalar_one())
@@ -146,7 +145,6 @@ async def send_otp(email: str, db: AsyncSession, is_resend: bool = False) -> dic
             select(func.count(OTPCode.id))
             .where(
                 OTPCode.email == email,
-                OTPCode.created_at >= now - timedelta(minutes=RESEND_WINDOW_MINUTES),
             )
         )
         total_sends = int((await db.execute(sends_stmt)).scalar_one())
