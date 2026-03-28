@@ -10,7 +10,41 @@ export const authService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     })
-    if (!response.ok) throw new Error(ERROR_MESSAGES.LOGIN_FAILED)
+    if (!response.ok) {
+      let message = 'Invalid Credentials'
+      try {
+        const errorData = await response.json()
+        if (errorData?.detail) {
+          message = errorData.detail
+        }
+      } catch {
+        // Ignore parse errors and keep default message
+      }
+      throw new Error(message)
+    }
+    return response.json()
+  },
+
+  verifyLoginOTP: async (email, otp) => {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-login-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code: otp }),
+    })
+
+    if (!response.ok) {
+      let message = ERROR_MESSAGES.LOGIN_FAILED
+      try {
+        const errorData = await response.json()
+        if (errorData?.detail) {
+          message = errorData.detail
+        }
+      } catch {
+        // Ignore parse errors and keep default message
+      }
+      throw new Error(message)
+    }
+
     return response.json()
   },
 
@@ -84,4 +118,14 @@ export const authService = {
 
     return response.json()
   },
+
+  checkUserExists: async (email) => {
+    const response = await fetch(`${API_BASE_URL}/auth/check-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    })
+    if (!response.ok) throw new Error(ERROR_MESSAGES.CHECK_USER_FAILED)
+    return response.json()
+  }
 }

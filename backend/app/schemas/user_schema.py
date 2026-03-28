@@ -31,6 +31,16 @@ class VerifyOTPRequest(BaseModel):
 class ResendOTPRequest(BaseModel):
     email: EmailStr
 
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class VerifyLoginOTPRequest(BaseModel):
+    email: EmailStr
+    code: str
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

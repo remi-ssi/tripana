@@ -1,30 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { validateLoginForm } from "../validators/authValidators";
+import { authService } from "../api/authService";
 import EarthLoader from "./loadingIndicator";
+import OTPModal from "./otpModal";
 
 export default function Login({ onSwitchToSignup }) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    if (isLoading) {
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-      }, 2500);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading]);
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validate form
@@ -35,8 +30,39 @@ export default function Login({ onSwitchToSignup }) {
     // If no errors, submit form
     if (!errors) {
       setIsLoading(true);
-      console.log("Login submitted:", formData);
-      // Call API to login user
+      try {
+        await authService.login(formData.email, formData.password);
+        setOtpEmail(formData.email);
+        setShowOTPModal(true);
+      } catch (error) {
+        setErrors({ submit: error.message || "Invalid Credentials" });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleVerifyOTP = async (otp) => {
+    try {
+      const response = await authService.verifyLoginOTP(otpEmail, otp);
+
+      if (response.token) {
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("user", JSON.stringify(response.user));
+      }
+
+      setShowOTPModal(false);
+      window.location.href = "/dashboard";
+    } catch (error) {
+      throw new Error(error.message || "OTP verification failed");
+    }
+  };
+
+  const handleResendOTP = async () => {
+    try {
+      await authService.resendOTP(otpEmail);
+    } catch (error) {
+      throw new Error(error.message || "Failed to resend OTP");
     }
   };
 
@@ -99,6 +125,9 @@ export default function Login({ onSwitchToSignup }) {
             />
             {errors.email && <p className="text-red-500 text-xs mt-1 ml-1">{errors.email}</p>}
           </div>
+
+          {/* Submit error */}
+          {errors.submit && <p className="text-red-500 text-sm text-center mt-2">{errors.submit}</p>}
 
           {/* Password */}
           <div>
@@ -163,6 +192,15 @@ export default function Login({ onSwitchToSignup }) {
           </button>
         </p>
       </div>
+
+      {/* OTP Modal */}
+      <OTPModal 
+        isOpen={showOTPModal}
+        onClose={() => setShowOTPModal(false)}
+        email={otpEmail}
+        onVerify={handleVerifyOTP}
+        onResend={handleResendOTP}
+      />
     </>
   );
 }

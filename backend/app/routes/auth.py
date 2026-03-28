@@ -4,27 +4,34 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db               # your existing DB session function
-from app.schemas.user_schema import UserCreate, VerifyOTPRequest, ResendOTPRequest
-from app.services.auth_service import send_registration_otp, verify_otp_and_register
-from app.models.user import User
+from app.schemas.user_schema import (
+    UserCreate,
+    VerifyOTPRequest,
+    ResendOTPRequest,
+    LoginRequest,
+    VerifyLoginOTPRequest,
+)
+from app.services.auth_service import (
+    send_otp,
+    start_registration_with_otp,
+    verify_otp_and_register,
+    verify_login_otp,
+    start_login_with_otp,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 legacy_router = APIRouter(prefix="/api/v1", tags=["auth"])
 
 
 async def _register_impl(data: UserCreate, db: AsyncSession):
-    existing = (await db.execute(select(User).where(User.email == data.email))).scalars().first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered.")
-
-    result = await send_registration_otp(data.email, db)
+    result = await start_registration_with_otp(data.email, db)
     if "error" in result:
-        raise HTTPException(status_code=429, detail=result["error"])
-    return {"message": "OTP sent. Please check your email."}
+        raise HTTPException(status_code=result.get("status_code", 400), detail=result["error"])
+    return result
 
 
 async def _resend_impl(data: ResendOTPRequest, db: AsyncSession):
-    result = await send_registration_otp(data.email, db, is_resend=True)
+    result = await send_otp(data.email, db, is_resend=True)
     if "error" in result:
         raise HTTPException(status_code=429, detail=result["error"])
     return {"message": "New OTP sent."}
@@ -40,6 +47,21 @@ async def _verify_impl(data: VerifyOTPRequest, db: AsyncSession):
         db=db,
     )
 
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
+
+
+async def _login_impl(data: LoginRequest, db: AsyncSession):
+    result = await start_login_with_otp(data.email, data.password, db)
+    if "error" in result:
+        raise HTTPException(status_code=result.get("status_code", 400), detail=result["error"])
+
+    return result
+
+
+async def _verify_login_impl(data: VerifyLoginOTPRequest, db: AsyncSession):
+    result = await verify_login_otp(email=data.email, code=data.code, db=db)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result
@@ -76,3 +98,25 @@ async def verify_otp(data: VerifyOTPRequest, db: AsyncSession = Depends(get_db))
 @legacy_router.post("/verify-otp")
 async def verify_otp_legacy(data: VerifyOTPRequest, db: AsyncSession = Depends(get_db)):
     return await _verify_impl(data, db)
+
+
+@router.post("/login")
+async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
+    """Step 1 login: validate credentials and send OTP to email."""
+    return await _login_impl(data, db)
+
+
+@legacy_router.post("/login")
+async def login_legacy(data: LoginRequest, db: AsyncSession = Depends(get_db)):
+    return await _login_impl(data, db)
+
+
+@router.post("/verify-login-otp")
+async def verify_login(data: VerifyLoginOTPRequest, db: AsyncSession = Depends(get_db)):
+    """Step 2 login: verify OTP and issue JWT token."""
+    return await _verify_login_impl(data, db)
+
+
+@legacy_router.post("/verify-login-otp")
+async def verify_login_legacy(data: VerifyLoginOTPRequest, db: AsyncSession = Depends(get_db)):
+    return await _verify_login_impl(data, db)
