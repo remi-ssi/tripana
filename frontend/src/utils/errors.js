@@ -15,6 +15,25 @@ export const ERROR_MESSAGES = {
   PASSWORD_MISSING_NUMBER: 'Password must contain at least 1 number.',
   PASSWORD_MISSING_SPECIAL_CHAR: 'Password must contain at least 1 special character (!@#$%^&*).',
   PASSWORDS_DONT_MATCH: 'Passwords do not match.',
+  
+  // OTP-related messages
+  OTP_BLOCKED: 'Oops! Too Many Failed Attempts. Please try again later.',
+  OTP_INCOMPLETE: 'Please enter all 6 digits.',
+  OTP_INVALID: 'Invalid code. Please try again.',
+  OTP_RESEND_FAILED: 'Failed to resend OTP. Please try again.',
+  OTP_CLOSE_FAILED: 'Unable to close OTP right now. Please try again.',
+}
+
+// Configuration for OTP verification and blocking logic
+export const OTP_CONFIG = {
+  RESEND_WAIT_SECONDS: 120,
+  BLOCK_DURATION_SECONDS: 15 * 60,
+  BLOCKED_ERROR_KEYWORDS: [
+    'verification blocked',
+    'resend limit reached',
+    'too many attempts',
+    'try again in',
+  ],
 }
 
 export const API_BASE_URL = 'http://localhost:8000'

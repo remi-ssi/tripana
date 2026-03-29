@@ -1,19 +1,14 @@
 // src/components/OTPModal.jsx
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ERROR_MESSAGES, OTP_CONFIG } from "../utils/errors";
 
-const RESEND_WAIT_SECONDS = 120;
-const BLOCK_DURATION_SECONDS = 15 * 60;
-const BLOCKED_ERROR_MESSAGE = "Oops! Too Many Failed Attempts. Please try again later.";
+const { RESEND_WAIT_SECONDS, BLOCK_DURATION_SECONDS, BLOCKED_ERROR_KEYWORDS } = OTP_CONFIG;
 
+// Detect if error message indicates a block state
 const isBlockedError = (message = "") => {
   const text = String(message).toLowerCase();
-  return (
-    text.includes("verification blocked") ||
-    text.includes("resend limit reached") ||
-    text.includes("too many attempts") ||
-    text.includes("try again in")
-  );
+  return BLOCKED_ERROR_KEYWORDS.some((keyword) => text.includes(keyword));
 };
 
 const formatCountdown = (seconds) => {
@@ -79,7 +74,7 @@ export default function OTPModal({
   const activateBlockedState = () => {
     setBlockedSeconds(BLOCK_DURATION_SECONDS);
     setJustUnblocked(false);
-    setError(BLOCKED_ERROR_MESSAGE);
+    setError(ERROR_MESSAGES.OTP_BLOCKED);
     setCanResend(false);
     setResendTimer(RESEND_WAIT_SECONDS);
   };
@@ -101,7 +96,7 @@ export default function OTPModal({
       await onClose?.();
       setConfirmExit(false);
     } catch (err) {
-      const message = err?.message || "Unable to close OTP right now. Please try again.";
+      const message = err?.message || ERROR_MESSAGES.OTP_CLOSE_FAILED;
       setCloseError(message);
     } finally {
       setClosing(false);
@@ -170,7 +165,7 @@ export default function OTPModal({
 
     const code = otp.join("");
     if (code.length < 6) {
-      setError("Please enter all 6 digits.");
+      setError(ERROR_MESSAGES.OTP_INCOMPLETE);
       return;
     }
     setLoading(true);
@@ -178,7 +173,7 @@ export default function OTPModal({
     try {
       await onVerify?.(code);
     } catch (err) {
-      const message = err?.message || "Invalid code. Please try again.";
+      const message = err?.message || ERROR_MESSAGES.OTP_INVALID;
       if (isBlockedError(message)) {
         activateBlockedState();
         return;
@@ -202,7 +197,7 @@ export default function OTPModal({
       setCanResend(false);
       inputRefs.current[0]?.focus();
     } catch (err) {
-      const message = err?.message || "Failed to resend OTP. Please try again.";
+      const message = err?.message || ERROR_MESSAGES.OTP_RESEND_FAILED;
 
       if (isBlockedError(message)) {
         activateBlockedState();
@@ -238,7 +233,7 @@ export default function OTPModal({
         setCanResend(false);
         inputRefs.current[0]?.focus();
       } catch (err) {
-        const message = err?.message || "Failed to resend OTP. Please try again.";
+        const message = err?.message || ERROR_MESSAGES.OTP_RESEND_FAILED;
         setError(message);
 
         const waitMatch = message.match(/(\d+)\s*seconds?/i);
