@@ -133,9 +133,6 @@ export default function Login({ onSwitchToSignup }) {
             {errors.email && <p className="text-red-500 text-xs mt-1 ml-1">{errors.email}</p>}
           </div>
 
-          {/* Submit error */}
-          {errors.submit && <p className="text-red-500 text-sm text-center mt-2">{errors.submit}</p>}
-
           {/* Password */}
           <div>
             <label className="block text-sm text-gray-700 mb-1 ml-1">Password</label>
@@ -170,6 +167,9 @@ export default function Login({ onSwitchToSignup }) {
                 Forgot Password
               </a>
             </div>
+
+            {/* Submit error */}
+            {errors.submit && <p className="text-red-500 text-sm text-center mt-2">{errors.submit}</p>}
           </div>
 
           {/* Submit Button */}
