@@ -3,6 +3,24 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const RESEND_WAIT_SECONDS = 120;
+const BLOCK_DURATION_SECONDS = 15 * 60;
+const BLOCKED_ERROR_MESSAGE = "Oops! Too Many Failed Attempts. Please try again later.";
+
+const isBlockedError = (message = "") => {
+  const text = String(message).toLowerCase();
+  return (
+    text.includes("verification blocked") ||
+    text.includes("resend limit reached") ||
+    text.includes("too many attempts") ||
+    text.includes("try again in")
+  );
+};
+
+const formatCountdown = (seconds) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+};
 
 export default function OTPModal({
   isOpen,
@@ -18,7 +36,9 @@ export default function OTPModal({
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
+  const [blockedSeconds, setBlockedSeconds] = useState(0);
   const inputRefs = useRef([]);
+  const isBlocked = blockedSeconds > 0;
 
   // ── Auto-focus first input when modal opens ──
   useEffect(() => {
@@ -28,9 +48,33 @@ export default function OTPModal({
       setResendTimer(RESEND_WAIT_SECONDS);
       setCanResend(false);
       setConfirmExit(false);
+      setBlockedSeconds(0);
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || blockedSeconds <= 0) return;
+
+    const id = setTimeout(() => {
+      setBlockedSeconds((prev) => {
+        if (prev <= 1) {
+          setError("");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearTimeout(id);
+  }, [blockedSeconds, isOpen]);
+
+  const activateBlockedState = () => {
+    setBlockedSeconds(BLOCK_DURATION_SECONDS);
+    setError(BLOCKED_ERROR_MESSAGE);
+    setCanResend(false);
+    setResendTimer(RESEND_WAIT_SECONDS);
+  };
 
   const handleRequestClose = () => {
     setConfirmExit(true);
@@ -48,13 +92,16 @@ export default function OTPModal({
   // ── Resend countdown ──
   useEffect(() => {
     if (!isOpen) return;
+    if (isBlocked) return;
     if (resendTimer === 0) { setCanResend(true); return; }
     const id = setTimeout(() => setResendTimer((t) => t - 1), 1000);
     return () => clearTimeout(id);
-  }, [resendTimer, isOpen]);
+  }, [resendTimer, isOpen, isBlocked]);
 
   // ── Handle digit input ──
   const handleChange = (index, value) => {
+    if (isBlocked) return;
+
     // Allow only single digit
     const digit = value.replace(/\D/g, "").slice(-1);
     const next = [...otp];
@@ -70,6 +117,8 @@ export default function OTPModal({
 
   // ── Handle backspace ──
   const handleKeyDown = (index, e) => {
+    if (isBlocked) return;
+
     if (e.key === "Backspace") {
       if (otp[index]) {
         const next = [...otp];
@@ -85,6 +134,8 @@ export default function OTPModal({
 
   // ── Handle paste ──
   const handlePaste = (e) => {
+    if (isBlocked) return;
+
     e.preventDefault();
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
     const next = [...otp];
@@ -96,6 +147,8 @@ export default function OTPModal({
 
   // ── Verify ──
   const handleVerify = async () => {
+    if (isBlocked) return;
+
     const code = otp.join("");
     if (code.length < 6) {
       setError("Please enter all 6 digits.");
@@ -105,8 +158,13 @@ export default function OTPModal({
     setError("");
     try {
       await onVerify?.(code);
-    } catch {
-      setError("Invalid code. Please try again.");
+    } catch (err) {
+      const message = err?.message || "Invalid code. Please try again.";
+      if (isBlockedError(message)) {
+        activateBlockedState();
+        return;
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -114,7 +172,7 @@ export default function OTPModal({
 
   // ── Resend ──
   const handleResend = async () => {
-    if (!canResend) return;
+    if (!canResend || isBlocked) return;
     setResending(true);
     setError("");
 
@@ -126,6 +184,12 @@ export default function OTPModal({
       inputRefs.current[0]?.focus();
     } catch (err) {
       const message = err?.message || "Failed to resend OTP. Please try again.";
+
+      if (isBlockedError(message)) {
+        activateBlockedState();
+        return;
+      }
+
       setError(message);
 
       const waitMatch = message.match(/(\d+)\s*seconds?/i);
@@ -220,6 +284,7 @@ export default function OTPModal({
                         type="text"
                         inputMode="numeric"
                         maxLength={1}
+                        disabled={isBlocked}
                         value={digit}
                         onChange={(e) => handleChange(i, e.target.value)}
                         onKeyDown={(e) => handleKeyDown(i, e)}
@@ -230,7 +295,8 @@ export default function OTPModal({
                           bg-gray-100 text-[#2b2d8e] transition-colors duration-150
                           ${digit ? "border-blue-500 bg-blue-50" : "border-transparent"}
                           focus:border-blue-500 focus:bg-blue-50
-                          ${error ? "border-red-400 bg-red-50" : ""}
+                          ${(error || isBlocked) ? "border-red-400 bg-red-50 text-red-700" : ""}
+                          ${isBlocked ? "opacity-80 cursor-not-allowed" : ""}
                         `}
                       />
                     ))}
@@ -240,12 +306,13 @@ export default function OTPModal({
                   <AnimatePresence>
                     {error && (
                       <motion.p
-                        className="text-sm text-red-500 -mt-2"
+                        className="w-full text-center text-sm text-red-500 -mt-2"
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
                       >
                         {error}
+                        {isBlocked ? ` (${formatCountdown(blockedSeconds)})` : ""}
                       </motion.p>
                     )}
                   </AnimatePresence>
@@ -253,7 +320,7 @@ export default function OTPModal({
                   {/* Verify Button */}
                   <motion.button
                     onClick={handleVerify}
-                    disabled={loading}
+                    disabled={loading || isBlocked}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     className="w-full py-3.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-semibold text-base tracking-wide transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
@@ -262,22 +329,24 @@ export default function OTPModal({
                   </motion.button>
 
                   {/* Resend */}
-                  <p className="text-sm text-gray-500">
-                    Didn't receive code?{" "}
-                    {canResend ? (
-                      <button
-                        onClick={handleResend}
-                        disabled={resending}
-                        className="font-semibold underline text-gray-800 hover:text-blue-600 transition-colors"
-                      >
-                        {resending ? "Resending..." : "Resend"}
-                      </button>
-                    ) : (
-                      <span className="font-semibold text-gray-400">
-                        Resend in {resendTimer}s
-                      </span>
-                    )}
-                  </p>
+                  {!isBlocked && (
+                    <p className="text-sm text-gray-500">
+                      Didn't receive code?{" "}
+                      {canResend ? (
+                        <button
+                          onClick={handleResend}
+                          disabled={resending}
+                          className="font-semibold underline text-gray-800 hover:text-blue-600 transition-colors"
+                        >
+                          {resending ? "Resending..." : "Resend"}
+                        </button>
+                      ) : (
+                        <span className="font-semibold text-gray-400">
+                          Resend in {resendTimer}s
+                        </span>
+                      )}
+                    </p>
+                  )}
                 </>
               )}
             </motion.div>
