@@ -15,10 +15,12 @@ export default function Login({ onSwitchToSignup }) {
   });
   const [errors, setErrors] = useState({});
 
+  // Handle form input changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -42,6 +44,7 @@ export default function Login({ onSwitchToSignup }) {
     }
   };
 
+  // Handle OTP verification after login
   const handleVerifyOTP = async (otp) => {
     try {
       await authService.verifyLoginOTP(otpEmail, otp);
@@ -53,6 +56,7 @@ export default function Login({ onSwitchToSignup }) {
     }
   };
 
+  // Handle resending OTP
   const handleResendOTP = async () => {
     try {
       await authService.resendOTP(otpEmail);
@@ -61,6 +65,7 @@ export default function Login({ onSwitchToSignup }) {
     }
   };
 
+  // Handle closing OTP modal 
   const handleCloseOTPModal = async () => {
     if (otpEmail) {
       await authService.cancelOTP(otpEmail);
@@ -68,6 +73,7 @@ export default function Login({ onSwitchToSignup }) {
     setShowOTPModal(false);
   };
 
+  // for password visibility toggle
   const EyeIcon = ({ open }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -91,7 +97,7 @@ export default function Login({ onSwitchToSignup }) {
       )}
     </svg>
   );
-
+  
   return (
     <>
       {isLoading && (

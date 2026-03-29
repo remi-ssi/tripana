@@ -20,10 +20,12 @@ export default function SignUp({ onSwitchToLogin }) {
   });
   const [errors, setErrors] = useState({});
 
+  // Handle form input changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -42,7 +44,7 @@ export default function SignUp({ onSwitchToLogin }) {
     if (!formErrors) {
       setIsLoading(true);
       try {
-        // Step 1: Call register endpoint to send OTP
+        // Call register endpoint to send OTP
         await authService.register({
           first_name: formData.firstName,
           last_name: formData.lastName,
@@ -50,7 +52,7 @@ export default function SignUp({ onSwitchToLogin }) {
           password: formData.password,
         });
         
-        // Step 2: Show OTP modal
+        // Show OTP modal
         setOtpEmail(formData.email);
         setRegisteredPassword(formData.password);
         setShowOTPModal(true);
@@ -62,9 +64,10 @@ export default function SignUp({ onSwitchToLogin }) {
     }
   };
 
+  // Handle OTP verification after registration
   const handleVerifyOTP = async (otp) => {
     try {
-      // Step 3: Call verify-otp endpoint
+      // Call verify-otp endpoint
       await authService.verifyOTP(
         otpEmail,
         otp,
@@ -72,7 +75,7 @@ export default function SignUp({ onSwitchToLogin }) {
         formData.firstName,
         formData.lastName
       );
-      
+      // On success, close modal and redirect to dashboard
       setShowOTPModal(false);
       // Reset form
       setFormData({
@@ -90,6 +93,7 @@ export default function SignUp({ onSwitchToLogin }) {
     }
   };
 
+  // Handle resending OTP
   const handleResendOTP = async () => {
     try {
       await authService.resendOTP(otpEmail);
@@ -98,6 +102,7 @@ export default function SignUp({ onSwitchToLogin }) {
     }
   };
 
+  // Handle closing OTP modal
   const handleCloseOTPModal = async () => {
     if (otpEmail) {
       await authService.cancelOTP(otpEmail);

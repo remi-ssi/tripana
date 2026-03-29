@@ -11,22 +11,17 @@ const isBlockedError = (message = "") => {
   return BLOCKED_ERROR_KEYWORDS.some((keyword) => text.includes(keyword));
 };
 
+//set countdown format mm:ss
 const formatCountdown = (seconds) => {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 };
 
-export default function OTPModal({
-  isOpen,
-  onClose,
-  onVerify,
-  onResend,
-  email = "your email",
-}) {
-  const [otp, setOtp] = useState(Array(6).fill(""));
-  const [error, setError] = useState("");
-  const [resendTimer, setResendTimer] = useState(RESEND_WAIT_SECONDS);
+export default function OTPModal({isOpen, onClose, onVerify, onResend, email = "your email",}) {
+  const [otp, setOtp] = useState(Array(6).fill(""));  
+  const [error, setError] = useState(""); 
+  const [resendTimer, setResendTimer] = useState(RESEND_WAIT_SECONDS); 
   const [canResend, setCanResend] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -54,9 +49,10 @@ export default function OTPModal({
     }
   }, [isOpen]);
 
+  // ── Block countdown ──
   useEffect(() => {
     if (!isOpen || blockedSeconds <= 0) return;
-
+    // Automatically unblock after countdown ends
     const id = setTimeout(() => {
       setBlockedSeconds((prev) => {
         if (prev <= 1) {
@@ -67,10 +63,11 @@ export default function OTPModal({
         return prev - 1;
       });
     }, 1000);
-
+  // Clear timeout if modal closes or block ends
     return () => clearTimeout(id);
   }, [blockedSeconds, isOpen]);
 
+  // Activate block state with appropriate error message and timers
   const activateBlockedState = () => {
     setBlockedSeconds(BLOCK_DURATION_SECONDS);
     setJustUnblocked(false);
@@ -79,16 +76,19 @@ export default function OTPModal({
     setResendTimer(RESEND_WAIT_SECONDS);
   };
 
+  // Handle modal close request with confirmation
   const handleRequestClose = () => {
     setCloseError("");
     setConfirmExit(true);
   };
 
+  // Handle user choosing to stay in modal
   const handleStay = () => {
     setCloseError("");
     setConfirmExit(false);
   };
 
+  // Handle user confirming exit 
   const handleConfirmExit = async () => {
     setClosing(true);
     setCloseError("");
@@ -159,7 +159,7 @@ export default function OTPModal({
     inputRefs.current[focusIndex]?.focus();
   };
 
-  // ── Verify ──
+  // ── Handle OTP verification ──
   const handleVerify = async () => {
     if (isBlocked) return;
 
@@ -222,7 +222,7 @@ export default function OTPModal({
   // Automatically send a fresh OTP once the block period ends.
   useEffect(() => {
     if (!isOpen || !justUnblocked || confirmExit || closing) return;
-
+  
     const autoResend = async () => {
       setResending(true);
       setError("");

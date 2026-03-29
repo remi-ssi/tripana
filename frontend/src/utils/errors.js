@@ -1,7 +1,3 @@
-/**
- * Error messages and API configuration
- */
-
 export const ERROR_MESSAGES = {
   LOGIN_FAILED: 'Login failed. Please check your credentials.',
   REGISTRATION_FAILED: 'Registration failed. Please try again.',
