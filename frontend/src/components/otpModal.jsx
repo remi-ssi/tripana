@@ -17,6 +17,7 @@ export default function OTPModal({
   const [canResend, setCanResend] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [confirmExit, setConfirmExit] = useState(false);
   const inputRefs = useRef([]);
 
   // ── Auto-focus first input when modal opens ──
@@ -26,9 +27,23 @@ export default function OTPModal({
       setError("");
       setResendTimer(RESEND_WAIT_SECONDS);
       setCanResend(false);
+      setConfirmExit(false);
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     }
   }, [isOpen]);
+
+  const handleRequestClose = () => {
+    setConfirmExit(true);
+  };
+
+  const handleStay = () => {
+    setConfirmExit(false);
+  };
+
+  const handleConfirmExit = () => {
+    setConfirmExit(false);
+    onClose?.();
+  };
 
   // ── Resend countdown ──
   useEffect(() => {
@@ -136,7 +151,7 @@ export default function OTPModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleRequestClose}
           />
 
           {/* Modal */}
@@ -149,84 +164,122 @@ export default function OTPModal({
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Title */}
-              <div className="text-center">
-                <h2 className="text-3xl font-extrabold tracking-widest text-[#2b2d8e] uppercase">
-                  OTP Verification
-                </h2>
-                <p className="mt-2 text-sm text-gray-500">
-                  Enter the 6-digit verification code that was sent to{" "}
-                  <span className="font-medium text-gray-700">{email}</span>
-                </p>
-              </div>
-
-              {/* OTP Inputs */}
-              <div className="flex gap-3">
-                {otp.map((digit, i) => (
-                  <motion.input
-                    key={i}
-                    ref={(el) => (inputRefs.current[i] = el)}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleChange(i, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(i, e)}
-                    onPaste={handlePaste}
-                    whileFocus={{ scale: 1.08 }}
-                    className={`
-                      w-12 h-14 text-center text-xl font-bold rounded-xl border-2 outline-none
-                      bg-gray-100 text-[#2b2d8e] transition-colors duration-150
-                      ${digit ? "border-blue-500 bg-blue-50" : "border-transparent"}
-                      focus:border-blue-500 focus:bg-blue-50
-                      ${error ? "border-red-400 bg-red-50" : ""}
-                    `}
-                  />
-                ))}
-              </div>
-
-              {/* Error */}
-              <AnimatePresence>
-                {error && (
-                  <motion.p
-                    className="text-sm text-red-500 -mt-2"
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    {error}
-                  </motion.p>
-                )}
-              </AnimatePresence>
-
-              {/* Verify Button */}
-              <motion.button
-                onClick={handleVerify}
-                disabled={loading}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="w-full py-3.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-semibold text-base tracking-wide transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+              <button
+                onClick={handleRequestClose}
+                aria-label="Close modal"
+                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-xl leading-none flex items-center justify-center transition-colors"
               >
-                {loading ? "Verifying..." : "Verify"}
-              </motion.button>
+                X
+              </button>
 
-              {/* Resend */}
-              <p className="text-sm text-gray-500">
-                Didn't receive code?{" "}
-                {canResend ? (
-                  <button
-                    onClick={handleResend}
-                    disabled={resending}
-                    className="font-semibold underline text-gray-800 hover:text-blue-600 transition-colors"
+              {confirmExit ? (
+                <>
+                  <div className="text-center">
+                    <h2 className="text-2xl font-extrabold tracking-wide text-[#2b2d8e]">
+                      Are you sure you want to exit?
+                    </h2>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Your current OTP entry will be cleared.
+                    </p>
+                  </div>
+
+                  <div className="w-full flex gap-3">
+                    <button
+                      onClick={handleStay}
+                      className="w-1/2 py-3 rounded-full border border-gray-300 text-gray-700 font-semibold hover:bg-gray-100 transition-colors"
+                    >
+                      No
+                    </button>
+                    <button
+                      onClick={handleConfirmExit}
+                      className="w-1/2 py-3 rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold transition-colors"
+                    >
+                      Yes
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Title */}
+                  <div className="text-center">
+                    <h2 className="text-3xl font-extrabold tracking-widest text-[#2b2d8e] uppercase">
+                      OTP Verification
+                    </h2>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Enter the 6-digit verification code that was sent to{" "}
+                      <span className="font-medium text-gray-700">{email}</span>
+                    </p>
+                  </div>
+
+                  {/* OTP Inputs */}
+                  <div className="flex gap-3">
+                    {otp.map((digit, i) => (
+                      <motion.input
+                        key={i}
+                        ref={(el) => (inputRefs.current[i] = el)}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleChange(i, e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(i, e)}
+                        onPaste={handlePaste}
+                        whileFocus={{ scale: 1.08 }}
+                        className={`
+                          w-12 h-14 text-center text-xl font-bold rounded-xl border-2 outline-none
+                          bg-gray-100 text-[#2b2d8e] transition-colors duration-150
+                          ${digit ? "border-blue-500 bg-blue-50" : "border-transparent"}
+                          focus:border-blue-500 focus:bg-blue-50
+                          ${error ? "border-red-400 bg-red-50" : ""}
+                        `}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Error */}
+                  <AnimatePresence>
+                    {error && (
+                      <motion.p
+                        className="text-sm text-red-500 -mt-2"
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                      >
+                        {error}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Verify Button */}
+                  <motion.button
+                    onClick={handleVerify}
+                    disabled={loading}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="w-full py-3.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-semibold text-base tracking-wide transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {resending ? "Resending..." : "Resend"}
-                  </button>
-                ) : (
-                  <span className="font-semibold text-gray-400">
-                    Resend in {resendTimer}s
-                  </span>
-                )}
-              </p>
+                    {loading ? "Verifying..." : "Verify"}
+                  </motion.button>
+
+                  {/* Resend */}
+                  <p className="text-sm text-gray-500">
+                    Didn't receive code?{" "}
+                    {canResend ? (
+                      <button
+                        onClick={handleResend}
+                        disabled={resending}
+                        className="font-semibold underline text-gray-800 hover:text-blue-600 transition-colors"
+                      >
+                        {resending ? "Resending..." : "Resend"}
+                      </button>
+                    ) : (
+                      <span className="font-semibold text-gray-400">
+                        Resend in {resendTimer}s
+                      </span>
+                    )}
+                  </p>
+                </>
+              )}
             </motion.div>
           </div>
         </>
