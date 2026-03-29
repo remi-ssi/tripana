@@ -3,14 +3,13 @@
 import random
 import string
 from datetime import datetime, timedelta, timezone
-from jose import jwt
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.otp import OTPCode
 from app.models.user import User
-from app.config import settings
 from app.services.email_service import send_otp_email
+from app.utils.auth import create_access_token
 from app.utils.security import hash_password, verify_password
 
 OTP_EXPIRE_MINUTES = 10   # OTP dies after 10 minutes
@@ -136,7 +135,7 @@ async def cancel_active_otp(email: str, db: AsyncSession) -> dict:
 # Build the authentication response containing the JWT token and user info.
 def _build_auth_response(user: User) -> dict:
     token_data = {"sub": str(user.user_id), "email": user.email}
-    token = jwt.encode(token_data, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    token = create_access_token(token_data)
     return {
         "token": token,
         "user": {

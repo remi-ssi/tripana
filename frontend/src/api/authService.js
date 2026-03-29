@@ -1,176 +1,92 @@
-import { API_BASE_URL, ERROR_MESSAGES } from '../utils/errors'
+import { ERROR_MESSAGES } from '../utils/errors'
+import { apiClient } from './apiClient'
 
 //authentication service - handles all auth-related API calls
 
 export const authService = {
  //Login user with email and password
   login: async (email, password) => {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
-    if (!response.ok) {
-      let message = 'Invalid Credentials'
-      try {
-        const errorData = await response.json()
-        if (errorData?.detail) {
-          message = errorData.detail
-        }
-      } catch {
-        // Ignore parse errors and keep default message
-      }
-      throw new Error(message)
+    try {
+      return await apiClient.post('/auth/login', { email, password })
+    } catch (error) {
+      throw new Error(error.message || 'Invalid Credentials')
     }
-    return response.json()
   },
 
+  //Verify OTP for login and get token
   verifyLoginOTP: async (email, otp) => {
-    const response = await fetch(`${API_BASE_URL}/auth/verify-login-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code: otp }),
-    })
-
-    if (!response.ok) {
-      let message = ERROR_MESSAGES.LOGIN_FAILED
-      try {
-        const errorData = await response.json()
-        if (errorData?.detail) {
-          message = errorData.detail
-        }
-      } catch {
-        // Ignore parse errors and keep default message
-      }
-      throw new Error(message)
+    try {
+      return await apiClient.post('/auth/verify-login-otp', { email, code: otp })
+    } catch (error) {
+      throw new Error(error.message || ERROR_MESSAGES.LOGIN_FAILED)
     }
-
-    return response.json()
   },
 
   //Register new user
   register: async (userData) => {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData),
-    })
-    if (!response.ok) {
-      let message = ERROR_MESSAGES.REGISTRATION_FAILED
-      try {
-        const errorData = await response.json()
-        if (errorData?.detail) {
-          message = errorData.detail
-        }
-      } catch {
-        // Ignore parse errors and keep default message
-      }
-      throw new Error(message)
+    try {
+      return await apiClient.post('/auth/register', userData)
+    } catch (error) {
+      throw new Error(error.message || ERROR_MESSAGES.REGISTRATION_FAILED)
     }
-    return response.json()
   },
 
   //Logout user
   logout: async () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    await apiClient.post('/auth/logout', {})
   },
 
   //Get current user profile
-  getProfile: async (token) => {
-    const response = await fetch(`${API_BASE_URL}/api/v1/profile`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    })
-    if (!response.ok) throw new Error(ERROR_MESSAGES.PROFILE_FETCH_FAILED)
-    return response.json()
+  getProfile: async () => {
+    try {
+      return await apiClient.get('/api/v1/profile')
+    } catch (error) {
+      throw new Error(error.message || ERROR_MESSAGES.PROFILE_FETCH_FAILED)
+    }
   },
 
   // Verify OTP and complete registration
   verifyOTP: async (email, otp, password, firstName, lastName) => {
-    const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        code: otp,
-        password,
-        first_name: firstName,
-        last_name: lastName,
-      }),
-    })
-    if (!response.ok) {
-      let message = ERROR_MESSAGES.REGISTRATION_FAILED
-      try {
-        const errorData = await response.json()
-        if (errorData?.detail) {
-          message = errorData.detail
+    try {
+      return await apiClient.post(
+        '/auth/verify-otp',
+        {
+          email,
+          code: otp,
+          password,
+          first_name: firstName,
+          last_name: lastName,
         }
-      } catch {
-        // Ignore parse errors and keep default message
-      }
-      throw new Error(message)
+      )
+    } catch (error) {
+      throw new Error(error.message || ERROR_MESSAGES.REGISTRATION_FAILED)
     }
-    return response.json()
   },
 
   //Resend OTP to email
   resendOTP: async (email) => {
-    const response = await fetch(`${API_BASE_URL}/auth/resend-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    })
-
-    if (!response.ok) {
-      let message = 'Failed to resend OTP'
-      try {
-        const errorData = await response.json()
-        if (errorData?.detail) {
-          message = errorData.detail
-        }
-      } catch {
-        // Ignore parse errors and keep default message
-      }
-      throw new Error(message)
+    try {
+      return await apiClient.post('/auth/resend-otp', { email })
+    } catch (error) {
+      throw new Error(error.message || 'Failed to resend OTP')
     }
-
-    return response.json()
   },
 
+  //Cancel OTP session when user closes OTP modal
   cancelOTP: async (email) => {
-    const response = await fetch(`${API_BASE_URL}/auth/cancel-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    })
-
-    if (!response.ok) {
-      let message = 'Failed to cancel OTP session'
-      try {
-        const errorData = await response.json()
-        if (errorData?.detail) {
-          message = errorData.detail
-        }
-      } catch {
-        // Ignore parse errors and keep default message
-      }
-      throw new Error(message)
+    try {
+      return await apiClient.post('/auth/cancel-otp', { email })
+    } catch (error) {
+      throw new Error(error.message || 'Failed to cancel OTP session')
     }
-
-    return response.json()
   },
-
+  
+// Check if user exists before registration
   checkUserExists: async (email) => {
-    const response = await fetch(`${API_BASE_URL}/auth/check-user`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    })
-    if (!response.ok) throw new Error(ERROR_MESSAGES.CHECK_USER_FAILED)
-    return response.json()
+    try {
+      return await apiClient.post('/auth/check-user', { email })
+    } catch (error) {
+      throw new Error(error.message || ERROR_MESSAGES.CHECK_USER_FAILED)
+    }
   }
 }

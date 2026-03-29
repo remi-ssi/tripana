@@ -65,19 +65,13 @@ export default function SignUp({ onSwitchToLogin }) {
   const handleVerifyOTP = async (otp) => {
     try {
       // Step 3: Call verify-otp endpoint
-      const response = await authService.verifyOTP(
+      await authService.verifyOTP(
         otpEmail,
         otp,
         registeredPassword,
         formData.firstName,
         formData.lastName
       );
-      
-      // Step 4: Store token and redirect or close modal
-      if (response.token) {
-        localStorage.setItem("token", response.token);
-        localStorage.setItem("user", JSON.stringify(response.user));
-      }
       
       setShowOTPModal(false);
       // Reset form

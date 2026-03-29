@@ -44,12 +44,7 @@ export default function Login({ onSwitchToSignup }) {
 
   const handleVerifyOTP = async (otp) => {
     try {
-      const response = await authService.verifyLoginOTP(otpEmail, otp);
-
-      if (response.token) {
-        localStorage.setItem("token", response.token);
-        localStorage.setItem("user", JSON.stringify(response.user));
-      }
+      await authService.verifyLoginOTP(otpEmail, otp);
 
       setShowOTPModal(false);
       window.location.href = "/dashboard";

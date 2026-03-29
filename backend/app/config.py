@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     # JWT settings
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 1 day
+    AUTH_COOKIE_NAME: str = "access_token"
+    AUTH_COOKIE_SECURE: bool = False
+    AUTH_COOKIE_SAMESITE: str = "lax"
     OTP_CLEANUP_INTERVAL_SECONDS: int = 60
 
 settings = Settings()

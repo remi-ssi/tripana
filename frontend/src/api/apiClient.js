@@ -1,47 +1,63 @@
-/**
- * API client setup for making HTTP requests
- * You can add interceptors here if using axios
- */
-
+// Simple API client for making requests to the backend
 export const apiClient = {
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
 
+  getHeaders: () => {
+    return { 'Content-Type': 'application/json' }
+  },
+
   /**
-   * Get authorization headers with token
+   * Parse and normalize API errors into a readable message.
    */
-  getHeaders: (includeAuth = true) => {
-    const headers = { 'Content-Type': 'application/json' }
-    if (includeAuth) {
-      const token = localStorage.getItem('token')
-      if (token) {
-        headers.Authorization = `Bearer ${token}`
+  parseError: async (response, fallbackMessage) => {
+    let message = fallbackMessage
+
+    try {
+      const errorData = await response.json()
+      if (errorData?.detail) {
+        message = errorData.detail
+      } else if (errorData?.message) {
+        message = errorData.message
       }
+    } catch {
+      // Ignore response parsing errors and keep fallback message
     }
-    return headers
+
+    throw new Error(message)
   },
 
   /**
-   * Generic GET request
+   * Generic request helper to avoid duplicated fetch code.
    */
-  get: async (endpoint) => {
+  request: async (endpoint, { method = 'GET', data } = {}) => {
     const response = await fetch(`${apiClient.baseURL}${endpoint}`, {
+      method,
+      headers: apiClient.getHeaders(),
+      credentials: 'include',
+      body: data ? JSON.stringify(data) : undefined,
+    })
+
+    if (!response.ok) {
+      await apiClient.parseError(response, `${method} ${endpoint} failed`)
+    }
+
+    return response.json()
+  },
+
+  //GET request
+  get: async (endpoint, options = {}) => {
+    return apiClient.request(endpoint, {
       method: 'GET',
-      headers: apiClient.getHeaders(),
+      ...options,
     })
-    if (!response.ok) throw new Error(`GET ${endpoint} failed`)
-    return response.json()
   },
 
-  /**
-   * Generic POST request
-   */
-  post: async (endpoint, data) => {
-    const response = await fetch(`${apiClient.baseURL}${endpoint}`, {
+  //POST request
+  post: async (endpoint, data, options = {}) => {
+    return apiClient.request(endpoint, {
       method: 'POST',
-      headers: apiClient.getHeaders(),
-      body: JSON.stringify(data),
+      data,
+      ...options,
     })
-    if (!response.ok) throw new Error(`POST ${endpoint} failed`)
-    return response.json()
   },
 }

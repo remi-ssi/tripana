@@ -1,9 +1,9 @@
 # backend/app/routes/auth.py
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db               # your existing DB session function
+from app.models.user import User
 from app.schemas.user_schema import (
     UserCreate,
     VerifyOTPRequest,
@@ -19,6 +19,7 @@ from app.services.auth_service import (
     start_login,
     cancel_active_otp,
 )
+from app.utils.auth import clear_auth_cookie, get_current_user, set_auth_cookie
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 legacy_router = APIRouter(prefix="/api/v1", tags=["auth"])
@@ -71,6 +72,25 @@ async def _verify_login_impl(data: VerifyLoginOTPRequest, db: AsyncSession):
 async def _cancel_otp_impl(data: ResendOTPRequest, db: AsyncSession):
     return await cancel_active_otp(data.email, db)
 
+
+def _user_payload(user: User) -> dict:
+    return {
+        "user_id": user.user_id,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "email": user.email,
+    }
+
+
+def _attach_cookie_and_strip_token(response: Response, result: dict) -> dict:
+    token = result.get("token")
+    if token:
+        set_auth_cookie(response, token)
+    return {
+        "message": "Authentication successful.",
+        "user": result.get("user"),
+    }
+
 @router.post("/register")
 async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
     """Step 1: User submits form -> send OTP email."""
@@ -95,14 +115,24 @@ async def resend_otp_legacy(data: ResendOTPRequest, db: AsyncSession = Depends(g
 
 
 @router.post("/verify-otp")
-async def verify_otp(data: VerifyOTPRequest, db: AsyncSession = Depends(get_db)):
+async def verify_otp(
+    data: VerifyOTPRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
     """Step 2: User enters OTP → verify and create account."""
-    return await _verify_impl(data, db)
+    result = await _verify_impl(data, db)
+    return _attach_cookie_and_strip_token(response, result)
 
 
 @legacy_router.post("/verify-otp")
-async def verify_otp_legacy(data: VerifyOTPRequest, db: AsyncSession = Depends(get_db)):
-    return await _verify_impl(data, db)
+async def verify_otp_legacy(
+    data: VerifyOTPRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await _verify_impl(data, db)
+    return _attach_cookie_and_strip_token(response, result)
 
 
 @router.post("/login")
@@ -117,14 +147,24 @@ async def login_legacy(data: LoginRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/verify-login-otp")
-async def verify_login(data: VerifyLoginOTPRequest, db: AsyncSession = Depends(get_db)):
+async def verify_login(
+    data: VerifyLoginOTPRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
     """Step 2 login: verify OTP and issue JWT token."""
-    return await _verify_login_impl(data, db)
+    result = await _verify_login_impl(data, db)
+    return _attach_cookie_and_strip_token(response, result)
 
 
 @legacy_router.post("/verify-login-otp")
-async def verify_login_legacy(data: VerifyLoginOTPRequest, db: AsyncSession = Depends(get_db)):
-    return await _verify_login_impl(data, db)
+async def verify_login_legacy(
+    data: VerifyLoginOTPRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await _verify_login_impl(data, db)
+    return _attach_cookie_and_strip_token(response, result)
 
 
 @router.post("/cancel-otp")
@@ -136,3 +176,20 @@ async def cancel_otp(data: ResendOTPRequest, db: AsyncSession = Depends(get_db))
 @legacy_router.post("/cancel-otp")
 async def cancel_otp_legacy(data: ResendOTPRequest, db: AsyncSession = Depends(get_db)):
     return await _cancel_otp_impl(data, db)
+
+
+@router.post("/logout")
+async def logout(response: Response):
+    clear_auth_cookie(response)
+    return {"message": "Logged out successfully."}
+
+
+@legacy_router.post("/logout")
+async def logout_legacy(response: Response):
+    clear_auth_cookie(response)
+    return {"message": "Logged out successfully."}
+
+
+@legacy_router.get("/profile")
+async def profile(current_user: User = Depends(get_current_user)):
+    return _user_payload(current_user)
