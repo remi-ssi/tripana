@@ -17,6 +17,7 @@ from app.services.auth_service import (
     finish_signup,
     finish_login,
     start_login,
+    cancel_active_otp,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -65,6 +66,10 @@ async def _verify_login_impl(data: VerifyLoginOTPRequest, db: AsyncSession):
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result
+
+
+async def _cancel_otp_impl(data: ResendOTPRequest, db: AsyncSession):
+    return await cancel_active_otp(data.email, db)
 
 @router.post("/register")
 async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
@@ -120,3 +125,14 @@ async def verify_login(data: VerifyLoginOTPRequest, db: AsyncSession = Depends(g
 @legacy_router.post("/verify-login-otp")
 async def verify_login_legacy(data: VerifyLoginOTPRequest, db: AsyncSession = Depends(get_db)):
     return await _verify_login_impl(data, db)
+
+
+@router.post("/cancel-otp")
+async def cancel_otp(data: ResendOTPRequest, db: AsyncSession = Depends(get_db)):
+    """Invalidate active OTP when user exits the OTP modal."""
+    return await _cancel_otp_impl(data, db)
+
+
+@legacy_router.post("/cancel-otp")
+async def cancel_otp_legacy(data: ResendOTPRequest, db: AsyncSession = Depends(get_db)):
+    return await _cancel_otp_impl(data, db)

@@ -113,6 +113,26 @@ async def use_otp(otp: OTPCode, db: AsyncSession, now: datetime) -> None:
     otp.deleted_at = now + timedelta(days=USED_OTP_RETENTION_DAYS)
     await db.commit()
 
+
+async def cancel_active_otp(email: str, db: AsyncSession) -> dict:
+    """Invalidate any active OTP rows when user exits OTP flow."""
+    now = datetime.now(timezone.utc)
+    await cleanup_old_used_otps(db, now)
+
+    await db.execute(
+        update(OTPCode)
+        .where(
+            OTPCode.email == email,
+            OTPCode.is_used == False,
+        )
+        .values(
+            is_used=True,
+            deleted_at=now + timedelta(days=USED_OTP_RETENTION_DAYS),
+        )
+    )
+    await db.commit()
+    return {"message": "OTP session cancelled."}
+
 # Build the authentication response containing the JWT token and user info.
 def _build_auth_response(user: User) -> dict:
     token_data = {"sub": str(user.user_id), "email": user.email}

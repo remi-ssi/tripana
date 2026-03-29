@@ -104,6 +104,13 @@ export default function SignUp({ onSwitchToLogin }) {
     }
   };
 
+  const handleCloseOTPModal = async () => {
+    if (otpEmail) {
+      await authService.cancelOTP(otpEmail);
+    }
+    setShowOTPModal(false);
+  };
+
   // Eye icon component for password visibility toggle
   const EyeIcon = ({ open }) => (
     <svg
@@ -289,7 +296,7 @@ export default function SignUp({ onSwitchToLogin }) {
       {/* OTP Modal */}
       <OTPModal
         isOpen={showOTPModal}
-        onClose={() => setShowOTPModal(false)}
+        onClose={handleCloseOTPModal}
         email={otpEmail}
         onVerify={handleVerifyOTP}
         onResend={handleResendOTP}

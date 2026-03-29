@@ -37,6 +37,8 @@ export default function OTPModal({
   const [resending, setResending] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const [blockedSeconds, setBlockedSeconds] = useState(0);
+  const [closing, setClosing] = useState(false);
+  const [closeError, setCloseError] = useState("");
   const inputRefs = useRef([]);
   const isBlocked = blockedSeconds > 0;
 
@@ -49,6 +51,8 @@ export default function OTPModal({
       setCanResend(false);
       setConfirmExit(false);
       setBlockedSeconds(0);
+      setClosing(false);
+      setCloseError("");
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     }
   }, [isOpen]);
@@ -77,16 +81,27 @@ export default function OTPModal({
   };
 
   const handleRequestClose = () => {
+    setCloseError("");
     setConfirmExit(true);
   };
 
   const handleStay = () => {
+    setCloseError("");
     setConfirmExit(false);
   };
 
-  const handleConfirmExit = () => {
-    setConfirmExit(false);
-    onClose?.();
+  const handleConfirmExit = async () => {
+    setClosing(true);
+    setCloseError("");
+    try {
+      await onClose?.();
+      setConfirmExit(false);
+    } catch (err) {
+      const message = err?.message || "Unable to close OTP right now. Please try again.";
+      setCloseError(message);
+    } finally {
+      setClosing(false);
+    }
   };
 
   // ── Resend countdown ──
@@ -250,17 +265,23 @@ export default function OTPModal({
                   <div className="w-full flex gap-3">
                     <button
                       onClick={handleStay}
+                      disabled={closing}
                       className="w-1/2 py-3 rounded-full border border-gray-300 text-gray-700 font-semibold hover:bg-gray-100 transition-colors"
                     >
                       No
                     </button>
                     <button
                       onClick={handleConfirmExit}
+                      disabled={closing}
                       className="w-1/2 py-3 rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold transition-colors"
                     >
-                      Yes
+                      {closing ? "Closing..." : "Yes"}
                     </button>
                   </div>
+
+                  {closeError && (
+                    <p className="w-full text-center text-sm text-red-500 -mt-1">{closeError}</p>
+                  )}
                 </>
               ) : (
                 <>
