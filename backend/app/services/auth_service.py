@@ -161,12 +161,17 @@ async def send_otp(email: str, db: AsyncSession, is_resend: bool = False) -> dic
         return block_error_result
 
     if is_resend:
-        sends_stmt = (
-            select(func.count(OTPCode.id))
-            .where(
-                OTPCode.email == email,
+        # Reset resend counting after the most recent block window has passed.
+        latest_block_until = (
+            await db.execute(
+                select(func.max(OTPCode.blocked_until)).where(OTPCode.email == email)
             )
-        )
+        ).scalar_one()
+
+        sends_stmt = select(func.count(OTPCode.id)).where(OTPCode.email == email)
+        if latest_block_until is not None:
+            sends_stmt = sends_stmt.where(OTPCode.created_at > latest_block_until)
+
         total_sends = int((await db.execute(sends_stmt)).scalar_one())
         resend_count = max(0, total_sends - 1)
 

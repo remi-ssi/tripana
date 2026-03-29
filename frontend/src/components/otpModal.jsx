@@ -37,6 +37,7 @@ export default function OTPModal({
   const [resending, setResending] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const [blockedSeconds, setBlockedSeconds] = useState(0);
+  const [justUnblocked, setJustUnblocked] = useState(false);
   const [closing, setClosing] = useState(false);
   const [closeError, setCloseError] = useState("");
   const inputRefs = useRef([]);
@@ -51,6 +52,7 @@ export default function OTPModal({
       setCanResend(false);
       setConfirmExit(false);
       setBlockedSeconds(0);
+      setJustUnblocked(false);
       setClosing(false);
       setCloseError("");
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
@@ -64,6 +66,7 @@ export default function OTPModal({
       setBlockedSeconds((prev) => {
         if (prev <= 1) {
           setError("");
+          setJustUnblocked(true);
           return 0;
         }
         return prev - 1;
@@ -75,6 +78,7 @@ export default function OTPModal({
 
   const activateBlockedState = () => {
     setBlockedSeconds(BLOCK_DURATION_SECONDS);
+    setJustUnblocked(false);
     setError(BLOCKED_ERROR_MESSAGE);
     setCanResend(false);
     setResendTimer(RESEND_WAIT_SECONDS);
@@ -219,6 +223,40 @@ export default function OTPModal({
       setResending(false);
     }
   };
+
+  // Automatically send a fresh OTP once the block period ends.
+  useEffect(() => {
+    if (!isOpen || !justUnblocked || confirmExit || closing) return;
+
+    const autoResend = async () => {
+      setResending(true);
+      setError("");
+      try {
+        await onResend?.();
+        setOtp(Array(6).fill(""));
+        setResendTimer(RESEND_WAIT_SECONDS);
+        setCanResend(false);
+        inputRefs.current[0]?.focus();
+      } catch (err) {
+        const message = err?.message || "Failed to resend OTP. Please try again.";
+        setError(message);
+
+        const waitMatch = message.match(/(\d+)\s*seconds?/i);
+        if (waitMatch) {
+          const waitSeconds = Number(waitMatch[1]);
+          if (!Number.isNaN(waitSeconds) && waitSeconds > 0) {
+            setResendTimer(waitSeconds);
+            setCanResend(false);
+          }
+        }
+      } finally {
+        setResending(false);
+        setJustUnblocked(false);
+      }
+    };
+
+    autoResend();
+  }, [justUnblocked, isOpen, confirmExit, closing, onResend]);
 
   return (
     <AnimatePresence>
