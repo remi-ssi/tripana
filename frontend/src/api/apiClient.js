@@ -6,9 +6,7 @@ export const apiClient = {
     return { 'Content-Type': 'application/json' }
   },
 
-  /**
-   * Parse and normalize API errors into a readable message.
-   */
+  // Parse error response and throw a consistent error message
   parseError: async (response, fallbackMessage) => {
     let message = fallbackMessage
 
@@ -26,9 +24,7 @@ export const apiClient = {
     throw new Error(message)
   },
 
-  /**
-   * Generic request helper to avoid duplicated fetch code.
-   */
+ // request method that handles all API calls
   request: async (endpoint, { method = 'GET', data } = {}) => {
     const response = await fetch(`${apiClient.baseURL}${endpoint}`, {
       method,

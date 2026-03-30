@@ -8,6 +8,7 @@ const MESSAGES = [
   "Almost ready!",
 ];
 
+// Simple revolving Earth loader with cycling messages
 export default function EarthLoader() {
   const [msgIndex, setMsgIndex] = useState(0);
 
