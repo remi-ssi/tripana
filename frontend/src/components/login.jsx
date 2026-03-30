@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { validateLoginForm } from "../validators/authValidators";
 import { authService } from "../api/authService";
 import EarthLoader from "./loadingIndicator";
 import OTPModal from "./otpModal";
 
 export default function Login({ onSwitchToSignup }) {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
@@ -50,7 +52,8 @@ export default function Login({ onSwitchToSignup }) {
       await authService.verifyLoginOTP(otpEmail, otp);
 
       setShowOTPModal(false);
-      window.location.href = "/dashboard";
+      const preferenceStatus = await authService.getPreferenceStatus();
+      navigate(preferenceStatus?.has_preferences ? "/dashboard" : "/user-preference", { replace: true });
     } catch (error) {
       throw new Error(error.message || "OTP verification failed");
     }

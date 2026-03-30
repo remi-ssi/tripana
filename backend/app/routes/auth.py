@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db               # your existing DB session function
+from app.models.userPreference import UserPreference
 from app.models.user import User
 from app.schemas.user_schema import (UserCreate, VerifyOTPRequest, ResendOTPRequest, LoginRequest, VerifyLoginOTPRequest)
 from app.services.auth_service import (send_otp, start_signup, finish_signup, finish_login, start_login, cancel_active_otp)
 from app.utils.auth import clear_auth_cookie, get_current_user, set_auth_cookie
+from app.schemas.user_schema import PreferenceUpdateRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -130,3 +133,49 @@ async def logout(response: Response):
 @router.get("/profile")
 async def profile(current_user: User = Depends(get_current_user)):
     return _user_payload(current_user)
+
+
+@router.get("/preference-status")
+async def preference_status(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(UserPreference).where(UserPreference.user_id == current_user.user_id)
+    )
+    preferences = result.scalars().all()
+    categories = [p.preferred_categories for p in preferences if p.preferred_categories]
+
+    return {
+        "has_preferences": len(categories) > 0,
+        "preferred_categories": categories,
+    }
+
+
+@router.post("/preferences")
+async def save_preferences(
+    payload: PreferenceUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    existing_result = await db.execute(
+        select(UserPreference).where(UserPreference.user_id == current_user.user_id)
+    )
+    existing_preferences = existing_result.scalars().all()
+
+    for preference in existing_preferences:
+        await db.delete(preference)
+
+    for category in payload.preferred_categories:
+        db.add(
+            UserPreference(
+                user_id=current_user.user_id,
+                category_id=None,
+                preferred_categories=category,
+            )
+        )
+
+    return {
+        "message": "Preferences saved successfully.",
+        "preferred_categories": payload.preferred_categories,
+    }

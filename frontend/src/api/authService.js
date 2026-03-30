@@ -39,9 +39,29 @@ export const authService = {
   //Get current user profile
   getProfile: async () => {
     try {
-      return await apiClient.get('/api/v1/profile')
+      return await apiClient.get('/auth/profile')
     } catch (error) {
       throw new Error(error.message || ERROR_MESSAGES.PROFILE_FETCH_FAILED)
+    }
+  },
+
+  //Check whether the authenticated user already has saved travel preferences
+  getPreferenceStatus: async () => {
+    try {
+      return await apiClient.get('/auth/preference-status')
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch preference status')
+    }
+  },
+
+  //Save the authenticated user's selected travel preferences
+  savePreferences: async (preferredCategories) => {
+    try {
+      return await apiClient.post('/auth/preferences', {
+        preferred_categories: preferredCategories,
+      })
+    } catch (error) {
+      throw new Error(error.message || 'Failed to save preferences')
     }
   },
 

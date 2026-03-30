@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { validateRegisterForm } from "../validators/authValidators";
 import { authService } from "../api/authService";
 import OTPModal from "./otpModal";
 import EarthLoader from "./loadingIndicator";
 
 export default function SignUp({ onSwitchToLogin }) {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -86,8 +88,7 @@ export default function SignUp({ onSwitchToLogin }) {
         confirmPassword: "",
       });
       
-      // You can redirect to dashboard here
-      window.location.href = "/dashboard";
+      navigate("/user-preference", { replace: true });
     } catch (error) {
       throw new Error(error.message || "OTP verification failed");
     }
