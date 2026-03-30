@@ -8,6 +8,7 @@ class Settings(BaseSettings):
         extra="allow"
     )
 
+    # Application settings
     APP_NAME: str = "Tripana"
     APP_ENV: str = "development"
     APP_DEBUG: bool = True
@@ -18,6 +19,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/tripana"
     FRONTEND_ORIGIN: str = "http://localhost:5173"
 
+    # Email settings
     MAIL_HOST: str = "smtp.gmail.com"
     MAIL_PORT: int = 587
     MAIL_USERNAME: str = ""      

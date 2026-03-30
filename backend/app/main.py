@@ -6,12 +6,12 @@ from app.config import settings
 from app.database import engine, Base, AsyncSessionLocal
 from app.middleware import setup_cors, setup_error_handlers
 from app.routes import api_router
-from app.routes.auth import router as auth_router, legacy_router as legacy_auth_router
+from app.routes.auth import router as auth_router
 from app.services.auth_service import cleanup_old_used_otps
 
-
+#
 async def otp_cleanup_worker(stop_event: asyncio.Event):
-    """Periodically hard-delete OTP rows whose deleted_at has passed."""
+    # Periodically clean up old used OTPs from the database
     while not stop_event.is_set():
         try:
             async with AsyncSessionLocal() as db:
@@ -67,7 +67,6 @@ setup_error_handlers(app)
 # Include API routes
 app.include_router(api_router)
 app.include_router(auth_router)
-app.include_router(legacy_auth_router)
 
 
 @app.get("/health")

@@ -26,7 +26,6 @@ async def cleanup_old_used_otps(db: AsyncSession, now: datetime) -> None:
             OTPCode.is_used == True,
             or_(
                 OTPCode.deleted_at <= now,
-                # Backward compatibility for older rows that predate deleted_at.
                 (
                     OTPCode.deleted_at.is_(None)
                     & (OTPCode.created_at <= now - timedelta(days=USED_OTP_RETENTION_DAYS))
@@ -36,7 +35,7 @@ async def cleanup_old_used_otps(db: AsyncSession, now: datetime) -> None:
     )
     await db.commit()
 
-# Step 1 (data lookup only): return active block timestamp for this email, or None.
+# return active block timestamp for this email, or None.
 async def get_block_until(email: str, db: AsyncSession, now: datetime):
     active_block_stmt = (
         select(OTPCode.blocked_until)
@@ -49,8 +48,7 @@ async def get_block_until(email: str, db: AsyncSession, now: datetime):
     )
     return (await db.execute(active_block_stmt)).scalars().first()
 
-# Step 2 (message adapter): convert active block timestamp to API error payload.
-# This wraps get_block_until so callers can reuse the same error message format.
+# Check if user is currently blocked due to too many attempts, and return error message if so.
 async def block_error(email: str, db: AsyncSession, now: datetime):
     blocked_until = await get_block_until(email, db, now)
     if not blocked_until:
@@ -60,8 +58,7 @@ async def block_error(email: str, db: AsyncSession, now: datetime):
     wait_minutes = max(1, (wait_seconds + 59) // 60)
     return {"error": f"Too many attempts. Try again in {wait_minutes} minutes."}
 
-# Step 3 (verification logic): validate submitted code against active OTP rows.
-# On failure it increments attempts and may create a new block.
+# Validate the provided OTP code for the email, returning the OTP object if valid or an error message if not.
 async def validate_otp(email: str, code: str, db: AsyncSession, now: datetime):
     otp_stmt = (
         select(OTPCode)
@@ -112,7 +109,7 @@ async def use_otp(otp: OTPCode, db: AsyncSession, now: datetime) -> None:
     otp.deleted_at = now + timedelta(days=USED_OTP_RETENTION_DAYS)
     await db.commit()
 
-
+# Invalidate any active OTPs for the email, such as when user cancels out of the OTP flow.
 async def cancel_active_otp(email: str, db: AsyncSession) -> dict:
     """Invalidate any active OTP rows when user exits OTP flow."""
     now = datetime.now(timezone.utc)
@@ -173,7 +170,8 @@ async def send_otp(email: str, db: AsyncSession, is_resend: bool = False) -> dic
 
         total_sends = int((await db.execute(sends_stmt)).scalar_one())
         resend_count = max(0, total_sends - 1)
-
+        
+        # If the resend count exceeds the limit, block further attempts for a period of time.
         if resend_count >= MAX_RESEND_ATTEMPTS:
             block_until = now + timedelta(minutes=VERIFY_BLOCK_MINUTES)
             await db.execute(
