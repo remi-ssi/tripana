@@ -1,19 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import travelImg from "../assets/wellness.png";
+import foodImg from "../assets/food.png";
+import cityImg from "../assets/city.png";
+import entertainmentImg from "../assets/entertainment.png";   
+import wellnessImg from "../assets/wellness.png";
+import adventureImg from "../assets/adventure.png";
+import culturalImg from "../assets/cultural.png";
+import natureImg from "../assets/nature.png";
+import eventsImg from "../assets/events.png";
 import { authService } from "../api/authService";
-
-// Category definitions for travel styles
-const categories = [
-  { id: "nature",          label: "Nature" },
-  { id: "cultural",        label: "Cultural & Historical" },
-  { id: "adventure",       label: "Adventure" },
-  { id: "events",          label: "Events" },
-  { id: "food",            label: "Food" },
-  { id: "city",            label: "City Exploration" },
-  { id: "entertainment",   label: "Entertainment" },
-  { id: "wellness",        label: "Wellness & Relaxation" },
-];
 
 export default function TravelStylePage() {
   const navigate = useNavigate();
@@ -54,10 +49,109 @@ export default function TravelStylePage() {
     }
   };
 
+  // Category definitions with colors and images
+const categories = [
+  {
+    id: "nature",
+    label: "Nature",
+    img: natureImg,
+    bg: "bg-emerald-100",
+    selectedBg: "bg-emerald-400",
+    border: "border-emerald-300",
+    selectedBorder: "border-emerald-600",
+    textColor: "text-emerald-800",
+    selectedText: "text-white",
+    shadow: "shadow-emerald-200",
+  },
+  {
+    id: "cultural",
+    label: "Cultural & Historical",
+    img: culturalImg,
+    bg: "bg-amber-100",
+    selectedBg: "bg-amber-400",
+    border: "border-amber-300",
+    selectedBorder: "border-amber-600",
+    textColor: "text-amber-900",
+    selectedText: "text-white",
+    shadow: "shadow-amber-200",
+  },
+  {
+    id: "adventure",
+    label: "Adventure",
+    img: adventureImg,
+    bg: "bg-rose-100",
+    selectedBg: "bg-rose-500",
+    border: "border-rose-300",
+    selectedBorder: "border-rose-600",
+    textColor: "text-rose-800",
+    selectedText: "text-white",
+    shadow: "shadow-rose-200",
+  },
+  {
+    id: "events",
+    label: "Events",
+    img: eventsImg,
+    bg: "bg-pink-100",
+    selectedBg: "bg-pink-500",
+    border: "border-pink-300",
+    selectedBorder: "border-pink-600",
+    textColor: "text-pink-800",
+    selectedText: "text-white",
+    shadow: "shadow-pink-200",
+  },
+  {
+    id: "food",
+    label: "Food",
+    img: foodImg,
+    bg: "bg-orange-100",
+    selectedBg: "bg-orange-400",
+    border: "border-orange-300",
+    selectedBorder: "border-orange-600",
+    textColor: "text-orange-800",
+    selectedText: "text-white",
+    shadow: "shadow-orange-200",
+  },
+  {
+    id: "city",
+    label: "City Exploration",
+    img: cityImg,
+    bg: "bg-slate-100",
+    selectedBg: "bg-slate-600",
+    border: "border-slate-300",
+    selectedBorder: "border-slate-700",
+    textColor: "text-slate-700",
+    selectedText: "text-white",
+    shadow: "shadow-slate-200",
+  },
+  {
+    id: "entertainment",
+    label: "Entertainment",
+    img: entertainmentImg,
+    bg: "bg-violet-100",
+    selectedBg: "bg-violet-500",
+    border: "border-violet-300",
+    selectedBorder: "border-violet-600",
+    textColor: "text-violet-800",
+    selectedText: "text-white",
+    shadow: "shadow-violet-200",
+  },
+  {
+    id: "wellness",
+    label: "Wellness & Relaxation",
+    img: wellnessImg,
+    bg: "bg-teal-100",
+    selectedBg: "bg-teal-500",
+    border: "border-teal-300",
+    selectedBorder: "border-teal-600",
+    textColor: "text-teal-800",
+    selectedText: "text-white",
+    shadow: "shadow-teal-200",
+  },
+];
   //page design
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-
+ 
       {/* Header */}
       <div
         className="text-center mb-8 sm:mb-12 w-full max-w-3xl"
@@ -67,15 +161,17 @@ export default function TravelStylePage() {
           transition: "opacity 0.7s ease, transform 0.7s ease",
         }}
       >
-        <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight mb-2 sm:mb-3 text-gray-900">
+        <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight mb-2 sm:mb-3 text-blue-600"
+          style={{ letterSpacing: "0.04em" }}
+        >
           TELL US YOUR TRAVEL STYLE
         </h1>
         <p className="text-gray-500 text-sm sm:text-base md:text-lg font-light tracking-wide px-2">
           Choose your interests so we can personalize your trips.
         </p>
       </div>
-
-      // Category Grid
+ 
+      {/* Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5 w-full max-w-xs sm:max-w-xl md:max-w-3xl lg:max-w-4xl">
         {categories.map((cat, i) => {
           const isSelected = selected.includes(cat.id);
@@ -86,10 +182,9 @@ export default function TravelStylePage() {
               className={`
                 relative flex flex-col items-center justify-end
                 rounded-2xl sm:rounded-3xl border-2 cursor-pointer overflow-hidden
-                transition-shadow duration-300
                 ${isSelected
-                  ? "bg-blue-500 border-blue-600 shadow-lg shadow-blue-200"
-                  : "bg-white border-gray-200 hover:border-blue-400 hover:shadow-md"
+                  ? `${cat.selectedBg} ${cat.selectedBorder} shadow-lg ${cat.shadow}`
+                  : `${cat.bg} ${cat.border} hover:brightness-95 hover:shadow-md`
                 }
               `}
               style={{
@@ -107,19 +202,19 @@ export default function TravelStylePage() {
                   </svg>
                 </span>
               )}
-
-              {/* Image */}
+ 
+              {/* Per-card image */}
               <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-5 pb-8 sm:pb-10">
                 <img
-                  src={travelImg}
+                  src={cat.img}
                   alt={cat.label}
                   className={`w-3/5 h-3/5 object-contain transition-transform duration-300 ${isSelected ? "scale-110" : ""}`}
                 />
               </div>
-
+ 
               {/* Label */}
               <div className="relative z-10 w-full py-2 sm:py-3 px-2 text-center">
-                <span className={`text-xs sm:text-sm font-bold leading-tight transition-colors duration-200 ${isSelected ? "text-white" : "text-gray-700"}`}>
+                <span className={`text-xs sm:text-sm font-bold leading-tight transition-colors duration-200 ${isSelected ? cat.selectedText : cat.textColor}`}>
                   {cat.label}
                 </span>
               </div>
@@ -127,7 +222,7 @@ export default function TravelStylePage() {
           );
         })}
       </div>
-
+ 
       {/* Done Button */}
       <div
         className="mt-8 sm:mt-12 w-full max-w-xs sm:max-w-sm"
@@ -148,7 +243,7 @@ export default function TravelStylePage() {
             ${selected.length ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-gray-300 text-gray-500"}
           `}
         >
-          {isSaving ? "Saving..." : `Done ${selected.length > 0 ? `(${selected.length})` : ""}`}
+          {isSaving ? "Saving..." : `Done${selected.length > 0 ? ` (${selected.length})` : ""}`}
         </button>
         {submitError && (
           <p className="mt-3 text-sm text-center text-red-600">{submitError}</p>
