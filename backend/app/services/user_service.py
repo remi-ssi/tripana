@@ -3,8 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.user_repository import UserRepository
 from app.schemas.user_schema import UserCreate, UserRead
-from app.utils.security import hash_password
-from app.utils.auth import verify_password
+from app.utils.security import hash_password, verify_password
 
 # for password verification
 class UserService:

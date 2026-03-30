@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import travelImg from "../assets/travel.png";
+import travelImg from "../assets/wellness.png";
 import { authService } from "../api/authService";
 
+// Category definitions for travel styles
 const categories = [
   { id: "nature",          label: "Nature" },
   { id: "cultural",        label: "Cultural & Historical" },
@@ -21,17 +22,20 @@ export default function TravelStylePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  // Staggered fade-in effect for header, grid, and button
   useEffect(() => {
     const timer = setTimeout(() => setVisible(true), 80);
     return () => clearTimeout(timer);
   }, []);
 
+  // Toggle category selection
   const toggle = (id) => {
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
     );
   };
 
+  // Handle saving preferences and navigating to dashboard
   const handleSavePreferences = async () => {
     if (selected.length === 0 || isSaving) {
       return;
@@ -50,6 +54,7 @@ export default function TravelStylePage() {
     }
   };
 
+  //page design
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
 
@@ -70,7 +75,7 @@ export default function TravelStylePage() {
         </p>
       </div>
 
-      {/* Grid */}
+      // Category Grid
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5 w-full max-w-xs sm:max-w-xl md:max-w-3xl lg:max-w-4xl">
         {categories.map((cat, i) => {
           const isSelected = selected.includes(cat.id);

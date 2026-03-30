@@ -1,10 +1,11 @@
 import { Navigate } from 'react-router-dom'
 import { useAuthStatus } from '../hooks/useAuthStatus'
+import LoadingIndicator from '../components/loadingIndicator'
 
 function FullScreenLoader() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-600 font-medium">
-      Loading...
+      <LoadingIndicator />
     </div>
   )
 }
