@@ -15,7 +15,7 @@ export default function Navbar() {
     <nav className="w-full bg-blue-600 px-6 py-3 flex items-center justify-between shadow-lg">
       {/* Logo */}
       <div className="flex items-center">
-        <Logo>
+        <img src={logo} alt="Tripana Logo" className="h-10 w-auto object-contain" />
       </div>
 
       {/* Nav Links */}
