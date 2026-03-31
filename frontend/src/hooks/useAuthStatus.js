@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { authService } from '../api/authService'
 
-export function useAuthStatus() {
+export function useAuthStatus(refreshKey) {
   const [state, setState] = useState({
     isLoading: true,
     isAuthenticated: false,
@@ -37,12 +37,17 @@ export function useAuthStatus() {
       }
     }
 
+    setState((prevState) => ({
+      ...prevState,
+      isLoading: true,
+    }))
+
     loadStatus()
 
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [refreshKey])
 
   return state
 }
