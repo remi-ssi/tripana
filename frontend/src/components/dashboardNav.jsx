@@ -9,10 +9,11 @@ const navLinks = [
   { label: "ABOUT US", href: "#" },
 ];
 
-export default function Navbar() {
+export default function Navbar({ onLogout }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("DASHBOARD");
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const menuItems = [
     { label: "Edit Profile", Icon: UserCog },
@@ -25,6 +26,21 @@ export default function Navbar() {
       },
     },
   ];
+
+  const handleConfirmLogout = async () => {
+    if (!onLogout) {
+      setShowLogoutConfirmation(false);
+      return;
+    }
+
+    setIsLoggingOut(true);
+    try {
+      await onLogout();
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutConfirmation(false);
+    }
+  };
 
   return (
     <>
@@ -103,8 +119,9 @@ export default function Navbar() {
 
       {showLogoutConfirmation && (
         <LogoutConfirmation
-          onConfirm={() => setShowLogoutConfirmation(false)}
+          onConfirm={handleConfirmLogout}
           onCancel={() => setShowLogoutConfirmation(false)}
+          isLoading={isLoggingOut}
         />
       )}
     </>
