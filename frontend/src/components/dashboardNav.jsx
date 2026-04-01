@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, User, UserCog, LogOut } from "lucide-react";
 import logo from "../assets/white.png";
+import LogoutConfirmation from "./confirmLogout";
 
 const navLinks = [
   { label: "DASHBOARD", href: "#" },
@@ -11,15 +12,30 @@ const navLinks = [
 export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("DASHBOARD");
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+
+  const menuItems = [
+    { label: "Edit Profile", Icon: UserCog },
+    {
+      label: "Log Out",
+      Icon: LogOut,
+      onClick: () => {
+        setDropdownOpen(false);
+        setShowLogoutConfirmation(true);
+      },
+    },
+  ];
 
   return (
-    <nav className="w-full bg-blue-700 px-6 py-3 flex items-center justify-between shadow-lg">
+    <>
+      <nav className="w-full bg-blue-700 px-6 py-3 flex items-center justify-between shadow-lg">
       {/* Logo */}
       <div className="flex items-right ml-8">
         <a
           href="#"
           onClick={(e) => {
             e.preventDefault();
+            setDropdownOpen(false);
             setActiveTab("DASHBOARD");
           }}
           aria-label="Go to Dashboard"
@@ -64,13 +80,16 @@ export default function Navbar() {
 
         {dropdownOpen && (
           <div className="absolute right-0 top-full mt-2 w-44 bg-white rounded-lg shadow-xl overflow-hidden z-50">
-            {[
-              { label: "Edit Profile", Icon: UserCog },
-              { label: "Log Out", Icon: LogOut },
-            ].map(({ label, Icon }) => (
+            {menuItems.map(({ label, Icon, onClick }) => (
               <a
                 key={label}
                 href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (onClick) {
+                    onClick();
+                  }
+                }}
                 className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-50 transition-colors duration-150"
               >
                 <Icon size={16} />
@@ -80,10 +99,19 @@ export default function Navbar() {
           </div>
         )}
       </div>
-    </nav>
+      </nav>
+
+      {showLogoutConfirmation && (
+        <LogoutConfirmation
+          onConfirm={() => setShowLogoutConfirmation(false)}
+          onCancel={() => setShowLogoutConfirmation(false)}
+        />
+      )}
+    </>
   );
 }
 
+// Reusable nav button component with active state and sliding shimmer effect
 function NavButton({ label, href, isActive, onClick }) {
   return (
     <a
