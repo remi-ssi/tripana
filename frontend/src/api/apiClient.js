@@ -21,7 +21,9 @@ export const apiClient = {
       // Ignore response parsing errors and keep fallback message
     }
 
-    throw new Error(message)
+    const error = new Error(message)
+    error.status = response.status
+    throw error
   },
 
  // request method that handles all API calls

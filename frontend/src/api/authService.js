@@ -9,7 +9,11 @@ export const authService = {
     try {
       return await apiClient.post('/auth/login', { email, password })
     } catch (error) {
-      throw new Error(error.message || 'Invalid Credentials')
+      if (error?.status === 401) {
+        throw new Error('Invalid Credentials')
+      }
+
+      throw new Error(error?.message || ERROR_MESSAGES.LOGIN_FAILED)
     }
   },
 
