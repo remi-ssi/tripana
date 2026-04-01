@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import EarthSVG from "../assets/loading.svg";
 
 const MESSAGES = [
-  "Creating Account...",
+  "Getting everything ready...",
+  "Just a moment...",
   "Almost ready!",
 ];
 
