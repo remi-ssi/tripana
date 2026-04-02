@@ -4,6 +4,9 @@ import { apiClient } from './apiClient'
 //authentication service - handles all auth-related API calls
 
 export const authService = {
+  // Build backend Google OAuth entry URL
+  getGoogleLoginUrl: () => `${apiClient.baseURL}/auth/google/login`,
+
  //Login user with email and password
   login: async (email, password) => {
     try {

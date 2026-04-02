@@ -1,5 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from urllib.parse import urlencode
+
+from authlib.integrations.starlette_client import OAuth
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.responses import RedirectResponse
+from google.auth.transport.requests import Request as GoogleRequest
+from google.oauth2 import id_token
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.config import settings
 from app.database import get_db               # your existing DB session function
 from app.models.user import User
 from app.schemas.user_schema import (
@@ -11,10 +18,20 @@ from app.schemas.user_schema import (
     PreferenceUpdateRequest,
 )
 from app.services.auth_service import (send_otp, start_signup, finish_signup, finish_login, start_login, cancel_active_otp)
+from app.services.auth_service import login_or_register_google_user
 from app.services.user_preference_service import UserPreferenceService
 from app.utils.auth import clear_auth_cookie, get_current_user, set_auth_cookie
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+oauth = OAuth()
+oauth.register(
+    name="google",
+    client_id=settings.GOOGLE_CLIENT_ID,
+    client_secret=settings.GOOGLE_CLIENT_SECRET,
+    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    client_kwargs={"scope": "openid email profile"},
+)
 
 def _raise_if_error(result: dict, *, default_status: int = 400, force_status: int | None = None):
     if "error" in result:
@@ -75,6 +92,116 @@ def _attach_cookie_and_strip_token(response: Response, result: dict) -> dict:
         "message": "Authentication successful.",
         "user": result.get("user"),
     }
+
+
+def _google_oauth_enabled() -> bool:
+    return bool(settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET)
+
+
+def _build_callback_url() -> str:
+    base = settings.BACKEND_BASE_URL.rstrip("/")
+    path = settings.GOOGLE_REDIRECT_PATH
+    if not path.startswith("/"):
+        path = f"/{path}"
+    return f"{base}{path}"
+
+
+def _frontend_login_redirect(error: str | None = None) -> str:
+    base_login = f"{settings.FRONTEND_ORIGIN.rstrip('/')}/login"
+    if not error:
+        return base_login
+    query = urlencode({"google_error": error})
+    return f"{base_login}?{query}"
+
+
+def _extract_profile_from_claims(claims: dict) -> tuple[str, str]:
+    given_name = (claims.get("given_name") or "").strip()
+    family_name = (claims.get("family_name") or "").strip()
+    full_name = (claims.get("name") or "").strip()
+
+    if given_name or family_name:
+        return given_name or "Google", family_name or "User"
+
+    if full_name:
+        parts = full_name.split(maxsplit=1)
+        if len(parts) == 2:
+            return parts[0], parts[1]
+        return full_name, "User"
+
+    return "Google", "User"
+
+
+def _verify_google_id_token(raw_id_token: str) -> dict:
+    claims = id_token.verify_oauth2_token(
+        raw_id_token,
+        GoogleRequest(),
+        settings.GOOGLE_CLIENT_ID,
+    )
+
+    # Defense in depth checks for issuer and required identity claims.
+    if claims.get("iss") not in {"accounts.google.com", "https://accounts.google.com"}:
+        raise ValueError("Invalid token issuer")
+
+    if not claims.get("email"):
+        raise ValueError("Google account email is missing")
+
+    if claims.get("email_verified") is not True:
+        raise ValueError("Google email is not verified")
+
+    return claims
+
+
+@router.get("/google/login")
+async def google_login(request: Request):
+    if not _google_oauth_enabled():
+        return RedirectResponse(
+            url=_frontend_login_redirect("Google login is not configured."),
+            status_code=status.HTTP_302_FOUND,
+        )
+
+    return await oauth.google.authorize_redirect(request, _build_callback_url())
+
+
+@router.get("/callback")
+async def auth_callback(request: Request, db: AsyncSession = Depends(get_db)):
+    if not _google_oauth_enabled():
+        return RedirectResponse(
+            url=_frontend_login_redirect("Google login is not configured."),
+            status_code=status.HTTP_302_FOUND,
+        )
+
+    try:
+        token = await oauth.google.authorize_access_token(request)
+
+        # Authlib can attach verified OIDC claims as userinfo.
+        userinfo = token.get("userinfo") or {}
+        raw_id_token = token.get("id_token")
+        if not raw_id_token:
+            raise ValueError("Missing Google ID token")
+
+        # Verify signature with Google's public keys and validate OIDC claims.
+        claims = _verify_google_id_token(raw_id_token)
+
+        if userinfo.get("email") and userinfo["email"] != claims["email"]:
+            raise ValueError("Token identity mismatch")
+
+        first_name, last_name = _extract_profile_from_claims(claims)
+        result = await login_or_register_google_user(
+            email=claims["email"],
+            first_name=first_name,
+            last_name=last_name,
+            db=db,
+        )
+
+        response = RedirectResponse(url=_frontend_login_redirect(), status_code=status.HTTP_302_FOUND)
+        set_auth_cookie(response, result["token"])
+        return response
+
+    except Exception:
+        return RedirectResponse(
+            url=_frontend_login_redirect("Google login failed. Please try again."),
+            status_code=status.HTTP_302_FOUND,
+        )
 
 @router.post("/register")
 async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):

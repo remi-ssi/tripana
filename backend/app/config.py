@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # PostgreSQL for development and production
     DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/tripana"
     FRONTEND_ORIGIN: str = "http://localhost:5173"
+    BACKEND_BASE_URL: str = "http://localhost:8000"
 
     # Email settings
     MAIL_HOST: str = "smtp.gmail.com"
@@ -32,6 +33,11 @@ class Settings(BaseSettings):
     AUTH_COOKIE_NAME: str = "access_token"
     AUTH_COOKIE_SECURE: bool = False
     AUTH_COOKIE_SAMESITE: str = "lax"
+
+    # Google OAuth settings
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_PATH: str = "/auth/callback"
 
     # OTP settings
     OTP_CLEANUP_INTERVAL_SECONDS: int = 60

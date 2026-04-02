@@ -2,6 +2,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from fastapi import FastAPI
+from starlette.middleware.sessions import SessionMiddleware
 from app.config import settings
 from app.database import engine, Base, AsyncSessionLocal
 from app.middleware import setup_cors, setup_error_handlers
@@ -58,6 +59,13 @@ app = FastAPI(
     title=settings.APP_NAME,
     debug=settings.APP_DEBUG,
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SECRET_KEY,
+    same_site=settings.AUTH_COOKIE_SAMESITE,
+    https_only=settings.AUTH_COOKIE_SECURE or settings.APP_ENV.lower() == "production",
 )
 
 # Setup middleware

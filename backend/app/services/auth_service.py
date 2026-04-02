@@ -1,6 +1,7 @@
 # backend/app/services/auth_service.py
 
 import random
+import secrets
 import string
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import delete, func, or_, select, update
@@ -142,6 +143,30 @@ def _build_auth_response(user: User) -> dict:
             "email": user.email,
         },
     }
+
+
+async def login_or_register_google_user(
+    *,
+    email: str,
+    first_name: str,
+    last_name: str,
+    db: AsyncSession,
+) -> dict:
+    user = (await db.execute(select(User).where(User.email == email))).scalars().first()
+
+    if not user:
+        generated_secret = secrets.token_urlsafe(32)
+        user = User(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            hashed_password=hash_password(generated_secret),
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+    return _build_auth_response(user)
 
 #generate a random 6-digit OTP code
 def generate_otp() -> str:

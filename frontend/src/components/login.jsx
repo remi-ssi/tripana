@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { validateLoginForm } from "../validators/authValidators";
 import { authService } from "../api/authService";
 import EarthLoader from "./loadingIndicator";
@@ -7,6 +7,7 @@ import OTPModal from "./otpModal";
 
 export default function Login({ onSwitchToSignup }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
@@ -16,6 +17,18 @@ export default function Login({ onSwitchToSignup }) {
     password: "",
   });
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const googleError = params.get("google_error");
+
+    if (googleError) {
+      setErrors((prev) => ({
+        ...prev,
+        submit: googleError,
+      }));
+    }
+  }, [location.search]);
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -76,6 +89,10 @@ export default function Login({ onSwitchToSignup }) {
     setShowOTPModal(false);
   };
 
+  const handleGoogleLogin = () => {
+    window.location.assign(authService.getGoogleLoginUrl());
+  };
+
   // for password visibility toggle
   const EyeIcon = ({ open }) => (
     <svg
@@ -116,6 +133,27 @@ export default function Login({ onSwitchToSignup }) {
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Log in Account</h1>
           <p className="text-gray-500 text-sm">Log in to continue planning your trips</p>
         </div>
+
+        {/* Divider */}
+      <div className="flex items-center gap-3 my-2">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-xs text-gray-400">or</span>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
+
+      {/* Google Login */}
+      <button
+        type="button"
+        onClick={handleGoogleLogin}
+        className="w-full flex items-center justify-center gap-3 border border-blue-400 hover:bg-blue-50 active:scale-95 text-gray-700 font-medium rounded-full py-3 text-sm transition-all duration-150"
+      >
+        <img
+          src="https://www.svgrepo.com/show/475656/google-color.svg"
+          alt="Google"
+          className="w-5 h-5"
+        />
+        Continue with Google
+      </button>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
