@@ -27,12 +27,33 @@ export default function Login({ onSwitchToSignup }) {
         ...prev,
         submit: googleError,
       }));
+
+      // Consume this one-time query error so it doesn't persist on refresh.
+      params.delete("google_error");
+      const nextSearch = params.toString();
+      navigate(
+        {
+          pathname: location.pathname,
+          search: nextSearch ? `?${nextSearch}` : "",
+        },
+        { replace: true }
+      );
     }
-  }, [location.search]);
+  }, [location.pathname, location.search, navigate]);
 
   // Handle form input changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setErrors((prev) => {
+      if (!prev.submit && !prev[e.target.name]) {
+        return prev;
+      }
+
+      const nextErrors = { ...prev };
+      delete nextErrors.submit;
+      delete nextErrors[e.target.name];
+      return nextErrors;
+    });
   };
 
   // Handle form submission

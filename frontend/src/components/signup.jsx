@@ -25,6 +25,16 @@ export default function SignUp({ onSwitchToLogin }) {
   // Handle form input changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setErrors((prev) => {
+      if (!prev.submit && !prev[e.target.name]) {
+        return prev;
+      }
+
+      const nextErrors = { ...prev };
+      delete nextErrors.submit;
+      delete nextErrors[e.target.name];
+      return nextErrors;
+    });
   };
 
   // Handle form submission
