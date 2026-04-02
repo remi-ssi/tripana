@@ -258,6 +258,27 @@ async def profile(current_user: User = Depends(get_current_user)):
     return _user_payload(current_user)
 
 
+@router.get("/session")
+async def session_status(request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        current_user = await get_current_user(request=request, bearer_token=None, db=db)
+    except HTTPException:
+        return {
+            "authenticated": False,
+            "has_preferences": False,
+            "user": None,
+        }
+
+    service = UserPreferenceService(db)
+    has_prefs = await service.has_preferences(current_user.user_id)
+
+    return {
+        "authenticated": True,
+        "has_preferences": has_prefs,
+        "user": _user_payload(current_user),
+    }
+
+
 @router.get("/preference-status")
 async def preference_status(
     current_user: User = Depends(get_current_user),

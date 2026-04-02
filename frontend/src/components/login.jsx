@@ -134,13 +134,6 @@ export default function Login({ onSwitchToSignup }) {
           <p className="text-gray-500 text-sm">Log in to continue planning your trips</p>
         </div>
 
-        {/* Divider */}
-      <div className="flex items-center gap-3 my-2">
-        <div className="flex-1 h-px bg-gray-200" />
-        <span className="text-xs text-gray-400">or</span>
-        <div className="flex-1 h-px bg-gray-200" />
-      </div>
-
       {/* Google Login */}
       <button
         type="button"
@@ -154,6 +147,13 @@ export default function Login({ onSwitchToSignup }) {
         />
         Continue with Google
       </button>
+      
+         {/* Divider */}
+      <div className="flex items-center gap-3 my-2">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-xs text-gray-400">or</span>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">

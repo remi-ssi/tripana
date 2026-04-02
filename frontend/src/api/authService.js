@@ -7,6 +7,17 @@ export const authService = {
   // Build backend Google OAuth entry URL
   getGoogleLoginUrl: () => `${apiClient.baseURL}/auth/google/login`,
 
+  // Get guest-safe current session status
+  getSessionStatus: async () => {
+    try {
+      return await apiClient.get('/auth/session')
+    } catch (error) {
+      const sessionError = new Error(error.message || 'Failed to fetch session status')
+      sessionError.status = error?.status
+      throw sessionError
+    }
+  },
+
  //Login user with email and password
   login: async (email, password) => {
     try {
@@ -48,7 +59,9 @@ export const authService = {
     try {
       return await apiClient.get('/auth/profile')
     } catch (error) {
-      throw new Error(error.message || ERROR_MESSAGES.PROFILE_FETCH_FAILED)
+      const profileError = new Error(error.message || ERROR_MESSAGES.PROFILE_FETCH_FAILED)
+      profileError.status = error?.status
+      throw profileError
     }
   },
 
@@ -57,7 +70,9 @@ export const authService = {
     try {
       return await apiClient.get('/auth/preference-status')
     } catch (error) {
-      throw new Error(error.message || 'Failed to fetch preference status')
+      const preferenceError = new Error(error.message || 'Failed to fetch preference status')
+      preferenceError.status = error?.status
+      throw preferenceError
     }
   },
 

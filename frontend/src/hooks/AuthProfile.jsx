@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { authService } from "../api/authService";
 
 const AuthContext = createContext()
@@ -6,22 +6,28 @@ const AuthContext = createContext()
 // Provides user profile and loading state to the app
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true) 
-  
-    useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const profile = await authService.getProfile()
-                setUser(profile)
-            } catch (error) {
-                console.error("Failed to fetch user profile:", error)
-            } finally {    
-                setLoading(false)
-            }
-        }
+  const [loading, setLoading] = useState(true)
+  const didFetchRef = useRef(false)
 
-        fetchUser()
-    }, [])
+  useEffect(() => {
+    if (didFetchRef.current) {
+      return
+    }
+    didFetchRef.current = true
+
+    const fetchUser = async () => {
+      try {
+        const sessionStatus = await authService.getSessionStatus()
+        setUser(sessionStatus?.authenticated ? sessionStatus?.user ?? null : null)
+      } catch (error) {
+        console.error("Failed to fetch user profile:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUser()
+  }, [])
 
   return (
     <AuthContext.Provider value={{ user, loading }}>
@@ -31,9 +37,9 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-    const context = useContext(AuthContext)
-    if (context === undefined) {
-        throw new Error("useAuth must be used within an AuthProvider")
-    } 
-    return context
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider")
+  }
+  return context
 }

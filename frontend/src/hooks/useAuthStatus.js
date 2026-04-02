@@ -13,7 +13,7 @@ export function useAuthStatus(refreshKey) {
 
     const loadStatus = async () => {
       try {
-        const preferenceStatus = await authService.getPreferenceStatus()
+        const sessionStatus = await authService.getSessionStatus()
 
         if (!isMounted) {
           return
@@ -21,8 +21,8 @@ export function useAuthStatus(refreshKey) {
 
         setState({
           isLoading: false,
-          isAuthenticated: true,
-          hasPreferences: Boolean(preferenceStatus?.has_preferences),
+          isAuthenticated: Boolean(sessionStatus?.authenticated),
+          hasPreferences: Boolean(sessionStatus?.has_preferences),
         })
       } catch {
         if (!isMounted) {
