@@ -31,6 +31,16 @@ export const ERROR_MESSAGES = {
 
   // Attractions Error Messages
   ATTRACTIONS_REQUIRED: 'Please select at least one attraction',
+
+  // Preferences Error Messages
+  TRANSPORT_REQUIRED: 'Please select a preferred transport mode',
+  PACE_REQUIRED: 'Please select a trip pace',
+  INTERESTS_REQUIRED: 'Please select at least one interest',
+
+  // Break Error Messages
+  BREAKS_REQUIRED: 'Please select yes or no for break preference',
+  MEALS_REQUIRED: 'Please select at least one meal',
+  MEAL_TIME_REQUIRED: 'Please set a time for all selected meals',
 }
 
 // Configuration for OTP verification and blocking logic

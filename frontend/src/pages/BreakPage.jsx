@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from '../components/PageLayout'
+import { validateBreaks } from '../validators/breakValidator'
 
 const MEALS = [
   {
@@ -45,12 +46,25 @@ export default function BreakPage() {
     lunch: { checked: false, time: '12:00' },
     dinner: { checked: false, time: '18:00' },
   })
+  const [errors, setErrors] = useState({})
+
+  const handleContinue = () => {
+    const newErrors = validateBreaks(includeBreaks, mealStates)
+    setErrors(newErrors)
+    if (Object.keys(newErrors).length === 0) {
+      navigate('/summary')
+    }
+  }
 
   const toggleMeal = (id) => {
     setMealStates((prev) => ({
       ...prev,
       [id]: { ...prev[id], checked: !prev[id].checked },
     }))
+    // Clear errors when user modifies meals
+    if (errors.meals || errors.mealTime) {
+      setErrors({})
+    }
   }
 
   const setMealTime = (id, time) => {
@@ -58,6 +72,10 @@ export default function BreakPage() {
       ...prev,
       [id]: { ...prev[id], time },
     }))
+    // Clear errors when user sets time
+    if (errors.mealTime) {
+      setErrors({})
+    }
   }
 
   return (
@@ -212,12 +230,19 @@ export default function BreakPage() {
         )}
 
         {/* View Summary */}
-        <button
-          onClick={() => navigate('/summary')}
-          className="w-full py-4 rounded-full bg-blue-700 hover:bg-blue-800 text-white font-semibold text-base transition-colors shadow-md"
-        >
-          View Summary
-        </button>
+        <div>
+          {(errors.meals || errors.mealTime) && (
+            <div className="mb-3 p-3 bg-red-50 border border-red-300 rounded-lg">
+              <p className="text-red-500 text-sm">{errors.meals || errors.mealTime}</p>
+            </div>
+          )}
+          <button
+            onClick={handleContinue}
+            className="w-full py-4 rounded-full bg-blue-700 hover:bg-blue-800 text-white font-semibold text-base transition-colors shadow-md"
+          >
+            View Summary
+          </button>
+        </div>
 
         <button
           onClick={() => navigate('/preference')}

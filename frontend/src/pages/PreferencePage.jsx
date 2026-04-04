@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from '../components/PageLayout'
+import { validatePreferences } from '../validators/preferenceValidator'
 
 const TRANSPORT_OPTIONS = [
   { value: 'walking', label: 'Walking', emoji: '🚶' },
   { value: 'jeepney', label: 'Public Transport', emoji: '🚌' },
-  { value: 'car', label: 'Car', emoji: '🚗' },,
+  { value: 'car', label: 'Car', emoji: '🚗' },
 ]
 
 const INTEREST_TAGS = [
@@ -45,6 +46,15 @@ export default function PreferencePage() {
     petFriendly: false,
     indoorOnly: false,
   })
+  const [errors, setErrors] = useState({})
+
+  const handleContinue = () => {
+    const newErrors = validatePreferences(transport, paceLevel, interests)
+    setErrors(newErrors)
+    if (Object.keys(newErrors).length === 0) {
+      navigate('/break')
+    }
+  }
 
   const toggleInterest = (tag) => {
     setInterests((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag])
@@ -68,7 +78,12 @@ export default function PreferencePage() {
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => setTransport(opt.value)}
+                onClick={() => {
+                  setTransport(opt.value)
+                  if (errors.transport) {
+                    setErrors({})
+                  }
+                }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 text-sm font-medium transition-all duration-200 ${transport === opt.value ? 'border-blue-700 bg-blue-700 text-white shadow-md shadow-blue-200' : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:text-blue-700'}`}
               >
                 <span>{opt.emoji}</span>
@@ -76,6 +91,7 @@ export default function PreferencePage() {
               </button>
             ))}
           </div>
+          {errors.transport && <p className="text-red-500 text-xs mt-2">{errors.transport}</p>}
         </div>
 
         {/* Pace Level */}
@@ -89,13 +105,19 @@ export default function PreferencePage() {
             min="1"
             max="5"
             value={paceLevel}
-            onChange={(e) => setPaceLevel(Number(e.target.value))}
+            onChange={(e) => {
+              setPaceLevel(Number(e.target.value))
+              if (errors.paceLevel) {
+                setErrors((prev) => ({ ...prev, paceLevel: '' }))
+              }
+            }}
             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-700"
           />
           <div className="flex justify-between mt-1">
             <span className="text-xs text-gray-400">😴 Chill</span>
             <span className="text-xs text-gray-400">🔥 Intense</span>
           </div>
+          {errors.paceLevel && <p className="text-red-500 text-xs mt-2">{errors.paceLevel}</p>}
         </div>
 
         {/* Interests */}
@@ -108,7 +130,12 @@ export default function PreferencePage() {
                 <button
                   key={tag}
                   type="button"
-                  onClick={() => toggleInterest(tag)}
+                  onClick={() => {
+                    toggleInterest(tag)
+                    if (errors.interests) {
+                      setErrors((prev) => ({ ...prev, interests: '' }))
+                    }
+                  }}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${active ? 'bg-blue-700 border-blue-700 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-700'}`}
                 >
                   {tag}
@@ -116,6 +143,7 @@ export default function PreferencePage() {
               )
             })}
           </div>
+          {errors.interests && <p className="text-red-500 text-xs mt-2">{errors.interests}</p>}
         </div>
 
         {/* Toggle Preferences */}
@@ -132,7 +160,7 @@ export default function PreferencePage() {
         {/* Navigation */}
         <div className="flex gap-3 pt-1">
           <button onClick={() => navigate('/attractions')} className="flex-1 py-3.5 rounded-2xl border-2 border-blue-700 text-blue-700 font-semibold text-sm hover:bg-blue-50 transition-colors">Back</button>
-          <button onClick={() => navigate('/break')} className="flex-1 py-3.5 rounded-2xl bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm transition-colors shadow-md shadow-blue-200">Continue</button>
+          <button onClick={handleContinue} disabled={!transport || !paceLevel || interests.length === 0} className="flex-1 py-3.5 rounded-2xl bg-blue-700 hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors shadow-md shadow-blue-200">Continue</button>
         </div>
 
       </div>
