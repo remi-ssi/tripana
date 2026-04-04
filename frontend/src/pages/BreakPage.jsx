@@ -2,190 +2,229 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from '../components/PageLayout'
 
-const BREAK_TYPES = [
-  { value: 'meal', label: 'Meal Break', emoji: '🍽️', description: 'Stop for lunch or dinner' },
-  { value: 'coffee', label: 'Coffee Break', emoji: '☕', description: 'Quick cafe stop to recharge' },
-  { value: 'rest', label: 'Rest Break', emoji: '😴', description: 'Downtime at hotel or park' },
-  { value: 'snack', label: 'Snack Break', emoji: '🍌', description: 'Light refreshments on the go' },
+const MEALS = [
+  {
+    id: 'breakfast',
+    label: 'Breakfast',
+    subtitle: 'Morning meal',
+    emoji: '☀️',
+    bgColor: 'bg-orange-100',
+    defaultTime: '08:00',
+  },
+  {
+    id: 'lunch',
+    label: 'Lunch',
+    subtitle: 'Midday meal',
+    emoji: '🌤️',
+    bgColor: 'bg-yellow-100',
+    defaultTime: '12:00',
+  },
+  {
+    id: 'dinner',
+    label: 'Dinner',
+    subtitle: 'Evening meal',
+    emoji: '🌙',
+    bgColor: 'bg-indigo-100',
+    defaultTime: '18:00',
+  },
 ]
 
-function BreakCard({ breakItem, onRemove }) {
-  return (
-    <div className="flex items-center gap-3 bg-white border-2 border-blue-100 rounded-2xl px-4 py-3">
-      <span className="text-xl">{BREAK_TYPES.find(b => b.value === breakItem.type)?.emoji}</span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-700">{BREAK_TYPES.find(b => b.value === breakItem.type)?.label}</p>
-        <p className="text-xs text-gray-400">{breakItem.startTime} – {breakItem.endTime} · {breakItem.duration} min</p>
-      </div>
-      <button
-        type="button"
-        onClick={onRemove}
-        className="text-gray-400 hover:text-red-500 transition-colors p-1"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-          <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
-        </svg>
-      </button>
-    </div>
-  )
+function to12Hour(time24) {
+  if (!time24) return ''
+  const [h, m] = time24.split(':').map(Number)
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const hour = h % 12 || 12
+  return `${String(hour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`
 }
 
 export default function BreakPage() {
   const navigate = useNavigate()
-  const [breaks, setBreaks] = useState([])
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ type: 'meal', startTime: '', endTime: '', duration: '30' })
+  const [includeBreaks, setIncludeBreaks] = useState(true)
+  const [mealStates, setMealStates] = useState({
+    breakfast: { checked: true, time: '08:00' },
+    lunch: { checked: false, time: '12:00' },
+    dinner: { checked: false, time: '18:00' },
+  })
 
-  const addBreak = () => {
-    if (!form.startTime || !form.endTime) return
-    setBreaks((prev) => [...prev, { ...form, id: Date.now() }])
-    setForm({ type: 'meal', startTime: '', endTime: '', duration: '30' })
-    setShowForm(false)
+  const toggleMeal = (id) => {
+    setMealStates((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], checked: !prev[id].checked },
+    }))
   }
 
-  const removeBreak = (id) => {
-    setBreaks((prev) => prev.filter((b) => b.id !== id))
+  const setMealTime = (id, time) => {
+    setMealStates((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], time },
+    }))
   }
 
   return (
-    <PageLayout currentStep="break" title="Schedule Breaks" subtitle="Plan rest periods to keep your trip comfortable and enjoyable">
-      <div className="space-y-5">
+    <PageLayout
+      currentStep="break"
+      title="Break Preference"
+      subtitle="Select your travel preference for this trip"
+    >
+      <div className="space-y-6">
 
-        {/* Break Type Selector Cards */}
+        {/* Break Preference Toggle */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Break Types Available</label>
-          <div className="grid grid-cols-2 gap-2">
-            {BREAK_TYPES.map((bt) => (
-              <div key={bt.value} className="bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-2">
-                <span className="text-lg">{bt.emoji}</span>
-                <div>
-                  <p className="text-xs font-semibold text-gray-700">{bt.label}</p>
-                  <p className="text-xs text-gray-400">{bt.description}</p>
+          <h2 className="text-base font-bold text-gray-800 flex items-center gap-2 mb-1">
+            <span>🕐</span> Break Preference
+          </h2>
+          <p className="text-xs text-gray-500 mb-3">
+            Would you like to include meal breaks or rest breaks between attractions?
+          </p>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* Yes */}
+            <button
+              type="button"
+              onClick={() => setIncludeBreaks(true)}
+              className={`
+                relative rounded-2xl border-2 p-4 text-left transition-all duration-200
+                ${includeBreaks ? 'border-teal-400 bg-teal-50' : 'border-gray-200 bg-white hover:border-gray-300'}
+              `}
+            >
+              {/* top row */}
+              <div className="flex items-center justify-between mb-2">
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${includeBreaks ? 'border-teal-500 bg-teal-500' : 'border-gray-300'}`}>
+                  {includeBreaks && (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-white">
+                      <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                    </svg>
+                  )}
                 </div>
+                {includeBreaks && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-teal-400">
+                    <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                  </svg>
+                )}
               </div>
-            ))}
+              <p className={`text-sm font-bold mb-1 ${includeBreaks ? 'text-teal-700' : 'text-gray-700'}`}>
+                Yes, include breaks
+              </p>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Schedule meal times during your trip for a balanced itinerary
+              </p>
+            </button>
+
+            {/* No */}
+            <button
+              type="button"
+              onClick={() => setIncludeBreaks(false)}
+              className={`
+                relative rounded-2xl border-2 p-4 text-left transition-all duration-200
+                ${!includeBreaks ? 'border-teal-400 bg-teal-50' : 'border-gray-200 bg-white hover:border-gray-300'}
+              `}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${!includeBreaks ? 'border-teal-500 bg-teal-500' : 'border-gray-300'}`}>
+                  {!includeBreaks && (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-white">
+                      <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`w-4 h-4 ${!includeBreaks ? 'text-teal-400' : 'text-gray-300'}`}>
+                  <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.72 6.97a.75.75 0 10-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 101.06 1.06L12 13.06l1.72 1.72a.75.75 0 101.06-1.06L13.06 12l1.72-1.72a.75.75 0 10-1.06-1.06L12 10.94l-1.72-1.72z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <p className={`text-sm font-bold mb-1 ${!includeBreaks ? 'text-teal-700' : 'text-gray-700'}`}>
+                No, skip breaks
+              </p>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Maximize attraction visits without scheduled meal breaks
+              </p>
+            </button>
           </div>
         </div>
 
-        {/* Scheduled Breaks */}
-        {breaks.length > 0 && (
+        {/* Meal Times — only shown if includeBreaks */}
+        {includeBreaks && (
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Scheduled Breaks ({breaks.length})</label>
+            <h2 className="text-base font-bold text-gray-800 flex items-center gap-2 mb-1">
+              <span className="text-teal-500">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 inline">
+                  <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clipRule="evenodd" />
+                </svg>
+              </span>
+              Select Meal Times
+            </h2>
+            <p className="text-xs text-gray-500 mb-3">
+              Choose which meals you'd like to schedule and set your preferred times
+            </p>
+
             <div className="space-y-2">
-              {breaks.map((b) => (
-                <BreakCard key={b.id} breakItem={b} onRemove={() => removeBreak(b.id)} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Add Break Form */}
-        {showForm ? (
-          <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 space-y-4">
-            <h3 className="text-sm font-semibold text-blue-700">Add a Break</h3>
-
-            {/* Break Type */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Type</label>
-              <div className="flex flex-wrap gap-2">
-                {BREAK_TYPES.map((bt) => (
-                  <button
-                    key={bt.value}
-                    type="button"
-                    onClick={() => setForm(f => ({ ...f, type: bt.value }))}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${form.type === bt.value ? 'bg-blue-700 border-blue-700 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-blue-300'}`}
+              {MEALS.map((meal) => {
+                const state = mealStates[meal.id]
+                return (
+                  <div
+                    key={meal.id}
+                    className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3.5 transition-all duration-200 ${state.checked ? 'border-teal-400 bg-teal-50' : 'border-gray-200 bg-white'}`}
                   >
-                    <span>{bt.emoji}</span> {bt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+                    {/* Checkbox */}
+                    <button
+                      type="button"
+                      onClick={() => toggleMeal(meal.id)}
+                      className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${state.checked ? 'bg-teal-500 border-teal-500' : 'border-gray-300 bg-white'}`}
+                    >
+                      {state.checked && (
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-white">
+                          <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
 
-            {/* Time Range */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Start Time</label>
-                <input
-                  type="time"
-                  value={form.startTime}
-                  onChange={(e) => setForm(f => ({ ...f, startTime: e.target.value }))}
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-700 text-sm cursor-pointer"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">End Time</label>
-                <input
-                  type="time"
-                  value={form.endTime}
-                  onChange={(e) => setForm(f => ({ ...f, endTime: e.target.value }))}
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-700 text-sm cursor-pointer"
-                />
-              </div>
-            </div>
+                    {/* Emoji icon */}
+                    <div className={`w-9 h-9 rounded-full ${meal.bgColor} flex items-center justify-center text-lg flex-shrink-0`}>
+                      {meal.emoji}
+                    </div>
 
-            {/* Duration */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-gray-600">Duration</label>
-                <span className="text-xs font-semibold text-blue-700">{form.duration} min</span>
-              </div>
-              <input
-                type="range"
-                min="15"
-                max="120"
-                step="15"
-                value={form.duration}
-                onChange={(e) => setForm(f => ({ ...f, duration: e.target.value }))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-700"
-              />
-              <div className="flex justify-between mt-1">
-                <span className="text-xs text-gray-400">15 min</span>
-                <span className="text-xs text-gray-400">2 hrs</span>
-              </div>
-            </div>
+                    {/* Label */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-700">{meal.label}</p>
+                      <p className="text-xs text-gray-400">{meal.subtitle}</p>
+                    </div>
 
-            {/* Form Buttons */}
-            <div className="flex gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="flex-1 py-2.5 rounded-xl border-2 border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={addBreak}
-                className="flex-1 py-2.5 rounded-xl bg-blue-700 text-white text-sm font-semibold hover:bg-blue-800 transition-colors"
-              >
-                Add Break
-              </button>
+                    {/* Time input — only when checked */}
+                    {state.checked && (
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-gray-400">
+                          <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clipRule="evenodd" />
+                        </svg>
+                        <div className="relative">
+                          <input
+                            type="time"
+                            value={state.time}
+                            onChange={(e) => setMealTime(meal.id, e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400 w-28 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="w-full py-3 rounded-2xl border-2 border-dashed border-blue-300 text-blue-700 text-sm font-semibold hover:border-blue-500 hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-              <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-            </svg>
-            Add a Break
-          </button>
         )}
 
-        {/* Skip hint */}
-        {breaks.length === 0 && !showForm && (
-          <p className="text-xs text-center text-gray-400">You can skip this step if you don't need planned breaks.</p>
-        )}
+        {/* View Summary */}
+        <button
+          onClick={() => navigate('/summary')}
+          className="w-full py-4 rounded-full bg-blue-700 hover:bg-blue-800 text-white font-semibold text-base transition-colors shadow-md"
+        >
+          View Summary
+        </button>
 
-        {/* Navigation */}
-        <div className="flex gap-3 pt-1">
-          <button onClick={() => navigate('/preference')} className="flex-1 py-3.5 rounded-2xl border-2 border-blue-700 text-blue-700 font-semibold text-sm hover:bg-blue-50 transition-colors">Back</button>
-          <button onClick={() => navigate('/summary')} className="flex-1 py-3.5 rounded-2xl bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm transition-colors shadow-md shadow-blue-200">Continue</button>
-        </div>
-
+        <button
+          onClick={() => navigate('/preference')}
+          className="w-full text-center text-sm text-gray-400 hover:text-blue-700 transition-colors"
+        >
+          ← Back to Preference
+        </button>
       </div>
     </PageLayout>
   )

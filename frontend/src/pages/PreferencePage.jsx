@@ -4,10 +4,8 @@ import PageLayout from '../components/PageLayout'
 
 const TRANSPORT_OPTIONS = [
   { value: 'walking', label: 'Walking', emoji: '🚶' },
-  { value: 'jeepney', label: 'Jeepney', emoji: '🚌' },
-  { value: 'tricycle', label: 'Tricycle', emoji: '🛺' },
-  { value: 'car', label: 'Car', emoji: '🚗' },
-  { value: 'boat', label: 'Boat', emoji: '⛵' },
+  { value: 'jeepney', label: 'Public Transport', emoji: '🚌' },
+  { value: 'car', label: 'Car', emoji: '🚗' },,
 ]
 
 const INTEREST_TAGS = [

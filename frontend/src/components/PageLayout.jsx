@@ -4,9 +4,9 @@ import ProgressBar from './ProgressBar'
 /**
  * PageLayout — shared wrapper used across all wizard pages.
  *
- * @param {{ currentStep: string, title: string, subtitle?: string, children: React.ReactNode }} props
+ * @param {{ currentStep: string, title: string, subtitle?: string, contentClassName?: string, children: React.ReactNode }} props
  */
-export default function PageLayout({ currentStep, title, subtitle, children }) {
+export default function PageLayout({ currentStep, title, subtitle, contentClassName = 'max-w-xl', children }) {
   const navigate = useNavigate()
 
   return (
@@ -36,7 +36,7 @@ export default function PageLayout({ currentStep, title, subtitle, children }) {
       <ProgressBar currentStep={currentStep} />
 
       {/* Page Content */}
-      <div className="max-w-xl mx-auto px-4 pb-12">
+      <div className={`${contentClassName} mx-auto px-4 pb-12`}>
         {children}
       </div>
     </div>
