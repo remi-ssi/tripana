@@ -10,6 +10,10 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const { user, loading, refreshUser, clearUser } = useAuth()
 
+  const handlePlanTrip = () => {
+    navigate('/trip-plan')
+  }
+
   useEffect(() => {
     refreshUser()
   }, [refreshUser])
@@ -52,7 +56,11 @@ export default function Dashboard() {
           </div>
 
           {/* Right: button */}
-          <button className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold px-5 py-2.5 rounded-full transition-colors duration-200 cursor-pointer whitespace-nowrap">
+          <button
+            type="button"
+            onClick={handlePlanTrip}
+            className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold px-5 py-2.5 rounded-full transition-colors duration-200 cursor-pointer whitespace-nowrap"
+          >
             <PlusCircle size={18} className="text-white-500" /> Plan a Trip
           </button>
         </div>
