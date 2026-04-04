@@ -28,6 +28,9 @@ export const ERROR_MESSAGES = {
   MAX_ATTRACTIONS_INVALID: 'Max attractions must be between 1 and 20',
   BUDGET_REQUIRED: 'Budget is required',
   END_TIME_AFTER_START: 'End time must be after start time',
+
+  // Attractions Error Messages
+  ATTRACTIONS_REQUIRED: 'Please select at least one attraction',
 }
 
 // Configuration for OTP verification and blocking logic

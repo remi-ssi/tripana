@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from '../components/PageLayout'
+import { validateAttractions } from '../validators/attractionValidator'
 
 const ATTRACTIONS = [
   {
@@ -70,8 +71,17 @@ export default function AttractionsPage() {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selected, setSelected] = useState([])
+  const [errors, setErrors] = useState({})
 
   const categories = ['all', ...new Set(ATTRACTIONS.flatMap((a) => a.tags))]
+
+  const handleContinue = () => {
+    const newErrors = validateAttractions(selected)
+    setErrors(newErrors)
+    if (Object.keys(newErrors).length === 0) {
+      navigate('/preference')
+    }
+  }
 
   const filtered = ATTRACTIONS.filter(
     (a) => {
@@ -87,6 +97,10 @@ export default function AttractionsPage() {
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     )
+    // Clear error when user selects attractions
+    if (errors.attractions) {
+      setErrors({})
+    }
   }
 
   return (
@@ -190,12 +204,20 @@ export default function AttractionsPage() {
       </div>
 
       {/* Continue */}
-      <button
-        onClick={() => navigate('/preference')}
-        className="w-full py-4 rounded-full bg-blue-700 hover:bg-blue-800 text-white font-semibold text-base transition-colors shadow-md"
-      >
-        Continue to Preference
-      </button>
+      <div>
+        {errors.attractions && (
+          <div className="mb-3 p-3 bg-red-50 border border-red-300 rounded-lg">
+            <p className="text-red-500 text-sm">{errors.attractions}</p>
+          </div>
+        )}
+        <button
+          onClick={handleContinue}
+          disabled={selected.length === 0}
+          className="w-full py-4 rounded-full bg-blue-700 hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold text-base transition-colors shadow-md"
+        >
+          Continue to Preference
+        </button>
+      </div>
     </PageLayout>
   )
 }
