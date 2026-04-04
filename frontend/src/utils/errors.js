@@ -18,6 +18,16 @@ export const ERROR_MESSAGES = {
   OTP_INVALID: 'Invalid code. Please try again.',
   OTP_RESEND_FAILED: 'Failed to resend OTP. Please try again.',
   OTP_CLOSE_FAILED: 'Unable to close OTP right now. Please try again.',
+  
+  // Trip Plan Error Messages
+  CITY_REQUIRED: 'City is required',
+  HOTEL_REQUIRED: 'Hotel is required',
+  START_TIME_REQUIRED: 'Start time is required',
+  END_TIME_REQUIRED: 'End time is required',
+  MAX_ATTRACTIONS_REQUIRED: 'Max attractions is required',
+  MAX_ATTRACTIONS_INVALID: 'Max attractions must be between 1 and 20',
+  BUDGET_REQUIRED: 'Budget is required',
+  END_TIME_AFTER_START: 'End time must be after start time',
 }
 
 // Configuration for OTP verification and blocking logic

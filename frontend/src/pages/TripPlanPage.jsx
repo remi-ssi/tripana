@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from '../components/PageLayout'
+import { validateTripPlan } from '../validators/tripPlanValidator'
 
 const BUDGET_OPTIONS = [
   { value: 'budget-friendly', label: 'Budget-friendly', emoji: '💚' },
@@ -20,16 +21,34 @@ export default function TripPlanPage() {
     budget: '',
   })
 
+  const [errors, setErrors] = useState({})
+
+  const validateForm = () => {
+    const newErrors = validateTripPlan(form)
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }))
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: '' }))
+    }
   }
 
   const handleBudget = (value) => {
     setForm((prev) => ({ ...prev, budget: value }))
+    // Clear budget error when user selects
+    if (errors.budget) {
+      setErrors((prev) => ({ ...prev, budget: '' }))
+    }
   }
 
   const handleContinue = () => {
-    navigate('/attractions')
+    if (validateForm()) {
+      navigate('/attractions')
+    }
   }
 
   return (
@@ -50,8 +69,9 @@ export default function TripPlanPage() {
             placeholder="e.g., Zambales"
             value={form.city}
             onChange={(e) => handleChange('city', e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-transparent transition text-sm"
+            className={`w-full px-4 py-3 rounded-xl border ${errors.city ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.city ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
           />
+          {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
         </div>
 
         {/* Hotel */}
@@ -65,7 +85,7 @@ export default function TripPlanPage() {
               placeholder="e.g., Zambales"
               value={form.hotel}
               onChange={(e) => handleChange('hotel', e.target.value)}
-              className="w-full px-4 py-3 pr-12 rounded-xl border-2 border-blue-700 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-blue-700 transition text-sm"
+              className={`w-full px-4 py-3 pr-12 rounded-xl border-2 ${errors.hotel ? 'border-red-500' : 'border-blue-700'} bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.hotel ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
             />
             <button
               type="button"
@@ -77,6 +97,7 @@ export default function TripPlanPage() {
               </svg>
             </button>
           </div>
+          {errors.hotel && <p className="text-red-500 text-xs mt-1">{errors.hotel}</p>}
         </div>
 
         {/* Start Time & End Time */}
@@ -89,8 +110,9 @@ export default function TripPlanPage() {
               type="time"
               value={form.startTime}
               onChange={(e) => handleChange('startTime', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-transparent transition text-sm cursor-pointer"
+              className={`w-full px-4 py-3 rounded-xl border ${errors.startTime ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.startTime ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
             />
+            {errors.startTime && <p className="text-red-500 text-xs mt-1">{errors.startTime}</p>}
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -100,8 +122,9 @@ export default function TripPlanPage() {
               type="time"
               value={form.endTime}
               onChange={(e) => handleChange('endTime', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-transparent transition text-sm cursor-pointer"
+              className={`w-full px-4 py-3 rounded-xl border ${errors.endTime ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.endTime ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
             />
+            {errors.endTime && <p className="text-red-500 text-xs mt-1">{errors.endTime}</p>}
           </div>
         </div>
 
@@ -131,8 +154,9 @@ export default function TripPlanPage() {
             placeholder="e.g., 5"
             value={form.maxAttractions}
             onChange={(e) => handleChange('maxAttractions', e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-transparent transition text-sm"
+            className={`w-full px-4 py-3 rounded-xl border ${errors.maxAttractions ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.maxAttractions ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
           />
+          {errors.maxAttractions && <p className="text-red-500 text-xs mt-1">{errors.maxAttractions}</p>}
         </div>
 
         {/* Budget */}
@@ -150,7 +174,7 @@ export default function TripPlanPage() {
                   flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-medium transition-all duration-200
                   ${form.budget === option.value
                     ? 'border-blue-700 bg-blue-700 text-white shadow-md shadow-blue-200'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:text-blue-700'
+                    : `border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:text-blue-700 ${errors.budget ? 'ring-2 ring-red-500' : ''}`
                   }
                 `}
               >
@@ -159,13 +183,15 @@ export default function TripPlanPage() {
               </button>
             ))}
           </div>
+          {errors.budget && <p className="text-red-500 text-xs mt-1">{errors.budget}</p>}
         </div>
 
         {/* Continue Button */}
         <button
           type="button"
           onClick={handleContinue}
-          className="w-full py-4 rounded-2xl bg-blue-700 hover:bg-blue-800 active:bg-blue-900 text-white font-semibold text-base transition-colors duration-200 shadow-md shadow-blue-200 mt-2"
+          disabled={Object.keys(errors).length > 0 || !form.city || !form.hotel || !form.startTime || !form.endTime || !form.maxAttractions || !form.budget}
+          className="w-full py-4 rounded-2xl bg-blue-700 hover:bg-blue-800 active:bg-blue-900 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold text-base transition-colors duration-200 shadow-md shadow-blue-200 mt-2"
         >
           Continue to Select Attraction
         </button>

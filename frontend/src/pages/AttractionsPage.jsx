@@ -128,9 +128,12 @@ export default function AttractionsPage() {
         {filtered.map((attraction) => {
           const isSelected = selected.includes(attraction.id)
           return (
-            <div
+            <button
               key={attraction.id}
-              className={`rounded-2xl border-2 overflow-hidden bg-white transition-all duration-200 ${isSelected ? 'border-teal-400 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'}`}
+              type="button"
+              onClick={() => toggleAttraction(attraction.id)}
+              aria-pressed={isSelected}
+              className={`w-full text-left rounded-2xl border-2 overflow-hidden bg-white transition-all duration-200 ${isSelected ? 'border-teal-400 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'}`}
             >
               {/* Image */}
               <div className="relative">
@@ -176,16 +179,12 @@ export default function AttractionsPage() {
                     <span className="text-xs font-semibold text-gray-700">{attraction.rating}</span>
                     <span className="text-xs text-gray-400">({attraction.reviews.toLocaleString()} reviews)</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => toggleAttraction(attraction.id)}
-                    className={`text-xs font-semibold transition-colors ${isSelected ? 'text-teal-500' : 'text-gray-400 hover:text-blue-700'}`}
-                  >
+                  <span className={`text-xs font-semibold transition-colors ${isSelected ? 'text-teal-500' : 'text-gray-400'}`}>
                     {isSelected ? 'Selected' : 'Select'}
-                  </button>
+                  </span>
                 </div>
               </div>
-            </div>
+            </button>
           )
         })}
       </div>
