@@ -4,10 +4,12 @@ import { validateLoginForm } from "../validators/authValidators";
 import { authService } from "../api/authService";
 import EarthLoader from "./loadingIndicator";
 import OTPModal from "./otpModal";
+import { useAuth } from "../hooks/AuthProfile";
 
 export default function Login({ onSwitchToSignup }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { refreshUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
@@ -84,6 +86,7 @@ export default function Login({ onSwitchToSignup }) {
   const handleVerifyOTP = async (otp) => {
     try {
       await authService.verifyLoginOTP(otpEmail, otp);
+      await refreshUser();
 
       setShowOTPModal(false);
       const preferenceStatus = await authService.getPreferenceStatus();

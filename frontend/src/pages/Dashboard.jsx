@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../api/authService'
 import Navbar from '../components/dashboardNav'
@@ -7,11 +8,19 @@ import { CalendarDays, PlusCircle } from 'lucide-react'
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { user, loading } = useAuth()
+  const { user, loading, refreshUser, clearUser } = useAuth()
+
+  useEffect(() => {
+    refreshUser()
+  }, [refreshUser])
 
   const handleLogout = async () => {
-    await authService.logout()
-    navigate('/login')
+    try {
+      await authService.logout()
+    } finally {
+      clearUser()
+      navigate('/login', { replace: true })
+    }
   }
 
   if (loading){

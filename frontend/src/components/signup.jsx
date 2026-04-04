@@ -4,9 +4,11 @@ import { validateRegisterForm } from "../validators/authValidators";
 import { authService } from "../api/authService";
 import OTPModal from "./otpModal";
 import EarthLoader from "./loadingIndicator";
+import { useAuth } from "../hooks/AuthProfile";
 
 export default function SignUp({ onSwitchToLogin }) {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -87,6 +89,7 @@ export default function SignUp({ onSwitchToLogin }) {
         formData.firstName,
         formData.lastName
       );
+      await refreshUser();
       // On success, close modal and redirect to dashboard
       setShowOTPModal(false);
       // Reset form
