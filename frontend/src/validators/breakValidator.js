@@ -3,10 +3,11 @@ import { ERROR_MESSAGES } from '../utils/errors'
 export const validateBreaks = (includeBreaks, mealStates) => {
   const errors = {}
 
-  // Check if includeBreaks is explicitly set (it's always true or false, but we can validate concept)
-  // Actually, includeBreaks is always a boolean, so this validation is more about ensuring the user made a conscious choice
-  // In this case, we'll consider it valid if they've selected yes or no (which they always have)
-  
+  if (includeBreaks === null || includeBreaks === undefined) {
+    errors.breakChoice = ERROR_MESSAGES.BREAKS_REQUIRED
+    return errors
+  }
+
   if (includeBreaks) {
     // If yes is selected, at least one meal must be selected
     const hasSelectedMeal = Object.values(mealStates).some((meal) => meal.checked)

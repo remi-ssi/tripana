@@ -47,17 +47,15 @@ export default function PreferencePage() {
     indoorOnly: false,
   })
   const [errors, setErrors] = useState({})
+  const [touched, setTouched] = useState({})
 
   const handleContinue = () => {
+    setTouched({ transport: true, paceLevel: true, interests: true })
     const newErrors = validatePreferences(transport, paceLevel, interests)
     setErrors(newErrors)
     if (Object.keys(newErrors).length === 0) {
       navigate('/break')
     }
-  }
-
-  const toggleInterest = (tag) => {
-    setInterests((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag])
   }
 
   const togglePref = (key) => {
@@ -73,16 +71,16 @@ export default function PreferencePage() {
         {/* Transport Mode */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Preferred Transport <span className="text-red-500">*</span></label>
-          <div className="flex gap-2 flex-wrap">
+          <div className={`flex gap-2 flex-wrap rounded-xl p-1 ${errors.transport && touched.transport ? 'ring-2 ring-red-500' : ''}`}>
             {TRANSPORT_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => {
                   setTransport(opt.value)
-                  if (errors.transport) {
-                    setErrors({})
-                  }
+                  setTouched((prev) => ({ ...prev, transport: true }))
+                  const newErrors = validatePreferences(opt.value, paceLevel, interests)
+                  setErrors((prev) => ({ ...prev, transport: newErrors.transport || '' }))
                 }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 text-sm font-medium transition-all duration-200 ${transport === opt.value ? 'border-blue-700 bg-blue-700 text-white shadow-md shadow-blue-200' : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:text-blue-700'}`}
               >
@@ -91,11 +89,11 @@ export default function PreferencePage() {
               </button>
             ))}
           </div>
-          {errors.transport && <p className="text-red-500 text-xs mt-2">{errors.transport}</p>}
+          {errors.transport && touched.transport && <p className="text-red-500 text-xs mt-2">{errors.transport}</p>}
         </div>
 
         {/* Pace Level */}
-        <div>
+        <div className={`rounded-xl p-2 ${errors.paceLevel && touched.paceLevel ? 'ring-2 ring-red-500' : ''}`}>
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-semibold text-gray-700">Trip Pace</label>
             <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full">{paceLabels[paceLevel - 1]}</span>
@@ -106,10 +104,11 @@ export default function PreferencePage() {
             max="5"
             value={paceLevel}
             onChange={(e) => {
-              setPaceLevel(Number(e.target.value))
-              if (errors.paceLevel) {
-                setErrors((prev) => ({ ...prev, paceLevel: '' }))
-              }
+              const value = Number(e.target.value)
+              setPaceLevel(value)
+              setTouched((prev) => ({ ...prev, paceLevel: true }))
+              const newErrors = validatePreferences(transport, value, interests)
+              setErrors((prev) => ({ ...prev, paceLevel: newErrors.paceLevel || '' }))
             }}
             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-700"
           />
@@ -117,11 +116,11 @@ export default function PreferencePage() {
             <span className="text-xs text-gray-400">😴 Chill</span>
             <span className="text-xs text-gray-400">🔥 Intense</span>
           </div>
-          {errors.paceLevel && <p className="text-red-500 text-xs mt-2">{errors.paceLevel}</p>}
+          {errors.paceLevel && touched.paceLevel && <p className="text-red-500 text-xs mt-2">{errors.paceLevel}</p>}
         </div>
 
         {/* Interests */}
-        <div>
+        <div className={`rounded-xl p-2 ${errors.interests && touched.interests ? 'ring-2 ring-red-500' : ''}`}>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Your Interests</label>
           <div className="flex flex-wrap gap-2">
             {INTEREST_TAGS.map((tag) => {
@@ -131,10 +130,13 @@ export default function PreferencePage() {
                   key={tag}
                   type="button"
                   onClick={() => {
-                    toggleInterest(tag)
-                    if (errors.interests) {
-                      setErrors((prev) => ({ ...prev, interests: '' }))
-                    }
+                    const updatedInterests = active
+                      ? interests.filter((t) => t !== tag)
+                      : [...interests, tag]
+                    setInterests(updatedInterests)
+                    setTouched((prev) => ({ ...prev, interests: true }))
+                    const newErrors = validatePreferences(transport, paceLevel, updatedInterests)
+                    setErrors((prev) => ({ ...prev, interests: newErrors.interests || '' }))
                   }}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${active ? 'bg-blue-700 border-blue-700 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-700'}`}
                 >
@@ -143,7 +145,7 @@ export default function PreferencePage() {
               )
             })}
           </div>
-          {errors.interests && <p className="text-red-500 text-xs mt-2">{errors.interests}</p>}
+          {errors.interests && touched.interests && <p className="text-red-500 text-xs mt-2">{errors.interests}</p>}
         </div>
 
         {/* Toggle Preferences */}

@@ -22,27 +22,66 @@ export default function TripPlanPage() {
   })
 
   const [errors, setErrors] = useState({})
+  const [touched, setTouched] = useState({})
 
   const validateForm = () => {
     const newErrors = validateTripPlan(form)
+    setTouched({
+      city: true,
+      hotel: true,
+      startDate: true,
+      endDate: true,
+      maxAttractions: true,
+      budget: true,
+    })
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }))
-    // Clear error for this field when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: '' }))
-    }
+    const updatedForm = { ...form, [field]: value }
+    const newErrors = validateTripPlan(updatedForm)
+
+    setForm(updatedForm)
+    setTouched((prev) => ({ ...prev, [field]: true }))
+
+    setErrors((prev) => {
+      const nextErrors = { ...prev }
+      const fieldsToUpdate = [field]
+
+      // Date range validation can affect both date fields.
+      if (field === 'startDate' || field === 'endDate') {
+        fieldsToUpdate.push('startDate', 'endDate')
+      }
+
+      fieldsToUpdate.forEach((name) => {
+        if (newErrors[name]) {
+          nextErrors[name] = newErrors[name]
+        } else {
+          delete nextErrors[name]
+        }
+      })
+
+      return nextErrors
+    })
   }
 
   const handleBudget = (value) => {
-    setForm((prev) => ({ ...prev, budget: value }))
-    // Clear budget error when user selects
-    if (errors.budget) {
-      setErrors((prev) => ({ ...prev, budget: '' }))
-    }
+    const updatedForm = { ...form, budget: value }
+    const newErrors = validateTripPlan(updatedForm)
+
+    setForm(updatedForm)
+    setTouched((prev) => ({ ...prev, budget: true }))
+
+    setErrors((prev) => {
+      const nextErrors = { ...prev }
+      if (newErrors.budget) {
+        nextErrors.budget = newErrors.budget
+      } else {
+        delete nextErrors.budget
+      }
+      return nextErrors
+    })
   }
 
   const handleContinue = () => {
@@ -69,9 +108,9 @@ export default function TripPlanPage() {
             placeholder="e.g., Zambales"
             value={form.city}
             onChange={(e) => handleChange('city', e.target.value)}
-            className={`w-full px-4 py-3 rounded-xl border ${errors.city ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.city ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
+            className={`w-full px-4 py-3 rounded-xl border ${errors.city && touched.city ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.city && touched.city ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
           />
-          {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+          {errors.city && touched.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
         </div>
 
         {/* Hotel */}
@@ -85,7 +124,7 @@ export default function TripPlanPage() {
               placeholder="e.g., Zambales"
               value={form.hotel}
               onChange={(e) => handleChange('hotel', e.target.value)}
-              className={`w-full px-4 py-3 pr-12 rounded-xl border-2 ${errors.hotel ? 'border-red-500' : 'border-blue-700'} bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.hotel ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
+              className={`w-full px-4 py-3 pr-12 rounded-xl border-2 ${errors.hotel && touched.hotel ? 'border-red-500' : 'border-blue-700'} bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.hotel && touched.hotel ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
             />
             <button
               type="button"
@@ -97,7 +136,7 @@ export default function TripPlanPage() {
               </svg>
             </button>
           </div>
-          {errors.hotel && <p className="text-red-500 text-xs mt-1">{errors.hotel}</p>}
+          {errors.hotel && touched.hotel && <p className="text-red-500 text-xs mt-1">{errors.hotel}</p>}
         </div>
 
         {/* Start Time & End Time */}
@@ -110,9 +149,9 @@ export default function TripPlanPage() {
               type="date"
               value={form.startDate}
               onChange={(e) => handleChange('startDate', e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border ${errors.startDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.startDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
+              className={`w-full px-4 py-3 rounded-xl border ${errors.startDate && touched.startDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.startDate && touched.startDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
             />
-            {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>}
+            {errors.startDate && touched.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>}
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -122,9 +161,9 @@ export default function TripPlanPage() {
               type="date"
               value={form.endDate}
               onChange={(e) => handleChange('endDate', e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border ${errors.endDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.endDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
+              className={`w-full px-4 py-3 rounded-xl border ${errors.endDate && touched.endDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.endDate && touched.endDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
             />
-            {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>}
+            {errors.endDate && touched.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>}
           </div>
         </div>
 
@@ -154,9 +193,9 @@ export default function TripPlanPage() {
             placeholder="e.g., 5"
             value={form.maxAttractions}
             onChange={(e) => handleChange('maxAttractions', e.target.value)}
-            className={`w-full px-4 py-3 rounded-xl border ${errors.maxAttractions ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.maxAttractions ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
+            className={`w-full px-4 py-3 rounded-xl border ${errors.maxAttractions && touched.maxAttractions ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.maxAttractions && touched.maxAttractions ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
           />
-          {errors.maxAttractions && <p className="text-red-500 text-xs mt-1">{errors.maxAttractions}</p>}
+          {errors.maxAttractions && touched.maxAttractions && <p className="text-red-500 text-xs mt-1">{errors.maxAttractions}</p>}
         </div>
 
         {/* Budget */}
@@ -174,7 +213,7 @@ export default function TripPlanPage() {
                   flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-medium transition-all duration-200
                   ${form.budget === option.value
                     ? 'border-blue-700 bg-blue-700 text-white shadow-md shadow-blue-200'
-                    : `border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:text-blue-700 ${errors.budget ? 'ring-2 ring-red-500' : ''}`
+                    : `border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:text-blue-700 ${errors.budget && touched.budget ? 'ring-2 ring-red-500' : ''}`
                   }
                 `}
               >
@@ -183,7 +222,7 @@ export default function TripPlanPage() {
               </button>
             ))}
           </div>
-          {errors.budget && <p className="text-red-500 text-xs mt-1">{errors.budget}</p>}
+          {errors.budget && touched.budget && <p className="text-red-500 text-xs mt-1">{errors.budget}</p>}
         </div>
 
         {/* Continue Button */}
