@@ -11,12 +11,12 @@ export const validateTripPlan = (form) => {
     newErrors.hotel = ERROR_MESSAGES.HOTEL_REQUIRED
   }
 
-  if (!form.startTime) {
-    newErrors.startTime = ERROR_MESSAGES.START_TIME_REQUIRED
+  if (!form.startDate) {
+    newErrors.startDate = ERROR_MESSAGES.START_DATE_REQUIRED
   }
 
-  if (!form.endTime) {
-    newErrors.endTime = ERROR_MESSAGES.END_TIME_REQUIRED
+  if (!form.endDate) {
+    newErrors.endDate = ERROR_MESSAGES.END_DATE_REQUIRED
   }
 
   if (!form.maxAttractions || form.maxAttractions === '') {
@@ -29,10 +29,10 @@ export const validateTripPlan = (form) => {
     newErrors.budget = ERROR_MESSAGES.BUDGET_REQUIRED
   }
 
-  // Validate time range
-  if (form.startTime && form.endTime) {
-    if (form.startTime >= form.endTime) {
-      newErrors.endTime = ERROR_MESSAGES.END_TIME_AFTER_START
+  // Validate date range
+  if (form.startDate && form.endDate) {
+    if (form.startDate >= form.endDate) {
+      newErrors.endDate = ERROR_MESSAGES.END_DATE_AFTER_START
     }
   }
 

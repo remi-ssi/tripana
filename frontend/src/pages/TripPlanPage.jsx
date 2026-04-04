@@ -15,8 +15,8 @@ export default function TripPlanPage() {
   const [form, setForm] = useState({
     city: '',
     hotel: '',
-    startTime: '',
-    endTime: '',
+    startDate: '',
+    endDate: '',
     maxAttractions: '',
     budget: '',
   })
@@ -104,27 +104,27 @@ export default function TripPlanPage() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Start Time <span className="text-red-500">*</span>
+              Start Date <span className="text-red-500">*</span>
             </label>
             <input
-              type="time"
-              value={form.startTime}
-              onChange={(e) => handleChange('startTime', e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border ${errors.startTime ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.startTime ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
+              type="date"
+              value={form.startDate}
+              onChange={(e) => handleChange('startDate', e.target.value)}
+              className={`w-full px-4 py-3 rounded-xl border ${errors.startDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.startDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
             />
-            {errors.startTime && <p className="text-red-500 text-xs mt-1">{errors.startTime}</p>}
+            {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>}
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
-              End Time <span className="text-red-500">*</span>
+              End Date <span className="text-red-500">*</span>
             </label>
             <input
-              type="time"
-              value={form.endTime}
-              onChange={(e) => handleChange('endTime', e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border ${errors.endTime ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.endTime ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
+              type="date"
+              value={form.endDate}
+              onChange={(e) => handleChange('endDate', e.target.value)}
+              className={`w-full px-4 py-3 rounded-xl border ${errors.endDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.endDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
             />
-            {errors.endTime && <p className="text-red-500 text-xs mt-1">{errors.endTime}</p>}
+            {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>}
           </div>
         </div>
 
@@ -190,7 +190,7 @@ export default function TripPlanPage() {
         <button
           type="button"
           onClick={handleContinue}
-          disabled={Object.keys(errors).length > 0 || !form.city || !form.hotel || !form.startTime || !form.endTime || !form.maxAttractions || !form.budget}
+          disabled={Object.keys(errors).length > 0 || !form.city || !form.hotel || !form.startDate || !form.endDate || !form.maxAttractions || !form.budget}
           className="w-full py-4 rounded-2xl bg-blue-700 hover:bg-blue-800 active:bg-blue-900 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold text-base transition-colors duration-200 shadow-md shadow-blue-200 mt-2"
         >
           Continue to Select Attraction

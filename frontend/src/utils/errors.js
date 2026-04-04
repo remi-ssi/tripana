@@ -22,12 +22,12 @@ export const ERROR_MESSAGES = {
   // Trip Plan Error Messages
   CITY_REQUIRED: 'City is required',
   HOTEL_REQUIRED: 'Hotel is required',
-  START_TIME_REQUIRED: 'Start time is required',
-  END_TIME_REQUIRED: 'End time is required',
+  START_DATE_REQUIRED: 'Start date is required',
+  END_DATE_REQUIRED: 'End date is required',
+  END_DATE_AFTER_START: 'End date must be after start date',
   MAX_ATTRACTIONS_REQUIRED: 'Max attractions is required',
   MAX_ATTRACTIONS_INVALID: 'Max attractions must be between 1 and 20',
   BUDGET_REQUIRED: 'Budget is required',
-  END_TIME_AFTER_START: 'End time must be after start time',
 
   // Attractions Error Messages
   ATTRACTIONS_REQUIRED: 'Please select at least one attraction',
