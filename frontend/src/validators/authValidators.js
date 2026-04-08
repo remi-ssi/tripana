@@ -18,7 +18,7 @@ const validateLastName = (lastName) => {
 }
 
 // * Email validation
-const validateEmail = (email) => {
+export const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!email || !emailRegex.test(email)) {
     return ERROR_MESSAGES.INVALID_EMAIL

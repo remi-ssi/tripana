@@ -1,12 +1,32 @@
 import { useState } from "react";
+import { validateEmail } from "../validators/authValidators";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  const handleSubmit = () => {
-    if (email.trim()) {
+  const handleSubmit = (e) => {
+    if (e) e.preventDefault();
+
+    const emailError = validateEmail(email);
+    const formErrors = emailError ? { email: emailError } : null;
+    setErrors(formErrors || {});
+
+    if (!formErrors) {
       setSubmitted(true);
+    }
+  };
+
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value);
+
+    if (errors.email) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.email;
+        return next;
+      });
     }
   };
 
@@ -55,11 +75,18 @@ export default function ForgotPassword() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                onChange={handleEmailChange}
+                onKeyDown={(e) => e.key === "Enter" && handleSubmit(e)}
                 placeholder=""
-                className="w-full px-4 py-3 rounded-xl bg-gray-100 text-gray-800 text-sm outline-none focus:ring-2 focus:ring-blue-700 focus:bg-white transition-all duration-200 placeholder-gray-400"
+                className={`w-full px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 transition-all duration-200 placeholder-gray-400 ${
+                  errors.email
+                    ? "bg-red-100 text-red-800 border-2 border-red-500 focus:ring-red-400"
+                    : "bg-gray-100 text-gray-800 focus:ring-blue-700 focus:bg-white"
+                }`}
               />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+              )}
             </div>
 
             {/* Submit Button */}
