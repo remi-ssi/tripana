@@ -226,12 +226,13 @@ export default function Login({ onSwitchToSignup }) {
             {errors.password && <p className="text-red-500 text-xs mt-1 ml-1">{errors.password}</p>}
             {/* Forgot Password */}
             <div className="text-right mt-2">
-              <a
-                href="/forgot-password"
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password")}
                 className="text-sm italic text-gray-500 underline underline-offset-2 hover:text-blue-600 transition"
               >
                 Forgot Password
-              </a>
+              </button>
             </div>
 
             {/* Submit error */}

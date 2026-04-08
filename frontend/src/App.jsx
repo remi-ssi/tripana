@@ -8,6 +8,7 @@ import AttractionsPage from './pages/AttractionsPage'
 import PreferencePage from './pages/PreferencePage'
 import BreakPage from './pages/BreakPage'
 import SummaryPage from './pages/SummaryPage'
+import ForgotPassword from './pages/forgotPassword'
 import { AuthOnlyRoute, GuestOnlyRoute } from './routes/guards'
 
 function App() {
@@ -19,6 +20,14 @@ function App() {
           element={
             <GuestOnlyRoute>
               <Auth />
+            </GuestOnlyRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <GuestOnlyRoute>
+              <ForgotPassword />
             </GuestOnlyRoute>
           }
         />
