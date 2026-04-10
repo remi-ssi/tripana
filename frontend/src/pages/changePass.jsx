@@ -1,6 +1,13 @@
 import { useState } from "react";
+import {
+  validatePassword,
+  validatePasswordMatch,
+} from "../validators/authValidators";
+import { ERROR_MESSAGES } from "../utils/errors";
+import { useAuthStatus } from "../hooks/useAuthStatus";
 
 export default function ChangePasswordFull() {
+  const { isLoading, isAuthenticated } = useAuthStatus();
   const [oldPassword, setOldPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -9,20 +16,41 @@ export default function ChangePasswordFull() {
 
   const handleSubmit = () => {
     setError("");
-    if (!oldPassword || !password || !confirmPassword) {
-      setError("Please fill in all fields.");
+    if (isAuthenticated && !oldPassword) {
+      setError(ERROR_MESSAGES.OLD_PASSWORD_REQUIRED);
       return;
     }
-    if (password.length < 8) {
-      setError("New password must be at least 8 characters.");
+    if (!password) {
+      setError(ERROR_MESSAGES.NEW_PASSWORD_REQUIRED);
       return;
     }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+    if (!confirmPassword) {
+      setError(ERROR_MESSAGES.CONFIRM_PASSWORD_REQUIRED);
       return;
     }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
+
+    const matchError = validatePasswordMatch(password, confirmPassword);
+    if (matchError) {
+      setError(matchError || ERROR_MESSAGES.PASSWORDS_DONT_MATCH);
+      return;
+    }
+
     setSubmitted(true);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+        <p className="text-sm text-gray-500">Checking session...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4">
@@ -55,23 +83,26 @@ export default function ChangePasswordFull() {
 
         {/* Subtext */}
         <p className="text-gray-500 text-sm leading-relaxed mb-8">
-          Enter a new password to change your old password
+          {isAuthenticated
+            ? "Enter your current password and choose a new one"
+            : "Create your new password"}
         </p>
 
         {!submitted ? (
           <>
-            {/* Old Password */}
-            <div className="text-left mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Old Password
-              </label>
-              <input
-                type="password"
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-gray-100 text-gray-800 text-sm outline-none focus:ring-2 focus:ring-blue-700 focus:bg-white transition-all duration-200"
-              />
-            </div>
+            {isAuthenticated && (
+              <div className="text-left mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Old Password
+                </label>
+                <input
+                  type="password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-gray-100 text-gray-800 text-sm outline-none focus:ring-2 focus:ring-blue-700 focus:bg-white transition-all duration-200"
+                />
+              </div>
+            )}
 
             {/* New Password */}
             <div className="text-left mb-4">

@@ -10,6 +10,9 @@ export const ERROR_MESSAGES = {
   PASSWORD_MISSING_LOWERCASE: 'Password must contain at least 1 lowercase letter.',
   PASSWORD_MISSING_NUMBER: 'Password must contain at least 1 number.',
   PASSWORD_MISSING_SPECIAL_CHAR: 'Password must contain at least 1 special character (!@#$%^&*).',
+  OLD_PASSWORD_REQUIRED: 'Old password is required.',
+  NEW_PASSWORD_REQUIRED: 'New password is required.',
+  CONFIRM_PASSWORD_REQUIRED: 'Please confirm your new password.',
   PASSWORDS_DONT_MATCH: 'Passwords do not match.',
   
   // OTP-related messages
