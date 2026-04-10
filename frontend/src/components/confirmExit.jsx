@@ -1,17 +1,11 @@
-import { useState } from "react";
-
-export default function LeavePageModal({ onStay, onLeave, isOpen = true }) {
-  const [visible, setVisible] = useState(isOpen);
-
-  if (!visible) return null;
+export default function LeavePageModal({ onStay, onLeave, isOpen = false }) {
+  if (!isOpen) return null;
 
   const handleStay = () => {
-    setVisible(false);
     onStay?.();
   };
 
   const handleLeave = () => {
-    setVisible(false);
     onLeave?.();
   };
 

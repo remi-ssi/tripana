@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { validateEmail } from "../validators/authValidators";
 import { authService } from "../api/authService";
 import OTPModal from "../components/otpModal";
+import EarthLoader from "../components/loadingIndicator";
 import { ERROR_MESSAGES } from "../utils/errors";
 
 export default function ForgotPassword() {
@@ -11,6 +12,7 @@ export default function ForgotPassword() {
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
   const [showOTPModal, setShowOTPModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
@@ -20,6 +22,7 @@ export default function ForgotPassword() {
     setErrors(formErrors || {});
 
     if (!formErrors) {
+      setIsLoading(true);
       try {
         // Added: start forgot-password flow by sending OTP if user exists.
         await authService.forgotPassword(email);
@@ -28,6 +31,8 @@ export default function ForgotPassword() {
       } catch (error) {
         const message = error?.message || ERROR_MESSAGES.USER_NOT_EXISTS;
         setErrors({ submit: message });
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -78,8 +83,16 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
-      <div className="w-full max-w-md text-center">
+    <>
+      {isLoading && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl p-8">
+            <EarthLoader />
+          </div>
+        </div>
+      )}
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+        <div className="w-full max-w-md text-center">
         {/* Lock Icon */}
         <div className="flex justify-center mb-5">
           <div className="w-14 h-14 bg-blue-700 rounded-xl flex items-center justify-center shadow-md">
@@ -139,9 +152,10 @@ export default function ForgotPassword() {
             {/* Submit Button */}
             <button
               onClick={handleSubmit}
-              className="w-full py-3 bg-blue-700 hover:bg-blue-800 active:scale-[0.98] text-white font-semibold rounded-full text-sm transition-all duration-200 shadow-sm mb-4"
+              disabled={isLoading}
+              className="w-full py-3 bg-blue-700 hover:bg-blue-800 active:scale-[0.98] text-white font-semibold rounded-full text-sm transition-all duration-200 shadow-sm mb-4 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Submit
+              {isLoading ? "Loading..." : "Submit"}
             </button>
 
             {errors.submit && (
@@ -161,6 +175,7 @@ export default function ForgotPassword() {
         >
           Back to Login
         </a>
+        </div>
       </div>
 
       {/* Added: OTP modal for forgot-password flow. */}
@@ -171,6 +186,6 @@ export default function ForgotPassword() {
         onVerify={handleVerifyOTP}
         onResend={handleResendOTP}
       />
-    </div>
+    </>
   );
 }

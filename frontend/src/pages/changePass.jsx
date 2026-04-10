@@ -7,6 +7,8 @@ import {
 import { ERROR_MESSAGES } from "../utils/errors";
 import { useAuthStatus } from "../hooks/useAuthStatus";
 import { authService } from "../api/authService";
+import EarthLoader from "../components/loadingIndicator";
+import LeavePageModal from "../components/confirmExit";
 
 export default function ChangePasswordFull() {
   const navigate = useNavigate();
@@ -19,6 +21,10 @@ export default function ChangePasswordFull() {
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showConfirmExit, setShowConfirmExit] = useState(false);
 
   const handleSubmit = async () => {
     setError("");
@@ -71,16 +77,73 @@ export default function ChangePasswordFull() {
     }
   };
 
+  const handleExitStay = () => {
+    setShowConfirmExit(false);
+  };
+
+  const handleExitLeave = async () => {
+    setShowConfirmExit(false);
+
+    // Clear local form state before leaving.
+    setOldPassword("");
+    setPassword("");
+    setConfirmPassword("");
+    setError("");
+    setSubmitted(false);
+
+    // Best-effort token cleanup via logout cookie clear.
+    try {
+      await authService.logout();
+    } catch {
+      // Ignore logout failure and still continue navigation.
+    }
+
+    navigate("/login", { replace: true });
+  };
+
+  const EyeIcon = ({ open }) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-5 h-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.8}
+    >
+      {open ? (
+        <>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+          <circle cx="12" cy="12" r="3" />
+        </>
+      ) : (
+        <>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+          <line x1="1" y1="1" x2="23" y2="23" strokeLinecap="round" />
+        </>
+      )}
+    </svg>
+  );
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center px-4">
-        <p className="text-sm text-gray-500">Checking session...</p>
+        <EarthLoader />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
+    <>
+      {isSubmitting && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl p-8">
+            <EarthLoader />
+          </div>
+        </div>
+      )}
+
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
       <div className="w-full max-w-md text-center">
 
         {/* Lock Icon */}
@@ -122,12 +185,21 @@ export default function ChangePasswordFull() {
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Old Password
                 </label>
-                <input
-                  type="password"
-                  value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-100 text-gray-800 text-sm outline-none focus:ring-2 focus:ring-blue-700 focus:bg-white transition-all duration-200"
-                />
+                <div className="relative">
+                  <input
+                    type={showOldPassword ? "text" : "password"}
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    className="w-full px-4 py-3 pr-12 rounded-xl bg-gray-100 text-gray-800 text-sm outline-none focus:ring-2 focus:ring-blue-700 focus:bg-white transition-all duration-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOldPassword((prev) => !prev)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-700 transition"
+                  >
+                    <EyeIcon open={showOldPassword} />
+                  </button>
+                </div>
               </div>
             )}
 
@@ -136,12 +208,21 @@ export default function ChangePasswordFull() {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Password
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-gray-100 text-gray-800 text-sm outline-none focus:ring-2 focus:ring-blue-700 focus:bg-white transition-all duration-200"
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 pr-12 rounded-xl bg-gray-100 text-gray-800 text-sm outline-none focus:ring-2 focus:ring-blue-700 focus:bg-white transition-all duration-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword((prev) => !prev)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-700 transition"
+                >
+                  <EyeIcon open={showNewPassword} />
+                </button>
+              </div>
             </div>
 
             {/* Confirm Password */}
@@ -149,13 +230,22 @@ export default function ChangePasswordFull() {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Confirm Password
               </label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                className="w-full px-4 py-3 rounded-xl bg-gray-100 text-gray-800 text-sm outline-none focus:ring-2 focus:ring-blue-700 focus:bg-white transition-all duration-200"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  className="w-full px-4 py-3 pr-12 rounded-xl bg-gray-100 text-gray-800 text-sm outline-none focus:ring-2 focus:ring-blue-700 focus:bg-white transition-all duration-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-700 transition"
+                >
+                  <EyeIcon open={showConfirmPassword} />
+                </button>
+              </div>
             </div>
 
             {/* Error */}
@@ -181,12 +271,19 @@ export default function ChangePasswordFull() {
         {/* Back to Login */}
         <button
           type="button"
-          onClick={() => navigate("/login")}
+          onClick={() => setShowConfirmExit(true)}
           className="text-sm text-blue-700 hover:text-blue-900 hover:underline transition-colors duration-150"
         >
           Back to Login
         </button>
       </div>
-    </div>
+      </div>
+
+      <LeavePageModal
+        isOpen={showConfirmExit}
+        onStay={handleExitStay}
+        onLeave={handleExitLeave}
+      />
+    </>
   );
 }

@@ -26,8 +26,8 @@ export const validateEmail = (email) => {
   return null
 }
 
-//Password validation
-const validatePassword = (password) => {
+// * Password validation
+export const validatePassword = (password) => {
   if (!password || password.length < 8) {
     return ERROR_MESSAGES.PASSWORD_TOO_SHORT
   }
@@ -46,23 +46,15 @@ const validatePassword = (password) => {
   return null
 }
 
-//Confirm password validation
-const validatePasswordMatch = (password, confirmPassword) => {
+// * Confirm password validation
+export const validatePasswordMatch = (password, confirmPassword) => {
   if (password !== confirmPassword) {
     return ERROR_MESSAGES.PASSWORDS_DONT_MATCH
   }
   return null
 }
 
-// Check for empty first and last names
-    const validateName = (fname, lname) => {
-      if ((!fname || fname.trim() === '') && (!lname || lname.trim() === '')) {
-        return ERROR_MESSAGES.NAME_REQUIRED
-      }
-      return null
-    }
-
-//Validate login form
+// * Validate login form
 export const validateLoginForm = (email, password) => {
   const errors = {}
 
@@ -73,12 +65,12 @@ export const validateLoginForm = (email, password) => {
     errors.password = 'Password is required'
   }
   const passwordError = validatePassword(password)
-  if (passwordError) errors.password = passwordError  
+  if (passwordError) errors.password = passwordError
 
   return Object.keys(errors).length > 0 ? errors : null
 }
 
-//Validate registration form
+// * Validate registration form
 export const validateRegisterForm = (firstName, lastName, email, password, confirmPassword) => {
   const errors = {}
 
