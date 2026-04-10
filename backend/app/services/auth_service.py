@@ -339,3 +339,5 @@ async def finish_login(email: str, code: str, db: AsyncSession) -> dict:
         return {"error": "Invalid Credentials"}
 
     return _build_auth_response(user)
+
+

@@ -9,6 +9,7 @@ import PreferencePage from './pages/PreferencePage'
 import BreakPage from './pages/BreakPage'
 import SummaryPage from './pages/SummaryPage'
 import ForgotPassword from './pages/forgotPassword'
+import ChangePasswordFull from './pages/changePass'
 import { AuthOnlyRoute, GuestOnlyRoute } from './routes/guards'
 
 function App() {
@@ -31,6 +32,8 @@ function App() {
             </GuestOnlyRoute>
           }
         />
+        {/* Added: shared change-password page for logged-in and forgot-password flows. */}
+        <Route path="/change-password" element={<ChangePasswordFull />} />
         <Route
           path="/user-preference"
           element={

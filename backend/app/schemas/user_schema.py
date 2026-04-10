@@ -46,6 +46,24 @@ class VerifyLoginOTPRequest(BaseModel):
     email: EmailStr
     code: str
 
+
+# Forgot-password OTP verification request
+class VerifyForgotOTPRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+
+# Reset password using a temporary reset token
+class ResetPasswordRequest(BaseModel):
+    reset_token: str
+    new_password: str
+
+
+# Change password for an authenticated user
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
 # Response model for successful login, containing the access token and token type
 class TokenResponse(BaseModel):
     access_token: str

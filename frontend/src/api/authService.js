@@ -122,6 +122,48 @@ export const authService = {
       throw new Error(error.message || 'Failed to cancel OTP session')
     }
   },
+
+  // Forgot-password step 1: send OTP if email exists
+  forgotPassword: async (email) => {
+    try {
+      return await apiClient.post('/auth/forgot-password', { email })
+    } catch (error) {
+      throw new Error(error.message || 'Failed to process forgot password request')
+    }
+  },
+
+  // Forgot-password step 2: verify OTP and receive reset token
+  verifyForgotOTP: async (email, otp) => {
+    try {
+      return await apiClient.post('/auth/verify-forgot-otp', { email, code: otp })
+    } catch (error) {
+      throw new Error(error.message || ERROR_MESSAGES.OTP_INVALID)
+    }
+  },
+
+  // Forgot-password step 3: set a new password using reset token
+  resetPassword: async (resetToken, newPassword) => {
+    try {
+      return await apiClient.post('/auth/reset-password', {
+        reset_token: resetToken,
+        new_password: newPassword,
+      })
+    } catch (error) {
+      throw new Error(error.message || 'Failed to reset password')
+    }
+  },
+
+  // Logged-in password change
+  changePassword: async (oldPassword, newPassword) => {
+    try {
+      return await apiClient.post('/auth/change-password', {
+        old_password: oldPassword,
+        new_password: newPassword,
+      })
+    } catch (error) {
+      throw new Error(error.message || 'Failed to change password')
+    }
+  },
   
 // Check if user exists before registration
   checkUserExists: async (email) => {

@@ -14,6 +14,10 @@ export const ERROR_MESSAGES = {
   NEW_PASSWORD_REQUIRED: 'New password is required.',
   CONFIRM_PASSWORD_REQUIRED: 'Please confirm your new password.',
   PASSWORDS_DONT_MATCH: 'Passwords do not match.',
+  USER_NOT_EXISTS: 'User doesnt exists',
+  PASSWORD_CHANGE_FAILED: 'Failed to change password. Please try again.',
+  PASSWORD_CHANGE_SUCCESS: 'Your password has been changed successfully.',
+  RESET_TOKEN_INVALID: 'Invalid or expired reset link. Please try forgot password again.',
   
   // OTP-related messages
   OTP_BLOCKED: 'Oops! Too Many Failed Attempts. Please try again later.',

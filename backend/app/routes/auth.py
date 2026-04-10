@@ -15,10 +15,14 @@ from app.schemas.user_schema import (
     ResendOTPRequest,
     LoginRequest,
     VerifyLoginOTPRequest,
+    VerifyForgotOTPRequest,
+    ResetPasswordRequest,
+    ChangePasswordRequest,
     PreferenceUpdateRequest,
 )
 from app.services.auth_service import (send_otp, start_signup, finish_signup, finish_login, start_login, cancel_active_otp)
 from app.services.auth_service import login_or_register_google_user
+from app.services.password_service import (start_forgot_password, verify_forgot_password_otp, reset_password_with_token, change_password_authenticated)
 from app.services.user_preference_service import UserPreferenceService
 from app.utils.auth import clear_auth_cookie, get_current_user, set_auth_cookie
 
@@ -74,6 +78,24 @@ async def _verify_login_impl(data: VerifyLoginOTPRequest, db: AsyncSession):
 
 async def _cancel_otp_impl(data: ResendOTPRequest, db: AsyncSession):
     return await cancel_active_otp(data.email, db)
+
+
+async def _forgot_password_impl(data: ResendOTPRequest, db: AsyncSession):
+    result = await start_forgot_password(data.email, db)
+    _raise_if_error(result)
+    return result
+
+
+async def _verify_forgot_otp_impl(data: VerifyForgotOTPRequest, db: AsyncSession):
+    result = await verify_forgot_password_otp(data.email, data.code, db)
+    _raise_if_error(result)
+    return result
+
+
+async def _reset_password_impl(data: ResetPasswordRequest, db: AsyncSession):
+    result = await reset_password_with_token(data.reset_token, data.new_password, db)
+    _raise_if_error(result)
+    return result
 
 def _user_payload(user: User) -> dict:
     return {
@@ -245,6 +267,36 @@ async def verify_login(
 async def cancel_otp(data: ResendOTPRequest, db: AsyncSession = Depends(get_db)):
     """Invalidate active OTP when user exits the OTP modal."""
     return await _cancel_otp_impl(data, db)
+
+
+# Forgot-password step 1: send OTP if user email exists.
+@router.post("/forgot-password")
+async def forgot_password(data: ResendOTPRequest, db: AsyncSession = Depends(get_db)):
+    return await _forgot_password_impl(data, db)
+
+
+# Forgot-password step 2: verify OTP and return reset token.
+@router.post("/verify-forgot-otp")
+async def verify_forgot_otp(data: VerifyForgotOTPRequest, db: AsyncSession = Depends(get_db)):
+    return await _verify_forgot_otp_impl(data, db)
+
+
+# Forgot-password step 3: set new password using reset token.
+@router.post("/reset-password")
+async def reset_password(data: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    return await _reset_password_impl(data, db)
+
+
+# Logged-in password change: require current password.
+@router.post("/change-password")
+async def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await change_password_authenticated(current_user, data.old_password, data.new_password, db)
+    _raise_if_error(result)
+    return result
 
 
 @router.post("/logout")

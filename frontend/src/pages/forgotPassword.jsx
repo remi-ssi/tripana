@@ -1,12 +1,18 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { validateEmail } from "../validators/authValidators";
+import { authService } from "../api/authService";
+import OTPModal from "../components/otpModal";
+import { ERROR_MESSAGES } from "../utils/errors";
 
 export default function ForgotPassword() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showOTPModal, setShowOTPModal] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     if (e) e.preventDefault();
 
     const emailError = validateEmail(email);
@@ -14,7 +20,15 @@ export default function ForgotPassword() {
     setErrors(formErrors || {});
 
     if (!formErrors) {
-      setSubmitted(true);
+      try {
+        // Added: start forgot-password flow by sending OTP if user exists.
+        await authService.forgotPassword(email);
+        setSubmitted(true);
+        setShowOTPModal(true);
+      } catch (error) {
+        const message = error?.message || ERROR_MESSAGES.USER_NOT_EXISTS;
+        setErrors({ submit: message });
+      }
     }
   };
 
@@ -27,6 +41,39 @@ export default function ForgotPassword() {
         delete next.email;
         return next;
       });
+    }
+  };
+
+  const handleVerifyOTP = async (otp) => {
+    try {
+      // Added: verify forgot-password OTP and retrieve temporary reset token.
+      const result = await authService.verifyForgotOTP(email, otp);
+      const resetToken = result?.reset_token;
+      if (!resetToken) {
+        throw new Error(ERROR_MESSAGES.RESET_TOKEN_INVALID);
+      }
+
+      navigate(`/change-password?resetToken=${encodeURIComponent(resetToken)}`, {
+        replace: true,
+      });
+    } catch (error) {
+      throw new Error(error?.message || ERROR_MESSAGES.OTP_INVALID);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    try {
+      await authService.resendOTP(email);
+    } catch (error) {
+      throw new Error(error?.message || ERROR_MESSAGES.OTP_RESEND_FAILED);
+    }
+  };
+
+  const handleCloseOTPModal = async () => {
+    try {
+      await authService.cancelOTP(email);
+    } finally {
+      setShowOTPModal(false);
     }
   };
 
@@ -96,6 +143,10 @@ export default function ForgotPassword() {
             >
               Submit
             </button>
+
+            {errors.submit && (
+              <p className="text-red-500 text-xs mt-1 mb-2">{errors.submit}</p>
+            )}
           </>
         ) : (
           <div className="mb-4 px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 font-medium">
@@ -111,6 +162,15 @@ export default function ForgotPassword() {
           Back to Login
         </a>
       </div>
+
+      {/* Added: OTP modal for forgot-password flow. */}
+      <OTPModal
+        isOpen={showOTPModal}
+        onClose={handleCloseOTPModal}
+        email={email}
+        onVerify={handleVerifyOTP}
+        onResend={handleResendOTP}
+      />
     </div>
   );
 }

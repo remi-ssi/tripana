@@ -1,21 +1,33 @@
 import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   validatePassword,
   validatePasswordMatch,
 } from "../validators/authValidators";
 import { ERROR_MESSAGES } from "../utils/errors";
 import { useAuthStatus } from "../hooks/useAuthStatus";
+import { authService } from "../api/authService";
 
 export default function ChangePasswordFull() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { isLoading, isAuthenticated } = useAuthStatus();
+  const resetToken = new URLSearchParams(location.search).get("resetToken") || "";
   const [oldPassword, setOldPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError("");
+
+    if (!isAuthenticated && !resetToken) {
+      setError(ERROR_MESSAGES.RESET_TOKEN_INVALID);
+      return;
+    }
+
     if (isAuthenticated && !oldPassword) {
       setError(ERROR_MESSAGES.OLD_PASSWORD_REQUIRED);
       return;
@@ -41,7 +53,22 @@ export default function ChangePasswordFull() {
       return;
     }
 
-    setSubmitted(true);
+    try {
+      setIsSubmitting(true);
+
+      // Added: route the request by flow type (logged-in vs forgot-password).
+      if (isAuthenticated) {
+        await authService.changePassword(oldPassword, password);
+      } else {
+        await authService.resetPassword(resetToken, password);
+      }
+
+      setSubmitted(true);
+    } catch (submitError) {
+      setError(submitError?.message || ERROR_MESSAGES.PASSWORD_CHANGE_FAILED);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -139,24 +166,26 @@ export default function ChangePasswordFull() {
             {/* Submit Button */}
             <button
               onClick={handleSubmit}
+              disabled={isSubmitting}
               className="w-full mt-7 py-3 bg-blue-700 hover:bg-blue-800 active:scale-[0.98] text-white font-semibold rounded-full text-sm transition-all duration-200 shadow-sm mb-4"
             >
-              Change Password
+              {isSubmitting ? "Updating..." : "Change Password"}
             </button>
           </>
         ) : (
           <div className="mb-4 px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 font-medium">
-            ✓ Your password has been changed successfully.
+            ✓ {ERROR_MESSAGES.PASSWORD_CHANGE_SUCCESS}
           </div>
         )}
 
         {/* Back to Login */}
-        <a
-          href="/login"
+        <button
+          type="button"
+          onClick={() => navigate("/login")}
           className="text-sm text-blue-700 hover:text-blue-900 hover:underline transition-colors duration-150"
         >
           Back to Login
-        </a>
+        </button>
       </div>
     </div>
   );
