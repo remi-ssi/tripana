@@ -19,6 +19,7 @@ export default function ChangePasswordFull() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showOldPassword, setShowOldPassword] = useState(false);
@@ -28,6 +29,7 @@ export default function ChangePasswordFull() {
 
   const handleSubmit = async () => {
     setError("");
+    const nextFieldErrors = {};
 
     if (!isAuthenticated && !resetToken) {
       setError(ERROR_MESSAGES.RESET_TOKEN_INVALID);
@@ -35,29 +37,36 @@ export default function ChangePasswordFull() {
     }
 
     if (isAuthenticated && !oldPassword) {
-      setError(ERROR_MESSAGES.OLD_PASSWORD_REQUIRED);
-      return;
+      nextFieldErrors.oldPassword = ERROR_MESSAGES.OLD_PASSWORD_REQUIRED;
     }
     if (!password) {
-      setError(ERROR_MESSAGES.NEW_PASSWORD_REQUIRED);
-      return;
+      nextFieldErrors.password = ERROR_MESSAGES.NEW_PASSWORD_REQUIRED;
     }
     if (!confirmPassword) {
-      setError(ERROR_MESSAGES.CONFIRM_PASSWORD_REQUIRED);
+      nextFieldErrors.confirmPassword = ERROR_MESSAGES.CONFIRM_PASSWORD_REQUIRED;
+    }
+
+    if (password) {
+      const passwordError = validatePassword(password);
+      if (passwordError) {
+        nextFieldErrors.password = passwordError;
+      }
+    }
+
+    if (password && confirmPassword) {
+      const matchError = validatePasswordMatch(password, confirmPassword);
+      if (matchError) {
+        nextFieldErrors.confirmPassword =
+          matchError || ERROR_MESSAGES.PASSWORDS_DONT_MATCH;
+      }
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
       return;
     }
 
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      setError(passwordError);
-      return;
-    }
-
-    const matchError = validatePasswordMatch(password, confirmPassword);
-    if (matchError) {
-      setError(matchError || ERROR_MESSAGES.PASSWORDS_DONT_MATCH);
-      return;
-    }
+    setFieldErrors({});
 
     try {
       setIsSubmitting(true);
@@ -89,6 +98,7 @@ export default function ChangePasswordFull() {
     setPassword("");
     setConfirmPassword("");
     setError("");
+    setFieldErrors({});
     setSubmitted(false);
 
     // Best-effort token cleanup via logout cookie clear.
@@ -189,8 +199,21 @@ export default function ChangePasswordFull() {
                   <input
                     type={showOldPassword ? "text" : "password"}
                     value={oldPassword}
-                    onChange={(e) => setOldPassword(e.target.value)}
-                    className="w-full px-4 py-3 pr-12 rounded-xl bg-gray-100 text-gray-800 text-sm outline-none focus:ring-2 focus:ring-blue-700 focus:bg-white transition-all duration-200"
+                    onChange={(e) => {
+                      setOldPassword(e.target.value);
+                      if (fieldErrors.oldPassword) {
+                        setFieldErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.oldPassword;
+                          return next;
+                        });
+                      }
+                    }}
+                    className={`w-full px-4 py-3 pr-12 rounded-xl text-sm outline-none focus:ring-2 transition-all duration-200 ${
+                      fieldErrors.oldPassword
+                        ? "bg-red-100 text-red-800 border-2 border-red-500 focus:ring-red-400"
+                        : "bg-gray-100 text-gray-800 focus:ring-blue-700 focus:bg-white"
+                    }`}
                   />
                   <button
                     type="button"
@@ -200,6 +223,9 @@ export default function ChangePasswordFull() {
                     <EyeIcon open={showOldPassword} />
                   </button>
                 </div>
+                {fieldErrors.oldPassword && (
+                  <p className="text-red-500 text-xs mt-1">{fieldErrors.oldPassword}</p>
+                )}
               </div>
             )}
 
@@ -212,8 +238,21 @@ export default function ChangePasswordFull() {
                 <input
                   type={showNewPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-12 rounded-xl bg-gray-100 text-gray-800 text-sm outline-none focus:ring-2 focus:ring-blue-700 focus:bg-white transition-all duration-200"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (fieldErrors.password) {
+                      setFieldErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.password;
+                        return next;
+                      });
+                    }
+                  }}
+                  className={`w-full px-4 py-3 pr-12 rounded-xl text-sm outline-none focus:ring-2 transition-all duration-200 ${
+                    fieldErrors.password
+                      ? "bg-red-100 text-red-800 border-2 border-red-500 focus:ring-red-400"
+                      : "bg-gray-100 text-gray-800 focus:ring-blue-700 focus:bg-white"
+                  }`}
                 />
                 <button
                   type="button"
@@ -223,6 +262,9 @@ export default function ChangePasswordFull() {
                   <EyeIcon open={showNewPassword} />
                 </button>
               </div>
+              {fieldErrors.password && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>
+              )}
             </div>
 
             {/* Confirm Password */}
@@ -234,9 +276,22 @@ export default function ChangePasswordFull() {
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (fieldErrors.confirmPassword) {
+                      setFieldErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.confirmPassword;
+                        return next;
+                      });
+                    }
+                  }}
                   onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                  className="w-full px-4 py-3 pr-12 rounded-xl bg-gray-100 text-gray-800 text-sm outline-none focus:ring-2 focus:ring-blue-700 focus:bg-white transition-all duration-200"
+                  className={`w-full px-4 py-3 pr-12 rounded-xl text-sm outline-none focus:ring-2 transition-all duration-200 ${
+                    fieldErrors.confirmPassword
+                      ? "bg-red-100 text-red-800 border-2 border-red-500 focus:ring-red-400"
+                      : "bg-gray-100 text-gray-800 focus:ring-blue-700 focus:bg-white"
+                  }`}
                 />
                 <button
                   type="button"
@@ -246,6 +301,9 @@ export default function ChangePasswordFull() {
                   <EyeIcon open={showConfirmPassword} />
                 </button>
               </div>
+              {fieldErrors.confirmPassword && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.confirmPassword}</p>
+              )}
             </div>
 
             {/* Error */}
