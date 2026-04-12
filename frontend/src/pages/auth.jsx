@@ -1,10 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Login from '../components/login'
 import Signup from '../components/signup'
 import logo from '../assets/fullLogo.png'
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true)
+  const [searchParams] = useSearchParams()
+  const mode = searchParams.get('mode')
+  const [isLogin, setIsLogin] = useState(mode !== 'signup')
+
+  useEffect(() => {
+    setIsLogin(mode !== 'signup')
+  }, [mode])
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">

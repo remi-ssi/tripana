@@ -10,6 +10,7 @@ import BreakPage from './pages/BreakPage'
 import SummaryPage from './pages/SummaryPage'
 import ForgotPassword from './pages/forgotPassword'
 import ChangePasswordFull from './pages/changePass'
+import LandingPage from './pages/landing_page'
 import { AuthOnlyRoute, GuestOnlyRoute } from './routes/guards'
 
 function App() {
@@ -90,7 +91,7 @@ function App() {
             </AuthOnlyRoute>
           }
         />
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<LandingPage />} />
       </Routes>
     </BrowserRouter>
   )
