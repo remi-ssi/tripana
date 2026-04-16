@@ -3,11 +3,14 @@
 import random
 import secrets
 import string
+import asyncio
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import delete, func, or_, select, update
+from typing import Optional
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.otp import OTPCode
 from app.models.user import User
 from app.services.email_service import send_otp_email
 from app.utils.auth import create_access_token
@@ -20,34 +23,74 @@ MAX_RESEND_ATTEMPTS = 5 # 5 resend attempts allowed per session before blocking
 MAX_VERIFY_ATTEMPTS = 5 # 5 failed verification attempts allowed per session before blocking
 VERIFY_BLOCK_MINUTES = 15 # 15 minute block after too many failed attempts
 
-# Cleanup old used OTPs to prevent DB bloat. This is called before any OTP generation or verification.
+
+@dataclass
+class InMemoryOTPCode:
+    email: str
+    hashed_code: str
+    created_at: datetime
+    expires_at: datetime
+    is_used: bool = False
+    attempts: int = 0
+
+
+@dataclass
+class OTPEmailState:
+    entries: list[InMemoryOTPCode] = field(default_factory=list)
+    blocked_until: Optional[datetime] = None
+    resend_count: int = 0
+    last_sent_at: Optional[datetime] = None
+
+
+OTP_STORE: dict[str, OTPEmailState] = {}
+OTP_STORE_LOCK = asyncio.Lock()
+
+
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
+def _active_entries(state: OTPEmailState, now: datetime) -> list[InMemoryOTPCode]:
+    return [entry for entry in state.entries if (not entry.is_used and entry.expires_at > now)]
+
+# Cleanup old/expired in-memory OTP entries.
 async def cleanup_old_used_otps(db: AsyncSession, now: datetime) -> None:
-    await db.execute(
-        delete(OTPCode).where(
-            OTPCode.is_used == True,
-            or_(
-                OTPCode.deleted_at <= now,
-                (
-                    OTPCode.deleted_at.is_(None)
-                    & (OTPCode.created_at <= now - timedelta(days=USED_OTP_RETENTION_DAYS))
-                ),
-            ),
-        )
-    )
-    await db.commit()
+    del db
+    cutoff = now - timedelta(days=USED_OTP_RETENTION_DAYS)
+
+    async with OTP_STORE_LOCK:
+        removable_emails = []
+        for email, state in OTP_STORE.items():
+            state.entries = [
+                entry
+                for entry in state.entries
+                if (not entry.is_used and entry.expires_at > now)
+                or (entry.is_used and entry.created_at > cutoff)
+            ]
+
+            if state.blocked_until and state.blocked_until <= now:
+                state.blocked_until = None
+
+            if not state.entries and not state.blocked_until:
+                removable_emails.append(email)
+
+        for email in removable_emails:
+            OTP_STORE.pop(email, None)
 
 # return active block timestamp for this email, or None.
 async def get_block_until(email: str, db: AsyncSession, now: datetime):
-    active_block_stmt = (
-        select(OTPCode.blocked_until)
-        .where(
-            OTPCode.email == email,
-            OTPCode.blocked_until.is_not(None),
-            OTPCode.blocked_until > now,
-        )
-        .order_by(OTPCode.blocked_until.desc())
-    )
-    return (await db.execute(active_block_stmt)).scalars().first()
+    del db
+    normalized_email = _normalize_email(email)
+    async with OTP_STORE_LOCK:
+        state = OTP_STORE.get(normalized_email)
+        if not state or not state.blocked_until:
+            return None
+
+        if state.blocked_until <= now:
+            state.blocked_until = None
+            return None
+
+        return state.blocked_until
 
 # Check if user is currently blocked due to too many attempts, and return error message if so.
 async def block_error(email: str, db: AsyncSession, now: datetime):
@@ -61,73 +104,55 @@ async def block_error(email: str, db: AsyncSession, now: datetime):
 
 # Validate the provided OTP code for the email, returning the OTP object if valid or an error message if not.
 async def validate_otp(email: str, code: str, db: AsyncSession, now: datetime):
-    otp_stmt = (
-        select(OTPCode)
-        .where(
-            OTPCode.email == email,
-            OTPCode.is_used == False,
-            OTPCode.expires_at > now,
-        )
-        .order_by(OTPCode.created_at.desc())
-    )
-    otp_candidates = (await db.execute(otp_stmt)).scalars().all()
-    otp = next((item for item in otp_candidates if verify_password(code, item.hashed_code)), None)
+    del db
+    normalized_email = _normalize_email(email)
 
-    if otp:
-        return otp, None
+    async with OTP_STORE_LOCK:
+        state = OTP_STORE.get(normalized_email)
+        if not state:
+            return None, {"error": "Invalid or expired code."}
 
-    latest_otp = otp_candidates[0] if otp_candidates else None
-    if latest_otp:
-        latest_otp.attempts = (latest_otp.attempts or 0) + 1
-        await db.commit()
-   
-    # Count failed attempts for active OTP session(s), regardless of elapsed time.
-    attempts_stmt = (
-        select(func.coalesce(func.sum(OTPCode.attempts), 0))
-        .where(
-            OTPCode.email == email,
-            OTPCode.is_used == False,
-            OTPCode.expires_at > now,
-        )
-    )
-    attempt_count = int((await db.execute(attempts_stmt)).scalar_one())
+        otp_candidates = sorted(_active_entries(state, now), key=lambda item: item.created_at, reverse=True)
+        otp = next((item for item in otp_candidates if verify_password(code, item.hashed_code)), None)
 
-    if attempt_count >= MAX_VERIFY_ATTEMPTS:
-        block_until = now + timedelta(minutes=VERIFY_BLOCK_MINUTES)
-        await db.execute(
-            update(OTPCode)
-            .where(OTPCode.email == email)
-            .values(blocked_until=block_until)
-        )
-        await db.commit()
-        return None, {"error": f"Too many attempts. Verification blocked for {VERIFY_BLOCK_MINUTES} minutes."}
+        if otp:
+            return otp, None
 
-    return None, {"error": "Invalid or expired code."}
+        latest_otp = otp_candidates[0] if otp_candidates else None
+        if latest_otp:
+            latest_otp.attempts = (latest_otp.attempts or 0) + 1
+
+        # Count failed attempts for active OTP session(s), regardless of elapsed time.
+        attempt_count = int(sum(item.attempts for item in _active_entries(state, now)))
+
+        if attempt_count >= MAX_VERIFY_ATTEMPTS:
+            block_until = now + timedelta(minutes=VERIFY_BLOCK_MINUTES)
+            state.blocked_until = block_until
+            return None, {"error": f"Too many attempts. Verification blocked for {VERIFY_BLOCK_MINUTES} minutes."}
+
+        return None, {"error": "Invalid or expired code."}
 
 # Mark the OTP as used and set a deletion time so it can't be reused and will eventually be cleaned up.
-async def use_otp(otp: OTPCode, db: AsyncSession, now: datetime) -> None:
+async def use_otp(otp: InMemoryOTPCode, db: AsyncSession, now: datetime) -> None:
+    del db, now
     otp.is_used = True
-    otp.deleted_at = now + timedelta(days=USED_OTP_RETENTION_DAYS)
-    await db.commit()
 
 # Invalidate any active OTPs for the email, such as when user cancels out of the OTP flow.
 async def cancel_active_otp(email: str, db: AsyncSession) -> dict:
-    """Invalidate any active OTP rows when user exits OTP flow."""
+    """Invalidate any active OTP entries when user exits OTP flow."""
     now = datetime.now(timezone.utc)
     await cleanup_old_used_otps(db, now)
+    normalized_email = _normalize_email(email)
 
-    await db.execute(
-        update(OTPCode)
-        .where(
-            OTPCode.email == email,
-            OTPCode.is_used == False,
-        )
-        .values(
-            is_used=True,
-            deleted_at=now + timedelta(days=USED_OTP_RETENTION_DAYS),
-        )
-    )
-    await db.commit()
+    async with OTP_STORE_LOCK:
+        state = OTP_STORE.get(normalized_email)
+        if state:
+            for entry in state.entries:
+                entry.is_used = True
+            state.entries = []
+            state.resend_count = 0
+            state.last_sent_at = None
+
     return {"message": "OTP session cancelled."}
 
 # Build the authentication response containing the JWT token and user info.
@@ -181,73 +206,43 @@ async def send_otp(email: str, db: AsyncSession, is_resend: bool = False) -> dic
     if block_error_result:
         return block_error_result
 
-    if is_resend:
-        # Reset resend counting after the most recent block window has passed.
-        latest_block_until = (
-            await db.execute(
-                select(func.max(OTPCode.blocked_until)).where(OTPCode.email == email)
-            )
-        ).scalar_one()
+    normalized_email = _normalize_email(email)
 
-        sends_stmt = select(func.count(OTPCode.id)).where(OTPCode.email == email)
-        if latest_block_until is not None:
-            sends_stmt = sends_stmt.where(OTPCode.created_at > latest_block_until)
+    async with OTP_STORE_LOCK:
+        state = OTP_STORE.setdefault(normalized_email, OTPEmailState())
 
-        total_sends = int((await db.execute(sends_stmt)).scalar_one())
-        resend_count = max(0, total_sends - 1)
-        
-        # If the resend count exceeds the limit, block further attempts for a period of time.
-        if resend_count >= MAX_RESEND_ATTEMPTS:
-            block_until = now + timedelta(minutes=VERIFY_BLOCK_MINUTES)
-            await db.execute(
-                update(OTPCode)
-                .where(OTPCode.email == email)
-                .values(blocked_until=block_until)
-            )
-            await db.commit()
+        if is_resend and state.resend_count >= MAX_RESEND_ATTEMPTS:
+            state.blocked_until = now + timedelta(minutes=VERIFY_BLOCK_MINUTES)
             return {"error": f"Resend limit reached. Verification blocked for {VERIFY_BLOCK_MINUTES} minutes."}
 
-    # Check if a recent OTP already exists (resend cooldown)
-    recent_stmt = (
-        select(OTPCode)
-        .where(
-            OTPCode.email == email,
-            OTPCode.is_used == False,
-            OTPCode.created_at >= now - timedelta(seconds=RESEND_WAIT_SECONDS),
+        # If there's a recent OTP, tell user to wait before resending.
+        if state.last_sent_at and state.last_sent_at >= now - timedelta(seconds=RESEND_WAIT_SECONDS):
+            wait_seconds = int(
+                (state.last_sent_at + timedelta(seconds=RESEND_WAIT_SECONDS) - now).total_seconds()
+            )
+            return {"error": f"Please wait {wait_seconds} seconds before resending."}
+
+        # Invalidate all previous unused OTPs for this email.
+        for entry in state.entries:
+            if not entry.is_used:
+                entry.is_used = True
+
+        # Create new OTP.
+        code = generate_otp()
+        state.entries.append(
+            InMemoryOTPCode(
+                email=normalized_email,
+                hashed_code=hash_password(code),
+                created_at=now,
+                expires_at=now + timedelta(minutes=OTP_EXPIRE_MINUTES),
+            )
         )
-        .order_by(OTPCode.created_at.desc())
-    )
-    recent_otp = (await db.execute(recent_stmt)).scalars().first()
-
-    # If there's a recent OTP, tell user to wait before resending
-    if recent_otp:
-        wait_seconds = int(
-            (recent_otp.created_at + timedelta(seconds=RESEND_WAIT_SECONDS)
-             - now).total_seconds()
-        )
-        return {"error": f"Please wait {wait_seconds} seconds before resending."}
-
-    # Invalidate all previous unused OTPs for this email
-    await db.execute(
-        update(OTPCode)
-        .where(OTPCode.email == email, OTPCode.is_used == False)
-        .values(is_used=True, deleted_at=now + timedelta(days=USED_OTP_RETENTION_DAYS))
-    )
-    await db.commit()
-
-    # Create new OTP
-    code = generate_otp()
-    otp = OTPCode(
-        email=email,
-        hashed_code=hash_password(code),
-        expires_at=now + timedelta(minutes=OTP_EXPIRE_MINUTES)
-    )
-    db.add(otp)
-    await db.commit()
+        state.last_sent_at = now
+        state.resend_count = state.resend_count + 1 if is_resend else 0
 
     # Send email
     try:
-        send_otp_email(email, code)
+        send_otp_email(normalized_email, code)
     except Exception:
         return {"error": "Failed to send OTP email. Check your mail configuration."}
 
