@@ -3,12 +3,18 @@ import { authService } from "../api/authService";
 
 const AuthContext = createContext()
 let sessionStatusRequest = null
+let hasInitialFetch = false
 
 function fetchSessionStatusOnce() {
-  if (!sessionStatusRequest) {
-    sessionStatusRequest = authService.getSessionStatus().finally(() => {
-      sessionStatusRequest = null
-    })
+  if (!sessionStatusRequest && !hasInitialFetch) {
+    hasInitialFetch = true
+    sessionStatusRequest = authService.getSessionStatus()
+      .catch(err => {
+        console.error("Session fetch failed:", err)
+        hasInitialFetch = false
+        sessionStatusRequest = null
+        return null
+      })
   }
 
   return sessionStatusRequest

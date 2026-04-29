@@ -43,8 +43,15 @@ export const authService = {
   //Register new user
   register: async (userData) => {
     try {
+      console.log('[AuthService] Registering user with data:', {
+        first_name: userData.first_name ? userData.first_name.substring(0, 50) + '...' : null,
+        last_name: userData.last_name ? userData.last_name.substring(0, 50) + '...' : null,
+        email: userData.email ? userData.email.substring(0, 50) + '...' : null,
+        password: userData.password ? userData.password.substring(0, 50) + '...' : null,
+      })
       return await apiClient.post('/auth/register', userData)
     } catch (error) {
+      console.error('[AuthService] Register failed:', error)
       throw new Error(error.message || ERROR_MESSAGES.REGISTRATION_FAILED)
     }
   },

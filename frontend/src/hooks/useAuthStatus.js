@@ -1,12 +1,7 @@
-import { useEffect, useState } from 'react'
 import { useAuth } from './AuthProfile'
 
-export function useAuthStatus(refreshKey) {
+export function useAuthStatus() {
   const { user, loading, hasPreferences } = useAuth()
-
-  useEffect(() => {
-    void refreshKey
-  }, [refreshKey])
 
   return {
     isLoading: loading,

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { validateLoginForm } from "../validators/authValidators";
 import { authService } from "../api/authService";
+import { encryptObject } from "../utils/crypto";
 import EarthLoader from "./loadingIndicator";
 import OTPModal from "./otpModal";
 import { useAuth } from "../hooks/AuthProfile";
@@ -71,7 +72,13 @@ export default function Login({ onSwitchToSignup }) {
     if (!errors) {
       setIsLoading(true);
       try {
-        await authService.login(formData.email, formData.password);
+        // Encrypt sensitive data before sending
+        const encryptedData = await encryptObject({
+          email: formData.email,
+          password: formData.password,
+        });
+        
+        await authService.login(encryptedData.email, encryptedData.password);
         setOtpEmail(formData.email);
         setShowOTPModal(true);
       } catch (error) {
@@ -85,7 +92,13 @@ export default function Login({ onSwitchToSignup }) {
   // Handle OTP verification after login
   const handleVerifyOTP = async (otp) => {
     try {
-      const authResult = await authService.verifyLoginOTP(otpEmail, otp);
+      // Encrypt sensitive data before sending
+      const encryptedData = await encryptObject({
+        email: otpEmail,
+        code: otp,
+      });
+      
+      const authResult = await authService.verifyLoginOTP(encryptedData.email, encryptedData.code);
       setAuthSession(authResult?.user ?? null, authResult?.has_preferences);
 
       setShowOTPModal(false);

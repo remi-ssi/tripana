@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { validateRegisterForm } from "../validators/authValidators";
 import { authService } from "../api/authService";
+import { encryptObject } from "../utils/crypto";
 import OTPModal from "./otpModal";
 import EarthLoader from "./loadingIndicator";
 import { useAuth } from "../hooks/AuthProfile";
@@ -58,12 +59,34 @@ export default function SignUp({ onSwitchToLogin }) {
     if (!formErrors) {
       setIsLoading(true);
       try {
-        // Call register endpoint to send OTP
-        await authService.register({
+        // Encrypt sensitive data before sending
+        console.log('[Signup] Original data before encryption:', {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          password: '***',
+        });
+        
+        const encryptedData = await encryptObject({
           first_name: formData.firstName,
           last_name: formData.lastName,
           email: formData.email,
           password: formData.password,
+        });
+        
+        console.log('[Signup] Encrypted data to be sent:', {
+          first_name: encryptedData.first_name ? encryptedData.first_name.substring(0, 50) + '...' : null,
+          last_name: encryptedData.last_name ? encryptedData.last_name.substring(0, 50) + '...' : null,
+          email: encryptedData.email ? encryptedData.email.substring(0, 50) + '...' : null,
+          password: encryptedData.password ? encryptedData.password.substring(0, 50) + '...' : null,
+        });
+        
+        // Call register endpoint with encrypted data
+        await authService.register({
+          first_name: encryptedData.first_name,
+          last_name: encryptedData.last_name,
+          email: encryptedData.email,
+          password: encryptedData.password,
         });
         
         // Show OTP modal
@@ -81,13 +104,22 @@ export default function SignUp({ onSwitchToLogin }) {
   // Handle OTP verification after registration
   const handleVerifyOTP = async (otp) => {
     try {
-      // Call verify-otp endpoint
+      // Encrypt sensitive data before sending
+      const encryptedData = await encryptObject({
+        email: otpEmail,
+        code: otp,
+        password: registeredPassword,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+      });
+      
+      // Call verify-otp endpoint with encrypted data
       const authResult = await authService.verifyOTP(
-        otpEmail,
-        otp,
-        registeredPassword,
-        formData.firstName,
-        formData.lastName
+        encryptedData.email,
+        encryptedData.code,
+        encryptedData.password,
+        encryptedData.first_name,
+        encryptedData.last_name
       );
       setAuthSession(authResult?.user ?? null, false);
       // On success, close modal and redirect to dashboard

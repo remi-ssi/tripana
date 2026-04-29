@@ -5,6 +5,8 @@ frontend/.env
 
 # ─── Backend ─────────────────────────────────────────────────
 backend/.env
+backend/private_key.pem
+backend/public_key.pem
 
 # ─── Python ──────────────────────────────────────────────────
 # Byte-compiled / optimized / DLL files

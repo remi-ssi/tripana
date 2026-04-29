@@ -1,4 +1,5 @@
 from urllib.parse import urlencode
+import json
 
 from authlib.integrations.starlette_client import OAuth
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -25,6 +26,7 @@ from app.services.auth_service import login_or_register_google_user
 from app.services.password_service import (start_forgot_password, verify_forgot_password_otp, reset_password_with_token, change_password_authenticated)
 from app.services.user_preference_service import UserPreferenceService
 from app.utils.auth import clear_auth_cookie, get_current_user, set_auth_cookie
+from app.utils.encryption import get_public_key, decrypt_dict
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -225,10 +227,29 @@ async def auth_callback(request: Request, db: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_302_FOUND,
         )
 
+@router.get("/public-key")
+async def get_public_key_endpoint():
+    """Get the public key for frontend encryption."""
+    return {"public_key": get_public_key()}
+
 @router.post("/register")
-async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
-    """Step 1: User submits form -> send OTP email."""
-    return await _register_impl(data, db)
+async def register(request: Request, db: AsyncSession = Depends(get_db)):
+    """Step 1: User submits form -> send OTP email. Data may be encrypted."""
+    try:
+        # Read raw JSON body
+        body = await request.json()
+        
+        # Decrypt if data comes encrypted from frontend
+        decrypted_data = decrypt_dict(body)
+        
+        # Validate with Pydantic schema (now with decrypted data)
+        user_data = UserCreate(**decrypted_data)
+        
+        return await _register_impl(user_data, db)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
 @router.post("/resend-otp")
 async def resend_otp(data: ResendOTPRequest, db: AsyncSession = Depends(get_db)):
@@ -237,36 +258,78 @@ async def resend_otp(data: ResendOTPRequest, db: AsyncSession = Depends(get_db))
 
 @router.post("/verify-otp")
 async def verify_otp(
-    data: VerifyOTPRequest,
+    request: Request,
     response: Response,
     db: AsyncSession = Depends(get_db),
 ):
-    """Step 2: User enters OTP → verify and create account."""
-    result = await _verify_impl(data, db)
-    return _attach_cookie_and_strip_token(response, result)
+    """Step 2: User enters OTP → verify and create account. Data may be encrypted."""
+    try:
+        # Read raw JSON body
+        body = await request.json()
+        
+        # Decrypt if data comes encrypted from frontend
+        decrypted_data = decrypt_dict(body)
+        
+        # Validate with Pydantic schema (now with decrypted data)
+        otp_data = VerifyOTPRequest(**decrypted_data)
+        
+        result = await _verify_impl(otp_data, db)
+        return _attach_cookie_and_strip_token(response, result)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
 
 @router.post("/login")
-async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
-    """Step 1 login: validate credentials and send OTP to email."""
-    return await _login_impl(data, db)
+async def login(request: Request, db: AsyncSession = Depends(get_db)):
+    """Step 1 login: validate credentials and send OTP to email. Data may be encrypted."""
+    try:
+        # Read raw JSON body
+        body = await request.json()
+        
+        # Decrypt if data comes encrypted from frontend
+        decrypted_data = decrypt_dict(body)
+        
+        # Validate with Pydantic schema (now with decrypted data)
+        login_data = LoginRequest(**decrypted_data)
+        
+        return await _login_impl(login_data, db)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
 
 @router.post("/verify-login-otp")
 async def verify_login(
-    data: VerifyLoginOTPRequest,
+    request: Request,
     response: Response,
     db: AsyncSession = Depends(get_db),
 ):
-    """Step 2 login: verify OTP and issue JWT token."""
-    result = await _verify_login_impl(data, db)
-    if "error" not in result:
-        service = UserPreferenceService(db)
-        result = {
-            **result,
-            "has_preferences": await service.has_preferences(result["user"]["user_id"]),
-        }
-    return _attach_cookie_and_strip_token(response, result)
+    """Step 2 login: verify OTP and issue JWT token. Data may be encrypted."""
+    try:
+        # Read raw JSON body
+        body = await request.json()
+        
+        # Decrypt if data comes encrypted from frontend
+        decrypted_data = decrypt_dict(body)
+        
+        # Validate with Pydantic schema (now with decrypted data)
+        otp_data = VerifyLoginOTPRequest(**decrypted_data)
+        
+        result = await _verify_login_impl(otp_data, db)
+        if "error" not in result:
+            service = UserPreferenceService(db)
+            result = {
+                **result,
+                "has_preferences": await service.has_preferences(result["user"]["user_id"]),
+            }
+        return _attach_cookie_and_strip_token(response, result)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
 
 @router.post("/cancel-otp")
