@@ -1,72 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import fullLogo from "../assets/Logo.png";
+import PhMap from "../assets/Philippines_flights5.gif";
 
 // ─── Philippines Map SVG ───────────────────────────────────────────────────────
-function PhMap() {
-  const pins = [
-    { label: "Manila", position: "top-[13%] left-[52%]", blue: true, delay: "[animation-delay:1.2s]" },
-    { label: "Boracay", position: "top-[46%] left-[28%]", blue: false, delay: "[animation-delay:1.7s]" },
-    { label: "Cebu", position: "top-[56%] left-[62%]", blue: true, delay: "[animation-delay:2.1s]" },
-    { label: "Palawan", position: "top-[52%] left-[12%]", blue: false, delay: "[animation-delay:2.5s]" },
-  ];
-
+function PhilippinesMap() {
   return (
-    <div className="relative h-[520px] w-[380px] shrink-0">
-      {/* Glow */}
-      <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(ellipse_60%_70%_at_50%_50%,rgba(249,115,22,0.18)_0%,transparent_70%)] animate-[glowPulse_4s_ease-in-out_infinite]" />
-
-      {/* Map */}
-      <svg
-        viewBox="0 0 260 430"
-        xmlns="http://www.w3.org/2000/svg"
-        className="absolute inset-0 h-full w-full fill-[#F97316] [filter:drop-shadow(0_16px_36px_rgba(249,115,22,0.32))] animate-[mapFloat_6s_ease-in-out_infinite]"
-      >
-        {/* Luzon */}
-        <path d="M138,16 C143,14 152,18 156,26 C160,34 158,44 154,50 C160,55 166,63 164,72 C161,81 153,83 148,88 C152,96 153,106 148,112 C144,120 135,122 130,118 C126,125 122,133 116,137 C111,141 104,137 100,132 C95,136 90,142 84,140 C79,137 78,130 81,124 C76,119 71,112 73,105 C75,98 82,94 88,95 C91,88 95,79 102,75 C109,71 116,75 119,82 C124,75 130,65 132,55 C128,47 124,38 127,28 Z"/>
-        {/* Mindoro */}
-        <path d="M87,148 C93,143 102,145 107,151 C112,157 110,167 105,172 C99,177 90,175 85,169 C80,163 81,153 87,148 Z"/>
-        {/* Palawan */}
-        <path d="M55,182 C59,177 65,178 69,184 C73,190 72,197 69,203 C79,208 89,213 93,222 C97,231 91,240 83,244 C74,248 65,242 61,233 C54,228 47,221 44,212 C40,203 42,192 49,187 Z"/>
-        {/* Samar/Leyte */}
-        <path d="M162,174 C168,170 175,172 179,178 C183,184 181,193 175,198 C169,203 161,201 157,195 C153,189 156,178 162,174 Z"/>
-        <path d="M148,192 C154,188 160,190 164,196 C168,202 167,211 161,216 C155,221 147,219 143,213 C139,207 142,196 148,192 Z"/>
-        <path d="M174,190 C179,186 186,188 189,194 C192,200 191,208 185,213 C179,218 172,216 169,210 C166,204 169,194 174,190 Z"/>
-        {/* Negros */}
-        <path d="M120,202 C126,196 133,198 137,205 C141,212 139,223 134,228 C128,234 119,232 115,225 C111,218 114,208 120,202 Z"/>
-        {/* Cebu */}
-        <path d="M140,218 C144,212 149,214 152,220 C155,226 154,233 149,237 C144,241 137,239 135,233 C132,227 136,224 140,218 Z"/>
-        {/* Mindanao */}
-        <path d="M108,270 C117,261 133,259 143,265 C155,271 160,284 162,297 C164,310 160,323 151,330 C141,337 127,335 116,329 C105,323 98,311 96,298 C93,284 99,278 108,270 Z"/>
-        <path d="M148,276 C155,270 164,272 169,280 C174,288 172,299 166,305 C159,311 150,309 145,301 C140,293 141,282 148,276 Z"/>
-        <path d="M87,288 C93,281 102,281 107,289 C112,296 110,308 103,313 C96,318 87,316 82,308 C77,300 81,295 87,288 Z"/>
-        {/* Sulu */}
-        <path d="M98,344 C102,340 107,341 110,346 C113,351 111,358 106,361 C101,363 96,361 93,356 C90,351 94,348 98,344 Z"/>
-        <path d="M84,358 C87,354 92,355 94,360 C96,365 95,371 90,373 C85,375 81,373 79,368 C77,363 81,361 84,358 Z"/>
-        {/* Batanes */}
-        <ellipse cx="144" cy="7" rx="5" ry="4" />
-        <ellipse cx="134" cy="13" rx="4" ry="3" />
-      </svg>
-
-      {/* Pins */}
-      {pins.map((pin) => (
-        <div
-          key={pin.label}
-          className={`absolute z-10 flex items-center gap-1.5 ${pin.position} animate-[pinPop_0.5s_ease_both] ${pin.delay}`}
-        >
-          <div
-            className={`h-3 w-3 shrink-0 rounded-full border-2 border-white ${
-              pin.blue
-                ? "bg-[#2563EB] animate-[pingBlue_2s_infinite]"
-                : "bg-[#F97316] animate-[pingOrange_2s_infinite]"
-            }`}
-          />
-          <span className="bg-white text-[#1a1f36] text-[11px] font-semibold px-2.5 py-1 rounded-lg shadow-md whitespace-nowrap">
-            {pin.label}
-          </span>
-        </div>
-      ))}
-    </div>
+    <img
+      src={PhMap}
+      alt="Philippines flight map"
+      className="h-auto w-full max-w-[560px] select-none drop-shadow-[0_24px_60px_rgba(37,99,235,0.18)]"
+      draggable="false"
+    />
   );
 }
 
@@ -198,7 +143,7 @@ function Hero() {
         <div
           className="shrink-0 animate-[fadeUp_0.9s_ease_both] [animation-delay:0.4s]"
         >
-          <PhMap />
+          <PhilippinesMap />
         </div>
       </div>
     </section>
