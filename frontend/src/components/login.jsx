@@ -9,7 +9,7 @@ import { useAuth } from "../hooks/AuthProfile";
 export default function Login({ onSwitchToSignup }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { refreshUser } = useAuth();
+  const { setAuthSession } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
@@ -85,12 +85,11 @@ export default function Login({ onSwitchToSignup }) {
   // Handle OTP verification after login
   const handleVerifyOTP = async (otp) => {
     try {
-      await authService.verifyLoginOTP(otpEmail, otp);
-      await refreshUser();
+      const authResult = await authService.verifyLoginOTP(otpEmail, otp);
+      setAuthSession(authResult?.user ?? null, authResult?.has_preferences);
 
       setShowOTPModal(false);
-      const preferenceStatus = await authService.getPreferenceStatus();
-      navigate(preferenceStatus?.has_preferences ? "/dashboard" : "/user-preference", { replace: true });
+      navigate(authResult?.has_preferences ? "/dashboard" : "/user-preference", { replace: true });
     } catch (error) {
       throw new Error(error.message || "OTP verification failed");
     }

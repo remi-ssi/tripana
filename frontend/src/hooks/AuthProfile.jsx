@@ -2,28 +2,50 @@ import { createContext, useContext, useState, useEffect, useCallback } from "rea
 import { authService } from "../api/authService";
 
 const AuthContext = createContext()
+let sessionStatusRequest = null
+
+function fetchSessionStatusOnce() {
+  if (!sessionStatusRequest) {
+    sessionStatusRequest = authService.getSessionStatus().finally(() => {
+      sessionStatusRequest = null
+    })
+  }
+
+  return sessionStatusRequest
+}
 
 // Provides user profile and loading state to the app
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
+  const [hasPreferences, setHasPreferences] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const refreshUser = useCallback(async () => {
     setLoading(true)
 
     try {
-      const sessionStatus = await authService.getSessionStatus()
+      const sessionStatus = await fetchSessionStatusOnce()
       setUser(sessionStatus?.authenticated ? sessionStatus?.user ?? null : null)
+      setHasPreferences(Boolean(sessionStatus?.has_preferences))
     } catch (error) {
       setUser(null)
+      setHasPreferences(false)
       console.error("Failed to fetch user profile:", error)
     } finally {
       setLoading(false)
     }
   }, [])
 
+  const setAuthSession = useCallback((nextUser, nextHasPreferences = false) => {
+    setUser(nextUser)
+    setHasPreferences(Boolean(nextHasPreferences))
+    setLoading(false)
+  }, [])
+
   const clearUser = useCallback(() => {
     setUser(null)
+    setHasPreferences(false)
+    setLoading(false)
   }, [])
 
   useEffect(() => {
@@ -31,7 +53,7 @@ export function AuthProvider({ children }) {
   }, [refreshUser])
 
   return (
-    <AuthContext.Provider value={{ user, loading, refreshUser, clearUser }}>
+    <AuthContext.Provider value={{ user, loading, hasPreferences, refreshUser, setAuthSession, clearUser }}>
       {children}
     </AuthContext.Provider>
   )

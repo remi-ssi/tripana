@@ -8,7 +8,7 @@ import { useAuth } from "../hooks/AuthProfile";
 
 export default function SignUp({ onSwitchToLogin }) {
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
+  const { setAuthSession } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -82,14 +82,14 @@ export default function SignUp({ onSwitchToLogin }) {
   const handleVerifyOTP = async (otp) => {
     try {
       // Call verify-otp endpoint
-      await authService.verifyOTP(
+      const authResult = await authService.verifyOTP(
         otpEmail,
         otp,
         registeredPassword,
         formData.firstName,
         formData.lastName
       );
-      await refreshUser();
+      setAuthSession(authResult?.user ?? null, false);
       // On success, close modal and redirect to dashboard
       setShowOTPModal(false);
       // Reset form

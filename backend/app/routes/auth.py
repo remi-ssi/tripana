@@ -260,6 +260,12 @@ async def verify_login(
 ):
     """Step 2 login: verify OTP and issue JWT token."""
     result = await _verify_login_impl(data, db)
+    if "error" not in result:
+        service = UserPreferenceService(db)
+        result = {
+            **result,
+            "has_preferences": await service.has_preferences(result["user"]["user_id"]),
+        }
     return _attach_cookie_and_strip_token(response, result)
 
 
