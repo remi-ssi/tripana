@@ -20,6 +20,12 @@ function fetchSessionStatusOnce() {
   return sessionStatusRequest
 }
 
+// Force a fresh session fetch by resetting the cache
+function resetSessionCache() {
+  sessionStatusRequest = null
+  hasInitialFetch = false
+}
+
 // Provides user profile and loading state to the app
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -30,6 +36,8 @@ export function AuthProvider({ children }) {
     setLoading(true)
 
     try {
+      // Reset cache to force a fresh fetch
+      resetSessionCache()
       const sessionStatus = await fetchSessionStatusOnce()
       setUser(sessionStatus?.authenticated ? sessionStatus?.user ?? null : null)
       setHasPreferences(Boolean(sessionStatus?.has_preferences))
