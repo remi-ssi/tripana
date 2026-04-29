@@ -21,13 +21,19 @@ export default function EarthLoader() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex flex-col items-center gap-6 bg-transparent">
 
       {/* Revolving Earth */}
       <motion.img
         src={EarthSVG}
         alt="Earth"
-        style={{ width: 160, height: 160 }}
+        className="bg-transparent"
+        style={{
+          width: 160,
+          height: 160,
+          backgroundColor: "transparent",
+          mixBlendMode: "multiply",
+        }}
         animate={{ rotate: 360 }}
         transition={{ duration: 3, repeat: Infinity, ease: "linear" }} 
       />
