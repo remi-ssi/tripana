@@ -20,12 +20,6 @@ function fetchSessionStatusOnce() {
   return sessionStatusRequest
 }
 
-// Force a fresh session fetch by resetting the cache
-function resetSessionCache() {
-  sessionStatusRequest = null
-  hasInitialFetch = false
-}
-
 // Provides user profile and loading state to the app
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -36,9 +30,9 @@ export function AuthProvider({ children }) {
     setLoading(true)
 
     try {
-      // Reset cache to force a fresh fetch
-      resetSessionCache()
-      const sessionStatus = await fetchSessionStatusOnce()
+      // Always make a fresh request without using or resetting the cache
+      // This ensures explicit refreshUser() calls get fresh data
+      const sessionStatus = await authService.getSessionStatus()
       setUser(sessionStatus?.authenticated ? sessionStatus?.user ?? null : null)
       setHasPreferences(Boolean(sessionStatus?.has_preferences))
     } catch (error) {
@@ -63,8 +57,18 @@ export function AuthProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    refreshUser()
-  }, [refreshUser])
+    // Initial load: use cached fetch to ensure only ONE request on app startup
+    fetchSessionStatusOnce().then(sessionStatus => {
+      setUser(sessionStatus?.authenticated ? sessionStatus?.user ?? null : null)
+      setHasPreferences(Boolean(sessionStatus?.has_preferences))
+      setLoading(false)
+    }).catch(error => {
+      console.error("Session fetch failed:", error)
+      setUser(null)
+      setHasPreferences(false)
+      setLoading(false)
+    })
+  }, [])
 
   return (
     <AuthContext.Provider value={{ user, loading, hasPreferences, refreshUser, setAuthSession, clearUser }}>

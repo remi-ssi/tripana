@@ -13,7 +13,7 @@ import { useAuth } from "../hooks/AuthProfile";
 
 export default function TravelStylePage() {
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
+  const { user, setAuthSession } = useAuth();
   const [selected, setSelected] = useState([]);
   const [visible, setVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,10 +44,11 @@ export default function TravelStylePage() {
     try {
       console.log('[UserPreference] Saving preferences:', selected);
       await authService.savePreferences(selected);
-      console.log('[UserPreference] Preferences saved, refreshing user session...');
-      // Refresh auth context to update hasPreferences before navigating
-      await refreshUser();
-      console.log('[UserPreference] User session refreshed, navigating to dashboard');
+      console.log('[UserPreference] Preferences saved, updating auth state...');
+      // Update auth state directly - preferences are now set
+      // Don't make another /auth/session request, just update local state
+      setAuthSession(user, true);
+      console.log('[UserPreference] Auth state updated, navigating to dashboard');
       navigate("/dashboard", { replace: true });
     } catch (error) {
       console.error('[UserPreference] Error saving preferences:', error);
