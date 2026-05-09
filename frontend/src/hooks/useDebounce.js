@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 
 // Custom hook to debounce values and prevent API spam while typing
-export default function useDebounce(value, delay = 500) {
+export default function useDebounce(value, delay = 300) {
   const [debouncedValue, setDebouncedValue] = useState(value)
 
   useEffect(() => {
