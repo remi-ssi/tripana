@@ -4,8 +4,8 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.config import settings
 from app.database import engine, Base
 from app.middleware import setup_cors, setup_error_handlers
-from app.routes import api_router
-from app.routes.auth import router as auth_router
+from app.api.routes import api_router
+from app.api.routes.auth import router as auth_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

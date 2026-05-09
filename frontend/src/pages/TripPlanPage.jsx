@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from '../components/PageLayout'
 import { validateTripPlan } from '../validators/tripPlanValidator'
+import useCitySuggestions from '../hooks/useCitySuggestions'
 
 const BUDGET_OPTIONS = [
   { value: 'budget-friendly', label: 'Budget-friendly', emoji: '💚' },
@@ -23,6 +24,11 @@ export default function TripPlanPage() {
 
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
+
+  // State for city autocomplete suggestions
+  const [citySearchInput, setCitySearchInput] = useState('')
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false)
+  const { suggestions: citySuggestions, isLoading: cityLoading } = useCitySuggestions(citySearchInput)
 
   const validateForm = () => {
     const newErrors = validateTripPlan(form)
@@ -84,6 +90,27 @@ export default function TripPlanPage() {
     })
   }
 
+  // Handle city selection from suggestions dropdown
+  const handleSelectCity = (cityName) => {
+    const updatedForm = { ...form, city: cityName }
+    const newErrors = validateTripPlan(updatedForm)
+
+    setForm(updatedForm)
+    setCitySearchInput(cityName)
+    setShowCitySuggestions(false)
+    setTouched((prev) => ({ ...prev, city: true }))
+
+    setErrors((prev) => {
+      const nextErrors = { ...prev }
+      if (newErrors.city) {
+        nextErrors.city = newErrors.city
+      } else {
+        delete nextErrors.city
+      }
+      return nextErrors
+    })
+  }
+
   const handleContinue = () => {
     if (validateForm()) {
       navigate('/attractions')
@@ -106,13 +133,49 @@ export default function TripPlanPage() {
           <label className="block text-sm font-semibold text-gray-700 mb-1">
             City <span className="text-red-500">*</span>
           </label>
-          <input
-            type="text"
-            placeholder="e.g., Zambales"
-            value={form.city}
-            onChange={(e) => handleChange('city', e.target.value)}
-            className={`w-full px-4 py-3 rounded-xl border ${errors.city && touched.city ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.city && touched.city ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
-          />
+          {/* City input with autocomplete suggestions */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="e.g., Zambales"
+              value={citySearchInput}
+              onChange={(e) => {
+                setCitySearchInput(e.target.value)
+                setShowCitySuggestions(true)
+              }}
+              onFocus={() => citySearchInput && setShowCitySuggestions(true)}
+              onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)} // Delay to allow selection
+              className={`w-full px-4 py-3 rounded-xl border ${errors.city && touched.city ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.city && touched.city ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
+            />
+
+            {/* City suggestions dropdown */}
+            {showCitySuggestions && citySearchInput && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                {cityLoading && (
+                  <div className="px-4 py-2 text-sm text-gray-500">
+                    Searching cities...
+                  </div>
+                )}
+                {!cityLoading && citySuggestions.length === 0 && (
+                  <div className="px-4 py-2 text-sm text-gray-500">
+                    No PH cities found
+                  </div>
+                )}
+                {!cityLoading && citySuggestions.length > 0 && (
+                  citySuggestions.map((city, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSelectCity(city.name)}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 transition text-sm text-gray-800 border-b border-gray-100 last:border-b-0"
+                    >
+                      {city.name}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
           {errors.city && touched.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
         </div>
 

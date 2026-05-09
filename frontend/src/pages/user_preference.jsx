@@ -8,7 +8,7 @@ import adventureImg from "../assets/adventure.png";
 import culturalImg from "../assets/cultural.png";
 import natureImg from "../assets/nature.png";
 import eventsImg from "../assets/events.png";
-import { authService } from "../api/authService";
+import { authService } from "../services/authService";
 import { useAuth } from "../hooks/AuthProfile";
 
 export default function TravelStylePage() {

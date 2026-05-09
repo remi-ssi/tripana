@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { validateLoginForm } from "../validators/authValidators";
-import { authService } from "../api/authService";
+import { authService } from "../services/authService";
 import { encryptObject } from "../utils/crypto";
 import EarthLoader from "./loadingIndicator";
 import OTPModal from "./otpModal";

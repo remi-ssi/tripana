@@ -6,7 +6,7 @@ import {
 } from "../validators/authValidators";
 import { ERROR_MESSAGES } from "../utils/errors";
 import { useAuthStatus } from "../hooks/useAuthStatus";
-import { authService } from "../api/authService";
+import { authService } from "../services/authService";
 import EarthLoader from "../components/loadingIndicator";
 import LeavePageModal from "../components/confirmExit";
 

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { authService } from "../api/authService";
+import { authService } from "../services/authService";
 
 const AuthContext = createContext()
 let sessionStatusRequest = null

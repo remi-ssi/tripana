@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { authService } from '../api/authService'
+import { authService } from '../services/authService'
 import Navbar from '../components/dashboardNav'
 import { useAuth } from '../hooks/AuthProfile'
 import EarthLoader from '../components/loadingIndicator'
