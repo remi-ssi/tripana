@@ -1,9 +1,12 @@
 from urllib.parse import urlencode
 import json
+import logging
 
 from authlib.integrations.starlette_client import OAuth
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
+
+logger = logging.getLogger(__name__)
 from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2 import id_token
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -160,6 +163,7 @@ def _verify_google_id_token(raw_id_token: str) -> dict:
         raw_id_token,
         GoogleRequest(),
         settings.GOOGLE_CLIENT_ID,
+        clock_skew_in_seconds=10,  # Allows up to 10 seconds of clock drift
     )
 
     # Defense in depth checks for issuer and required identity claims.
@@ -221,7 +225,8 @@ async def auth_callback(request: Request, db: AsyncSession = Depends(get_db)):
         set_auth_cookie(response, result["token"])
         return response
 
-    except Exception:
+    except Exception as e:
+        logger.error(f"Google OAuth callback error: {type(e).__name__}: {str(e)}", exc_info=True)
         return RedirectResponse(
             url=_frontend_login_redirect("Google login failed. Please try again."),
             status_code=status.HTTP_302_FOUND,
