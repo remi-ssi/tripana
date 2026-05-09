@@ -90,6 +90,9 @@ export default function TripPlanPage() {
     }
   }
 
+  // Get today's date in YYYY-MM-DD format for min attribute
+  const today = new Date().toISOString().split('T')[0];
+
   return (
     <PageLayout
       currentStep="trip-plan"
@@ -147,6 +150,7 @@ export default function TripPlanPage() {
             </label>
             <input
               type="date"
+              min={today}
               value={form.startDate}
               onChange={(e) => handleChange('startDate', e.target.value)}
               className={`w-full px-4 py-3 rounded-xl border ${errors.startDate && touched.startDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.startDate && touched.startDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
@@ -159,6 +163,7 @@ export default function TripPlanPage() {
             </label>
             <input
               type="date"
+              min={form.startDate || today}
               value={form.endDate}
               onChange={(e) => handleChange('endDate', e.target.value)}
               className={`w-full px-4 py-3 rounded-xl border ${errors.endDate && touched.endDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.endDate && touched.endDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
