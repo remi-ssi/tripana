@@ -1,5 +1,5 @@
 import { ERROR_MESSAGES } from '../utils/errors'
-import { apiClient } from './apiClient'
+import { apiClient } from '../api/apiClient'
 
 //authentication service - handles all auth-related API calls
 

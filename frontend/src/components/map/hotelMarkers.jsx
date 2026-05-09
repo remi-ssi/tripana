@@ -1,0 +1,1 @@
+// hotel markers fetched from OSM
