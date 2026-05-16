@@ -8,15 +8,11 @@ import { CalendarDays, PlusCircle } from 'lucide-react'
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { user, loading, refreshUser, clearUser } = useAuth()
+  const { user, loading, clearUser } = useAuth()
 
   const handlePlanTrip = () => {
     navigate('/trip-plan')
   }
-
-  useEffect(() => {
-    refreshUser()
-  }, [refreshUser])
 
   const handleLogout = async () => {
     try {

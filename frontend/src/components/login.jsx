@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { validateLoginForm } from "../validators/authValidators";
 import { authService } from "../services/authService";
@@ -11,6 +11,7 @@ export default function Login({ onSwitchToSignup }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { setAuthSession } = useAuth();
+  const errorHandledRef = useRef(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
@@ -25,13 +26,16 @@ export default function Login({ onSwitchToSignup }) {
     const params = new URLSearchParams(location.search);
     const googleError = params.get("google_error");
 
-    if (googleError) {
+    // Only handle error once
+    if (googleError && !errorHandledRef.current) {
+      errorHandledRef.current = true
+      
       setErrors((prev) => ({
         ...prev,
         submit: googleError,
       }));
 
-      // Consume this one-time query error so it doesn't persist on refresh.
+      // Clean up the error param so it doesn't persist
       params.delete("google_error");
       const nextSearch = params.toString();
       navigate(
@@ -42,7 +46,7 @@ export default function Login({ onSwitchToSignup }) {
         { replace: true }
       );
     }
-  }, [location.pathname, location.search, navigate]);
+  }, []);
 
   // Handle form input changes
   const handleChange = (e) => {

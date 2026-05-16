@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { useAuthStatus } from '../hooks/useAuthStatus'
 import LoadingIndicator from '../components/loadingIndicator'
 
@@ -11,8 +11,7 @@ function FullScreenLoader() {
 }
 
 export function AuthOnlyRoute({ children, requirePreferences }) {
-  const { pathname } = useLocation()
-  const { isLoading, isAuthenticated, hasPreferences } = useAuthStatus(pathname)
+  const { isLoading, isAuthenticated, hasPreferences } = useAuthStatus()
 
   if (isLoading) {
     return <FullScreenLoader />
@@ -34,8 +33,7 @@ export function AuthOnlyRoute({ children, requirePreferences }) {
 }
 
 export function GuestOnlyRoute({ children }) {
-  const { pathname } = useLocation()
-  const { isLoading, isAuthenticated, hasPreferences } = useAuthStatus(pathname)
+  const { isLoading, isAuthenticated, hasPreferences } = useAuthStatus()
 
   if (isLoading) {
     return <FullScreenLoader />

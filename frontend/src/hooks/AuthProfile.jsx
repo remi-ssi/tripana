@@ -1,37 +1,19 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { authService } from "../services/authService";
 
 const AuthContext = createContext()
-let sessionStatusRequest = null
-let hasInitialFetch = false
-
-function fetchSessionStatusOnce() {
-  if (!sessionStatusRequest && !hasInitialFetch) {
-    hasInitialFetch = true
-    sessionStatusRequest = authService.getSessionStatus()
-      .catch(err => {
-        console.error("Session fetch failed:", err)
-        hasInitialFetch = false
-        sessionStatusRequest = null
-        return null
-      })
-  }
-
-  return sessionStatusRequest
-}
 
 // Provides user profile and loading state to the app
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [hasPreferences, setHasPreferences] = useState(false)
   const [loading, setLoading] = useState(true)
+  const hasInitializedRef = useRef(false)
 
   const refreshUser = useCallback(async () => {
     setLoading(true)
 
     try {
-      // Always make a fresh request without using or resetting the cache
-      // This ensures explicit refreshUser() calls get fresh data
       const sessionStatus = await authService.getSessionStatus()
       setUser(sessionStatus?.authenticated ? sessionStatus?.user ?? null : null)
       setHasPreferences(Boolean(sessionStatus?.has_preferences))
@@ -57,17 +39,11 @@ export function AuthProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    // Initial load: use cached fetch to ensure only ONE request on app startup
-    fetchSessionStatusOnce().then(sessionStatus => {
-      setUser(sessionStatus?.authenticated ? sessionStatus?.user ?? null : null)
-      setHasPreferences(Boolean(sessionStatus?.has_preferences))
-      setLoading(false)
-    }).catch(error => {
-      console.error("Session fetch failed:", error)
-      setUser(null)
-      setHasPreferences(false)
-      setLoading(false)
-    })
+    // Only initialize once per component mount
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true
+      refreshUser()
+    }
   }, [])
 
   return (
