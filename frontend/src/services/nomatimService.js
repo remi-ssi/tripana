@@ -7,12 +7,10 @@ export const searchCitiesPH = async (query) => {
 
   try {
     const params = new URLSearchParams({
-      q: `${query}, Philippines`, // Filter to PH only
-      countrycodes: 'ph', // Country code for Philippines
+      q: `${query}, Philippines`,
+      countrycodes: 'ph',
       format: 'json',
-      limit: 8, // Limit suggestions to 8
-      featuretype: 'city',
-      addresstype: 'city',
+      limit: 10,
     })
 
     const response = await fetch(`${NOMINATIM_API}?${params}`, {
@@ -28,13 +26,23 @@ export const searchCitiesPH = async (query) => {
 
     const data = await response.json()
 
-    // Extract city names from response
-    return data.map((item) => ({
-      name: item.name,
-      displayName: item.display_name,
-      lat: item.lat,
-      lon: item.lon,
-    }))
+    // Map results and remove duplicates
+    const seenNames = new Set()
+    return data
+      .map((item) => ({
+        name: item.name,
+        displayName: item.display_name,
+        lat: item.lat,
+        lon: item.lon,
+      }))
+      .filter((place) => {
+        const nameLower = place.name.toLowerCase().trim()
+        if (seenNames.has(nameLower)) {
+          return false
+        }
+        seenNames.add(nameLower)
+        return true
+      })
   } catch (error) {
     console.error('Error searching cities:', error)
     return []
