@@ -1,8 +1,11 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from '../components/PageLayout'
 import { validateTripPlan } from '../validators/tripPlanValidator'
 import useCitySuggestions from '../hooks/useCitySuggestions'
+import useDebounce from '../hooks/useDebounce'
+import useMap from '../hooks/useMap'
+import { getPlaceSuggestions } from '../api/places_api'
 
 const BUDGET_OPTIONS = [
   { value: 'budget-friendly', label: 'Budget-friendly', emoji: '💚' },
@@ -29,6 +32,44 @@ export default function TripPlanPage() {
   const [citySearchInput, setCitySearchInput] = useState('')
   const [showCitySuggestions, setShowCitySuggestions] = useState(false)
   const { suggestions: citySuggestions, isLoading: cityLoading } = useCitySuggestions(citySearchInput)
+
+  // State for hotel/place search
+  const [hotelSearchInput, setHotelSearchInput] = useState('')
+  const [showHotelSuggestions, setShowHotelSuggestions] = useState(false)
+  const [hotelSuggestions, setHotelSuggestions] = useState([])
+  const [hotelLoading, setHotelLoading] = useState(false)
+  const debouncedHotelQuery = useDebounce(hotelSearchInput, 500)
+
+  // Map modal state
+  const [showMapModal, setShowMapModal] = useState(false)
+  const [selectedPlace, setSelectedPlace] = useState(null)
+  const mapContainerRef = useRef(null)
+
+  // Initialize map when modal is visible
+  useMap(mapContainerRef, selectedPlace?.coordinates, showMapModal)
+
+  // Fetch hotel/place suggestions from Mapbox
+  useEffect(() => {
+    if (!debouncedHotelQuery || debouncedHotelQuery.trim().length < 2) {
+      setHotelSuggestions([])
+      return
+    }
+
+    const fetchSuggestions = async () => {
+      setHotelLoading(true)
+      try {
+        const results = await getPlaceSuggestions(debouncedHotelQuery)
+        setHotelSuggestions(results)
+      } catch (error) {
+        console.error('Failed to fetch place suggestions:', error)
+        setHotelSuggestions([])
+      } finally {
+        setHotelLoading(false)
+      }
+    }
+
+    fetchSuggestions()
+  }, [debouncedHotelQuery])
 
   const validateForm = () => {
     const newErrors = validateTripPlan(form)
@@ -111,6 +152,19 @@ export default function TripPlanPage() {
     })
   }
 
+  // Handle hotel/place selection — opens map modal
+  const handleSelectHotel = (place) => {
+    setHotelSearchInput(place.name)
+    handleChange('hotel', place.name)
+    setSelectedPlace(place)
+    setShowHotelSuggestions(false)
+    setShowMapModal(true)
+  }
+
+  const handleCloseMapModal = () => {
+    setShowMapModal(false)
+  }
+
   const handleContinue = () => {
     if (validateForm()) {
       navigate('/attractions')
@@ -131,7 +185,7 @@ export default function TripPlanPage() {
         {/* City */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">
-            City <span className="text-red-500">*</span>
+            Where To: <span className="text-red-500">*</span>
           </label>
           {/* City input with autocomplete suggestions */}
           <div className="relative">
@@ -179,28 +233,64 @@ export default function TripPlanPage() {
           {errors.city && touched.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
         </div>
 
-        {/* Hotel */}
+        {/* Hotel / Where to Stay */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">
-            Hotel <span className="text-red-500">*</span>
+            Where to Stay <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <input
               type="text"
-              placeholder="e.g., Zambales"
-              value={form.hotel}
-              onChange={(e) => handleChange('hotel', e.target.value)}
+              placeholder="e.g., Transient House"
+              value={hotelSearchInput}
+              onChange={(e) => {
+                setHotelSearchInput(e.target.value)
+                handleChange('hotel', e.target.value)
+                setShowHotelSuggestions(true)
+              }}
+              onFocus={() => hotelSearchInput && setShowHotelSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowHotelSuggestions(false), 200)}
               className={`w-full px-4 py-3 pr-12 rounded-xl border-2 ${errors.hotel && touched.hotel ? 'border-red-500' : 'border-blue-700'} bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.hotel && touched.hotel ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-700 hover:text-blue-800 transition"
-              title="Use current location"
+              onClick={() => selectedPlace && setShowMapModal(true)}
+              className={`absolute right-3 top-1/2 -translate-y-1/2 transition ${selectedPlace ? 'text-blue-700 hover:text-blue-800 cursor-pointer' : 'text-gray-300 cursor-default'}`}
+              title={selectedPlace ? 'View on map' : 'Search a place first'}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
                 <path fillRule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-2.083 3.701-5.125 3.701-9.077 0-4.715-3.73-8.293-8-8.293s-8 3.578-8 8.293c0 3.952 1.757 6.994 3.701 9.077a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
               </svg>
             </button>
+
+            {/* Hotel/place suggestions dropdown */}
+            {showHotelSuggestions && hotelSearchInput && hotelSearchInput.length >= 2 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto">
+                {hotelLoading && (
+                  <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Searching places...
+                  </div>
+                )}
+                {!hotelLoading && hotelSuggestions.length === 0 && (
+                  <div className="px-4 py-3 text-sm text-gray-500">No places found</div>
+                )}
+                {!hotelLoading && hotelSuggestions.map((place) => (
+                  <button
+                    key={place.id}
+                    type="button"
+                    onClick={() => handleSelectHotel(place)}
+                    className="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition text-sm border-b border-gray-100 last:border-b-0"
+                  >
+                    <span className="font-medium text-gray-800">{place.name}</span>
+                    <span className="text-gray-400 text-xs block mt-0.5 truncate">{place.fullAddress}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           {errors.hotel && touched.hotel && <p className="text-red-500 text-xs mt-1">{errors.hotel}</p>}
         </div>
@@ -304,6 +394,43 @@ export default function TripPlanPage() {
         </button>
 
       </div>
+
+      {/* ── Map Modal ── */}
+      {showMapModal && selectedPlace && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={handleCloseMapModal}
+          style={{ animation: 'fadeIn .2s ease' }}
+        >
+          <div
+            className="relative w-[92%] max-w-lg rounded-2xl shadow-2xl overflow-hidden bg-white"
+            style={{ height: '65vh', animation: 'scaleIn .25s ease' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close (X) button on the map */}
+            <button
+              type="button"
+              onClick={handleCloseMapModal}
+              className="absolute top-3 right-3 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 shadow-lg text-gray-600 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer"
+              title="Close map"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
+            {/* Map container */}
+            <div ref={mapContainerRef} className="w-full h-full" />
+
+            {/* Place info bar at the bottom */}
+            <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm px-5 py-4 border-t border-gray-100">
+              <h3 className="font-semibold text-gray-800 text-sm">{selectedPlace.name}</h3>
+              <p className="text-xs text-gray-500 mt-0.5 truncate">{selectedPlace.fullAddress}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </PageLayout>
   )
 }

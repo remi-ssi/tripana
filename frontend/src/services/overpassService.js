@@ -1,1 +1,0 @@
-// fetch hotels/POI from OSM Overpass API

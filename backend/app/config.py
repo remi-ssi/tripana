@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_PATH: str = "/auth/callback"
 
+    # Mapbox settings
+    MAPBOX_TOKEN: str = ""
+
     # OTP settings
     OTP_CLEANUP_INTERVAL_SECONDS: int = 60
 
