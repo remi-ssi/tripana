@@ -21,6 +21,7 @@ async def search_places(
     q: str = Query(..., min_length=2, description="Search query"),
     country: str = Query("ph", description="Country code"),
     limit: int = Query(5, ge=1, le=10),
+    types: str = Query("poi", description="Comma-separated Mapbox feature types"),
 ):
     """
     Search for places using Mapbox Search Box API (suggest).
@@ -39,41 +40,53 @@ async def search_places(
 
     session_token = str(uuid.uuid4())
 
-    # ── 1) Try Search Box API suggest ──
-    suggest_params = {
-        "q": q,
-        "access_token": token,
-        "session_token": session_token,
-        "country": country.upper(),
-        "language": "en",
-        "limit": limit,
-        "types": "poi",
+    # ── 1) Search Box API — only for POI searches ──────────────────
+    # The Search Box suggest API only returns business/POI results,
+    # so bypass it entirely for place/locality/district/region searches.
+    if types.strip() == "poi":
+        suggest_params = {
+            "q": q,
+            "access_token": token,
+            "session_token": session_token,
+            "country": country.upper(),
+            "language": "en",
+            "limit": limit,
+            "types": "poi",
+        }
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(MAPBOX_SUGGEST_URL, params=suggest_params)
+
+        if resp.status_code == 200:
+            suggestions = resp.json().get("suggestions", [])
+            if suggestions:
+                return [
+                    {
+                        "id": s.get("mapbox_id", ""),
+                        "name": s.get("name", ""),
+                        "fullAddress": s.get("full_address", s.get("place_formatted", "")),
+                        "category": ", ".join(s.get("poi_category", [])),
+                        "coordinates": None,
+                    }
+                    for s in suggestions
+                ]
+
+    # ── 2) Geocoding v5 — for place/locality/district/region AND as fallback ──
+    geocode_type_map = {
+        "poi": "poi,address",
+        "place": "place",
+        "locality": "locality",
+        "district": "district",
+        "region": "region",
     }
-
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(MAPBOX_SUGGEST_URL, params=suggest_params)
-
-    if resp.status_code == 200:
-        suggestions = resp.json().get("suggestions", [])
-        if suggestions:
-            return [
-                {
-                    "id": s.get("mapbox_id", ""),
-                    "name": s.get("name", ""),
-                    "fullAddress": s.get("full_address", s.get("place_formatted", "")),
-                    "category": ", ".join(s.get("poi_category", [])),
-                    # No coordinates yet — call /retrieve/{mapbox_id} on selection
-                    "coordinates": None,
-                }
-                for s in suggestions
-            ]
-
-    # ── 2) Fallback to Geocoding v5 ──
+    geocode_types = ",".join(
+        geocode_type_map.get(t.strip(), t.strip()) for t in types.split(",")
+    )
     geocode_params = {
         "access_token": token,
         "country": country,
         "limit": limit,
-        "types": "poi,address,place",
+        "types": geocode_types,
         "language": "en",
     }
 
@@ -91,6 +104,7 @@ async def search_places(
             "fullAddress": f["place_name"],
             "coordinates": {"lng": f["center"][0], "lat": f["center"][1]},
             "category": f.get("properties", {}).get("category", ""),
+            "placeType": f.get("place_type", [""])[0],  # e.g. "place", "region", "locality"
         }
         for f in data.get("features", [])
     ]

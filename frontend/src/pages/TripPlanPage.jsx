@@ -176,7 +176,7 @@ export default function TripPlanPage() {
           <div className="relative">
             <input
               type="text"
-              placeholder="e.g., Zambales"
+              placeholder="e.g., Zambales, Baguio, Ilocos Region…"
               value={citySearchInput}
               onChange={(e) => { setCitySearchInput(e.target.value); setShowCitySuggestions(true) }}
               onFocus={() => citySearchInput && setShowCitySuggestions(true)}
@@ -184,17 +184,37 @@ export default function TripPlanPage() {
               className={`w-full px-4 py-3 rounded-xl border ${errors.city && touched.city ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.city && touched.city ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
             />
             {showCitySuggestions && citySearchInput && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                {cityLoading && <div className="px-4 py-2 text-sm text-gray-500">Searching cities…</div>}
-                {!cityLoading && citySuggestions.length === 0 && <div className="px-4 py-2 text-sm text-gray-500">No PH cities found</div>}
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto">
+                {cityLoading && (
+                  <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Searching…
+                  </div>
+                )}
+                {!cityLoading && citySuggestions.length === 0 && (
+                  <div className="px-4 py-2 text-sm text-gray-500">No results found in the Philippines</div>
+                )}
                 {!cityLoading && citySuggestions.map((city, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => handleSelectCity(city.name)}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 transition text-sm text-gray-800 border-b border-gray-100 last:border-b-0"
+                    className="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition border-b border-gray-100 last:border-b-0"
                   >
-                    {city.name}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-800">{city.shortName || city.name}</span>
+                      {city.typeLabel && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 uppercase tracking-wide">
+                          {city.typeLabel}
+                        </span>
+                      )}
+                    </div>
+                    {city.shortName && city.name !== city.shortName && (
+                      <span className="block text-xs text-gray-400 truncate mt-0.5">{city.name}</span>
+                    )}
                   </button>
                 ))}
               </div>

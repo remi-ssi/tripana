@@ -1,9 +1,25 @@
 import { searchPlaces, retrievePlace, reverseGeocode } from '../services/placeSearchService'
 
-// Search for city suggestions (Philippines only) via Mapbox
+// Human-readable labels for Mapbox place types
+const PLACE_TYPE_LABELS = {
+  place:    'City',
+  locality: 'Municipality',
+  district: 'Province',
+  region:   'Region',
+}
+
+// Search for city/municipality/region suggestions (Philippines only) via Mapbox
 export const getCitySuggestions = async (query) => {
-  const results = await searchPlaces(query, { types: 'place,locality', limit: 5 })
-  return results.map((r) => ({ name: r.fullAddress || r.name, coordinates: r.coordinates }))
+  const results = await searchPlaces(query, {
+    types: 'place,locality,district,region',
+    limit: 7,
+  })
+  return results.map((r) => ({
+    name: r.fullAddress || r.name,
+    shortName: r.name,
+    coordinates: r.coordinates,
+    typeLabel: PLACE_TYPE_LABELS[r.placeType] || '',
+  }))
 }
 
 // Search for place/hotel suggestions via Mapbox Search Box
