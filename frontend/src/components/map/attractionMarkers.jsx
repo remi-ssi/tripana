@@ -1,1 +1,0 @@
-// tourist attractions markers on the map

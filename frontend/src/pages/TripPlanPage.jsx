@@ -31,7 +31,8 @@ export default function TripPlanPage() {
   // ── City autocomplete ──────────────────────────────────
   const [citySearchInput, setCitySearchInput]       = useState('')
   const [showCitySuggestions, setShowCitySuggestions] = useState(false)
-  const { suggestions: citySuggestions, isLoading: cityLoading } = useCitySuggestions(citySearchInput)
+  const debouncedCityQuery = useDebounce(citySearchInput, 500)
+  const { suggestions: citySuggestions, isLoading: cityLoading } = useCitySuggestions(debouncedCityQuery)
 
   // ── Hotel search (debounced — API fires 500 ms after user stops typing) ──
   const [hotelSearchInput, setHotelSearchInput]       = useState('')
@@ -171,7 +172,7 @@ export default function TripPlanPage() {
         {/* ── City ── */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">
-            Where To: <span className="text-red-500">*</span>
+            Where To <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <input

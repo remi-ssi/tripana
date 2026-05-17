@@ -5,7 +5,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
  * Search for places via backend proxy (Mapbox Search Box suggest)
  */
 export async function searchPlaces(query, options = {}) {
-  const { country = 'ph', limit = 5 } = options
+  const { country = 'ph', limit = 5, types = 'poi' } = options
 
   if (!query || query.trim().length < 2) return []
 
@@ -13,6 +13,7 @@ export async function searchPlaces(query, options = {}) {
     q: query.trim(),
     country,
     limit: String(limit),
+    types: types,
   })
 
   const response = await fetch(`${API_BASE}/api/v1/places/search?${params}`, {
