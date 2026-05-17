@@ -1,4 +1,4 @@
-import { searchPlaces, retrievePlace } from '../services/placeSearchService'
+import { searchPlaces, retrievePlace, reverseGeocode } from '../services/placeSearchService'
 
 // Search for city suggestions (Philippines only) via Mapbox
 export const getCitySuggestions = async (query) => {
@@ -14,4 +14,9 @@ export const getPlaceSuggestions = async (query, options) => {
 // Retrieve full place details (with coordinates) by mapbox_id
 export const getPlaceDetails = async (mapboxId) => {
   return await retrievePlace(mapboxId)
+}
+
+// Reverse geocode: coordinates → place name/address
+export const reverseGeocodePlace = async (lng, lat) => {
+  return await reverseGeocode(lng, lat)
 }

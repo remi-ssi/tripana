@@ -135,6 +135,43 @@ async def retrieve_place(mapbox_id: str):
     }
 
 
+@router.get("/reverse")
+async def reverse_geocode(
+    lng: float = Query(..., description="Longitude"),
+    lat: float = Query(..., description="Latitude"),
+):
+    """Reverse geocode: coordinates → place name / address."""
+    token = settings.MAPBOX_TOKEN
+    if not token:
+        raise HTTPException(status_code=500, detail="Mapbox token is not configured")
+
+    if not track_geocoding():
+        raise HTTPException(
+            status_code=429,
+            detail="Mapbox geocoding limit almost reached. Blocked to stay on free tier.",
+        )
+
+    params = {"access_token": token, "language": "en", "limit": 1}
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{MAPBOX_GEOCODE_URL}/{lng},{lat}.json", params=params
+        )
+
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail="Reverse geocoding failed")
+
+    features = resp.json().get("features", [])
+    if not features:
+        return {"name": "Pinned Location", "fullAddress": f"{lat:.5f}, {lng:.5f}"}
+
+    f = features[0]
+    return {
+        "name": f.get("text", "Pinned Location"),
+        "fullAddress": f.get("place_name", f"{lat:.5f}, {lng:.5f}"),
+    }
+
+
 @router.get("/mapbox-token")
 async def get_mapbox_token():
     """Return the Mapbox public token so the frontend can render the map."""
