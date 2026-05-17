@@ -12,11 +12,13 @@ import ForgotPassword from './pages/forgotPassword'
 import ChangePasswordFull from './pages/changePass'
 import LandingPage from './pages/landing_page'
 import { AuthOnlyRoute, GuestOnlyRoute } from './routes/guards'
+import { TripPlanProvider } from './contexts/TripPlanContext'
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <TripPlanProvider>
+      <BrowserRouter>
+        <Routes>
         <Route
           path="/login"
           element={
@@ -94,6 +96,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
       </Routes>
     </BrowserRouter>
+    </TripPlanProvider>
   )
 }
 

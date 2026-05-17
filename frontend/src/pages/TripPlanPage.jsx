@@ -6,6 +6,7 @@ import { validateTripPlan } from '../validators/tripPlanValidator'
 import useCitySuggestions from '../hooks/useCitySuggestions'
 import useDebounce from '../hooks/useDebounce'
 import { getPlaceSuggestions, getPlaceDetails } from '../api/places_api'
+import { useTripPlan } from '../contexts/TripPlanContext'
 
 const BUDGET_OPTIONS = [
   { value: 'budget-friendly', label: 'Budget-friendly', emoji: '💚' },
@@ -15,6 +16,7 @@ const BUDGET_OPTIONS = [
 
 export default function TripPlanPage() {
   const navigate = useNavigate()
+  const { formData, updateFormData, updateMultipleFields, isLoaded } = useTripPlan()
 
   const [form, setForm] = useState({
     city: '',
@@ -27,6 +29,15 @@ export default function TripPlanPage() {
 
   const [errors, setErrors]   = useState({})
   const [touched, setTouched] = useState({})
+
+  // Load saved data from context on mount
+  useEffect(() => {
+    if (isLoaded && Object.keys(formData).some((key) => formData[key])) {
+      setForm(formData)
+      setCitySearchInput(formData.city)
+      setHotelSearchInput(formData.hotel)
+    }
+  }, [isLoaded, formData])
 
   // ── City autocomplete ──────────────────────────────────
   const [citySearchInput, setCitySearchInput]       = useState('')
@@ -78,6 +89,7 @@ export default function TripPlanPage() {
     const updatedForm = { ...form, [field]: value }
     const newErrors   = validateTripPlan(updatedForm)
     setForm(updatedForm)
+    updateFormData(field, value) // Save to context
     setTouched((prev) => ({ ...prev, [field]: true }))
     setErrors((prev) => {
       const next   = { ...prev }
@@ -96,6 +108,7 @@ export default function TripPlanPage() {
     const updatedForm = { ...form, budget: value }
     const newErrors   = validateTripPlan(updatedForm)
     setForm(updatedForm)
+    updateFormData('budget', value) // Save to context
     setTouched((prev) => ({ ...prev, budget: true }))
     setErrors((prev) => {
       const next = { ...prev }
@@ -110,6 +123,7 @@ export default function TripPlanPage() {
     const updatedForm = { ...form, city: cityName }
     const newErrors   = validateTripPlan(updatedForm)
     setForm(updatedForm)
+    updateFormData('city', cityName) // Save to context
     setCitySearchInput(cityName)
     setShowCitySuggestions(false)
     setTouched((prev) => ({ ...prev, city: true }))
@@ -125,6 +139,7 @@ export default function TripPlanPage() {
   const handleSelectHotel = async (place) => {
     setHotelSearchInput(place.name)
     handleChange('hotel', place.name)
+    updateFormData('hotel', place.name) // Save to context
     setShowHotelSuggestions(false)
 
     if (place.coordinates) {
@@ -151,6 +166,7 @@ export default function TripPlanPage() {
   const handleMapConfirm = (place) => {
     setHotelSearchInput(place.name)
     handleChange('hotel', place.name)
+    updateFormData('hotel', place.name) // Save to context
     setSelectedPlace(place)
     setShowMapModal(false)
   }

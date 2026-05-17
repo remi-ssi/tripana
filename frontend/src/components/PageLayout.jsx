@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ProgressBar from './ProgressBar'
+import { useTripPlan } from '../contexts/TripPlanContext'
 
 /**
  * PageLayout — shared wrapper used across all wizard pages.
@@ -8,13 +10,29 @@ import ProgressBar from './ProgressBar'
  */
 export default function PageLayout({ currentStep, title, subtitle, contentClassName = 'max-w-xl', children }) {
   const navigate = useNavigate()
+  const { clearFormData } = useTripPlan()
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+
+  const handleBackToDashboard = () => {
+    setShowConfirmModal(true)
+  }
+
+  const handleConfirmBack = () => {
+    clearFormData()
+    navigate('/dashboard')
+    setShowConfirmModal(false)
+  }
+
+  const handleCancelBack = () => {
+    setShowConfirmModal(false)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Back to Dashboard */}
       <div className="px-6 pt-5">
         <button
-          onClick={() => navigate('/')}
+          onClick={handleBackToDashboard}
           className="flex items-center gap-2 text-gray-600 hover:text-blue-700 transition-colors text-sm font-medium"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
@@ -39,6 +57,32 @@ export default function PageLayout({ currentStep, title, subtitle, contentClassN
       <div className={`${contentClassName} mx-auto px-4 pb-12`}>
         {children}
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-lg p-6 max-w-sm mx-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Go Back to Dashboard?</h2>
+            <p className="text-gray-600 text-sm mb-6">
+              Are you sure you want to go back to the dashboard? Your trip plan data will be cleared.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelBack}
+                className="flex-1 px-4 py-2 rounded-lg border-2 border-gray-200 text-gray-700 font-semibold hover:border-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmBack}
+                className="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors"
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
