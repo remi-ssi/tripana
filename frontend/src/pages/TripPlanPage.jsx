@@ -5,7 +5,7 @@ import { validateTripPlan } from '../validators/tripPlanValidator'
 import useCitySuggestions from '../hooks/useCitySuggestions'
 import useDebounce from '../hooks/useDebounce'
 import useMap from '../hooks/useMap'
-import { getPlaceSuggestions } from '../api/places_api'
+import { getPlaceSuggestions, getPlaceDetails } from '../api/places_api'
 
 const BUDGET_OPTIONS = [
   { value: 'budget-friendly', label: 'Budget-friendly', emoji: '💚' },
@@ -152,13 +152,29 @@ export default function TripPlanPage() {
     })
   }
 
-  // Handle hotel/place selection — opens map modal
-  const handleSelectHotel = (place) => {
+  // Handle hotel/place selection — retrieve coordinates then open map
+  const handleSelectHotel = async (place) => {
     setHotelSearchInput(place.name)
     handleChange('hotel', place.name)
-    setSelectedPlace(place)
     setShowHotelSuggestions(false)
-    setShowMapModal(true)
+
+    // If coordinates are already available (geocoding fallback), use them directly
+    if (place.coordinates) {
+      setSelectedPlace(place)
+      setShowMapModal(true)
+      return
+    }
+
+    // Otherwise, retrieve full details from Search Box API
+    try {
+      const details = await getPlaceDetails(place.id)
+      setSelectedPlace(details)
+      setShowMapModal(true)
+    } catch (error) {
+      console.error('Failed to retrieve place details:', error)
+      // Still set the place without coordinates — map won't open but name is saved
+      setSelectedPlace(place)
+    }
   }
 
   const handleCloseMapModal = () => {

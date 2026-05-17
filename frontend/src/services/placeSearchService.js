@@ -2,13 +2,11 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 /**
- * Search for places via backend proxy (Mapbox Geocoding)
- * @param {string} query - Search text
- * @param {object} options - Search options
- * @returns {Promise<Array>} Array of place results
+ * Search for places via backend proxy (Mapbox Search Box suggest)
+ * Returns suggestions — coordinates may be null (call retrievePlace to get them)
  */
 export async function searchPlaces(query, options = {}) {
-  const { country = 'ph', limit = 5, types = 'poi,address,place' } = options
+  const { country = 'ph', limit = 5 } = options
 
   if (!query || query.trim().length < 2) return []
 
@@ -16,7 +14,6 @@ export async function searchPlaces(query, options = {}) {
     q: query.trim(),
     country,
     limit: String(limit),
-    types,
   })
 
   const response = await fetch(`${API_BASE}/api/v1/places/search?${params}`, {
@@ -29,8 +26,20 @@ export async function searchPlaces(query, options = {}) {
 }
 
 /**
+ * Retrieve full place details (with coordinates) for a given mapbox_id
+ */
+export async function retrievePlace(mapboxId) {
+  const response = await fetch(`${API_BASE}/api/v1/places/retrieve/${encodeURIComponent(mapboxId)}`, {
+    credentials: 'include',
+  })
+
+  if (!response.ok) throw new Error('Failed to retrieve place details')
+
+  return await response.json()
+}
+
+/**
  * Fetch the Mapbox token from backend (for map rendering)
- * @returns {Promise<string>} Mapbox access token
  */
 export async function getMapboxToken() {
   const response = await fetch(`${API_BASE}/api/v1/places/mapbox-token`, {
