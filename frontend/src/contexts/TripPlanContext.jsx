@@ -5,10 +5,13 @@ const TripPlanContext = createContext()
 const STORAGE_KEY = 'tripPlanFormData'
 
 const initialFormState = {
+  tripType: '', // 'day' or 'overnight'
   city: '',
   hotel: '',
-  startDate: '',
-  endDate: '',
+  date: '', // for day tour
+  startTime: '', // for day tour
+  startDate: '', // for overnight
+  endDate: '', // for overnight
   maxAttractions: '',
   budget: '',
 }

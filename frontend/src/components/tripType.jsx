@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
+import { useTripPlan } from "../contexts/TripPlanContext";
 import daytour from "../assets/daytour.png";
 import overnight from "../assets/overnight.png";
 
@@ -20,6 +22,8 @@ const tripTypes = [
 
 export default function TripTypeModal({ onClose = () => {} }) {
   const [selected, setSelected] = useState(null);
+  const navigate = useNavigate();
+  const { updateFormData } = useTripPlan();
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -62,6 +66,11 @@ export default function TripTypeModal({ onClose = () => {} }) {
         {/* Footer */}
         <button
           disabled={!selected}
+          onClick={() => {
+            updateFormData('tripType', selected);
+            navigate('/trip-plan');
+            onClose();
+          }}
           className={`w-full py-3 rounded-lg font-semibold text-sm tracking-wider transition-all ${
             selected
               ? "bg-blue-600 text-white hover:bg-blue-700 cursor-pointer active:scale-95"
