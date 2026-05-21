@@ -1,17 +1,19 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
 import Navbar from '../components/dashboardNav'
 import { useAuth } from '../hooks/AuthProfile'
 import EarthLoader from '../components/loadingIndicator'
 import { CalendarDays, PlusCircle } from 'lucide-react'
+import TripTypeModal from '../components/tripType'
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, loading, clearUser } = useAuth()
+  const [showTripModal, setShowTripModal] = useState(false)
 
   const handlePlanTrip = () => {
-    navigate('/trip-plan')
+    setShowTripModal(true)
   }
 
   const handleLogout = async () => {
@@ -61,6 +63,8 @@ export default function Dashboard() {
           </button>
         </div>
       </main>
+
+      {showTripModal && <TripTypeModal onClose={() => setShowTripModal(false)} />}
     </div>
   )
 }
