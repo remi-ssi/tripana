@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import PageLayout from '../components/PageLayout'
+import PageLayout from './PageLayout'
 import { validateBreaks } from '../validators/breakValidator'
 
 const MEALS = [

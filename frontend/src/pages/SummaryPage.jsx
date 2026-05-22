@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import PageLayout from '../components/PageLayout'
+import PageLayout from './PageLayout'
 
 // Mock summary data — in a real app this would come from shared state/context
 const SUMMARY = {
