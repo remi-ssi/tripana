@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from './PageLayout'
 import { validatePreferences } from '../validators/preferenceValidator'
+import { useTripPlan } from '../contexts/TripPlanContext'
 
 const INTEREST_TAGS = [
-  'Photography', 'Local Food', 'History', 'Nature Hike',
-  'Swimming', 'Shopping', 'Nightlife', 'Art', 'Wildlife', 'Camping',
+  'Photography', 'Local Food', 'Hiking', 'Shopping', 'Nightlife', 'Art', 'Wildlife', 'Camping', 'Beaches', 'Food Trip', 'Historical Sites', 'Relaxation', 'Water Activities','Island Hopping',
 ]
 
 const BUDGET_OPTIONS = [
@@ -16,10 +16,11 @@ const BUDGET_OPTIONS = [
 
 export default function PreferencePage() {
   const navigate = useNavigate()
+  const { formData, updateMultipleFields } = useTripPlan()
 
-  const [paceLevel, setPaceLevel] = useState(2)
-  const [interests, setInterests] = useState([])
-  const [budget, setBudget] = useState('')
+  const [paceLevel, setPaceLevel] = useState(formData.paceLevel || 2)
+  const [interests, setInterests] = useState(formData.interests || [])
+  const [budget, setBudget] = useState(formData.budget || '')
 
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
@@ -29,7 +30,9 @@ export default function PreferencePage() {
     const newErrors = validatePreferences(paceLevel, interests, budget)
     setErrors(newErrors)
     if (Object.keys(newErrors).length === 0) {
-      navigate('/break')
+      // Save to context before navigating
+      updateMultipleFields({ paceLevel, interests, budget })
+      navigate('/attractions')
     }
   }
 
@@ -38,6 +41,8 @@ export default function PreferencePage() {
     setTouched((prev) => ({ ...prev, budget: true }))
     const newErrors = validatePreferences(paceLevel, interests, value)
     setErrors((prev) => ({ ...prev, budget: newErrors.budget || '' }))
+    // Save to context
+    updateMultipleFields({ budget: value })
   }
 
   const paceLabels = ['Very Relaxed', 'Relaxed', 'Moderate', 'Active', 'Intense']
@@ -63,6 +68,8 @@ export default function PreferencePage() {
               setTouched((prev) => ({ ...prev, paceLevel: true }))
               const newErrors = validatePreferences(value, interests, budget)
               setErrors((prev) => ({ ...prev, paceLevel: newErrors.paceLevel || '' }))
+              // Save to context
+              updateMultipleFields({ paceLevel: value })
             }}
             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-700"
           />
@@ -91,6 +98,8 @@ export default function PreferencePage() {
                     setTouched((prev) => ({ ...prev, interests: true }))
                     const newErrors = validatePreferences(paceLevel, updatedInterests, budget)
                     setErrors((prev) => ({ ...prev, interests: newErrors.interests || '' }))
+                    // Save to context
+                    updateMultipleFields({ interests: updatedInterests })
                   }}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${active ? 'bg-blue-700 border-blue-700 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-700'}`}
                 >
@@ -128,10 +137,16 @@ export default function PreferencePage() {
         </div>
 
         {/* Navigation */}
-        <div className="flex gap-3 pt-1">
-          <button onClick={() => navigate('/attractions')} className="flex-1 py-3.5 rounded-2xl border-2 border-blue-700 text-blue-700 font-semibold text-sm hover:bg-blue-50 transition-colors">Back</button>
-          <button onClick={handleContinue} disabled={!paceLevel || interests.length === 0 || !budget} className="flex-1 py-3.5 rounded-2xl bg-blue-700 hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors shadow-md shadow-blue-200">Continue</button>
+        <div>
+          <button onClick={handleContinue} disabled={!paceLevel || interests.length === 0 || !budget} className="w-full py-4 rounded-full bg-blue-700 hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold text-base transition-colors shadow-md">Continue</button>
         </div>
+
+        <button
+          onClick={() => navigate('/trip-plan')}
+          className="w-full text-center text-sm text-gray-400 hover:text-blue-700 transition-colors"
+        >
+          ← Back to Trip Plan
+        </button>
 
       </div>
     </PageLayout>

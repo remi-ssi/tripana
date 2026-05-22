@@ -14,6 +14,8 @@ const initialFormState = {
   endDate: '', // for overnight
   maxAttractions: '',
   budget: '',
+  paceLevel: 2,
+  interests: [],
 }
 
 export function TripPlanProvider({ children }) {

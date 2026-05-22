@@ -79,7 +79,7 @@ export default function AttractionsPage() {
     const newErrors = validateAttractions(selected)
     setErrors(newErrors)
     if (Object.keys(newErrors).length === 0) {
-      navigate('/preference')
+      navigate('/break')
     }
   }
 
@@ -215,7 +215,14 @@ export default function AttractionsPage() {
           disabled={selected.length === 0}
           className="w-full py-4 rounded-full bg-blue-700 hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold text-base transition-colors shadow-md"
         >
-          Continue to Preference
+          Continue to Break
+        </button>
+
+        <button
+          onClick={() => navigate('/preference')}
+          className="w-full text-center text-sm text-gray-400 hover:text-blue-700 transition-colors"
+        >
+          ← Back to Preference
         </button>
       </div>
     </PageLayout>
