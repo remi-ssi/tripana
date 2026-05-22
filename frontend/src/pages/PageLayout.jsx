@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import ProgressBar from './ProgressBar'
+import ProgressBar from '../components/ProgressBar'
 import { useTripPlan } from '../contexts/TripPlanContext'
 
 /**
@@ -60,7 +60,7 @@ export default function PageLayout({ currentStep, title, subtitle, contentClassN
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-lg p-6 max-w-sm mx-4">
             <h2 className="text-xl font-bold text-gray-900 mb-2">Go Back to Dashboard?</h2>
             <p className="text-gray-600 text-sm mb-6">

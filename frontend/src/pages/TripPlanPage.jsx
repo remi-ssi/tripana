@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import PageLayout from '../components/PageLayout'
+import PageLayout from './PageLayout'
 import HotelMapModal from '../components/map/HotelMapModal'
 import { validateTripPlan } from '../validators/tripPlanValidator'
 import useCitySuggestions from '../hooks/useCitySuggestions'
@@ -188,7 +188,7 @@ export default function TripPlanPage() {
 
   const handleContinue = () => {
     if (validateForm()) {
-      navigate('/preferences')
+      navigate('/preference')
     }
   }
 
@@ -205,7 +205,7 @@ export default function TripPlanPage() {
 
   return (
     <PageLayout
-      currentStep={tripType === 'day' ? 'day-tour-plan' : 'trip-plan'}
+      currentStep="trip-plan"
       title={pageTitle}
       subtitle={pageSubtitle}
     >
