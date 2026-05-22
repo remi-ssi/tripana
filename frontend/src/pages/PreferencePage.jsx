@@ -8,22 +8,36 @@ const INTEREST_TAGS = [
   'Swimming', 'Shopping', 'Nightlife', 'Art', 'Wildlife', 'Camping',
 ]
 
+const BUDGET_OPTIONS = [
+  { value: 'budget-friendly', label: 'Budget-friendly', emoji: '💚' },
+  { value: 'balanced', label: 'Balanced', emoji: '💼' },
+  { value: 'luxury', label: 'Luxury', emoji: '✨' },
+]
+
 export default function PreferencePage() {
   const navigate = useNavigate()
 
   const [paceLevel, setPaceLevel] = useState(2)
   const [interests, setInterests] = useState([])
+  const [budget, setBudget] = useState('')
 
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
 
   const handleContinue = () => {
-    setTouched({ paceLevel: true, interests: true })
-    const newErrors = validatePreferences(paceLevel, interests)
+    setTouched({ paceLevel: true, interests: true, budget: true })
+    const newErrors = validatePreferences(paceLevel, interests, budget)
     setErrors(newErrors)
     if (Object.keys(newErrors).length === 0) {
       navigate('/break')
     }
+  }
+
+  const handleBudget = (value) => {
+    setBudget(value)
+    setTouched((prev) => ({ ...prev, budget: true }))
+    const newErrors = validatePreferences(paceLevel, interests, value)
+    setErrors((prev) => ({ ...prev, budget: newErrors.budget || '' }))
   }
 
   const paceLabels = ['Very Relaxed', 'Relaxed', 'Moderate', 'Active', 'Intense']
@@ -47,7 +61,7 @@ export default function PreferencePage() {
               const value = Number(e.target.value)
               setPaceLevel(value)
               setTouched((prev) => ({ ...prev, paceLevel: true }))
-              const newErrors = validatePreferences(value, interests)
+              const newErrors = validatePreferences(value, interests, budget)
               setErrors((prev) => ({ ...prev, paceLevel: newErrors.paceLevel || '' }))
             }}
             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-700"
@@ -75,7 +89,7 @@ export default function PreferencePage() {
                       : [...interests, tag]
                     setInterests(updatedInterests)
                     setTouched((prev) => ({ ...prev, interests: true }))
-                    const newErrors = validatePreferences(paceLevel, updatedInterests)
+                    const newErrors = validatePreferences(paceLevel, updatedInterests, budget)
                     setErrors((prev) => ({ ...prev, interests: newErrors.interests || '' }))
                   }}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${active ? 'bg-blue-700 border-blue-700 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-700'}`}
@@ -88,10 +102,35 @@ export default function PreferencePage() {
           {errors.interests && touched.interests && <p className="text-red-500 text-xs mt-2">{errors.interests}</p>}
         </div>
 
+        {/* Budget */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Budget <span className="text-red-500">*</span>
+          </label>
+          <div className="flex gap-3">
+            {BUDGET_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleBudget(option.value)}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-medium transition-all duration-200 ${
+                  budget === option.value
+                    ? 'border-blue-700 bg-blue-700 text-white shadow-md shadow-blue-200'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:text-blue-700'
+                }`}
+              >
+                <span>{option.emoji}</span>
+                <span>{option.label}</span>
+              </button>
+            ))}
+          </div>
+          {errors.budget && touched.budget && <p className="text-red-500 text-xs mt-2">{errors.budget}</p>}
+        </div>
+
         {/* Navigation */}
         <div className="flex gap-3 pt-1">
           <button onClick={() => navigate('/attractions')} className="flex-1 py-3.5 rounded-2xl border-2 border-blue-700 text-blue-700 font-semibold text-sm hover:bg-blue-50 transition-colors">Back</button>
-          <button onClick={handleContinue} disabled={!paceLevel || interests.length === 0} className="flex-1 py-3.5 rounded-2xl bg-blue-700 hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors shadow-md shadow-blue-200">Continue</button>
+          <button onClick={handleContinue} disabled={!paceLevel || interests.length === 0 || !budget} className="flex-1 py-3.5 rounded-2xl bg-blue-700 hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors shadow-md shadow-blue-200">Continue</button>
         </div>
 
       </div>

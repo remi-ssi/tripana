@@ -8,12 +8,6 @@ import useDebounce from '../hooks/useDebounce'
 import { getPlaceSuggestions, getPlaceDetails } from '../api/places_api'
 import { useTripPlan } from '../contexts/TripPlanContext'
 
-const BUDGET_OPTIONS = [
-  { value: 'budget-friendly', label: 'Budget-friendly', emoji: '💚' },
-  { value: 'balanced', label: 'Balanced', emoji: '💼' },
-  { value: 'luxury', label: 'Luxury', emoji: '✨' },
-]
-
 export default function TripPlanPage() {
   const navigate = useNavigate()
   const { formData, updateFormData, isLoaded } = useTripPlan()
@@ -34,7 +28,6 @@ export default function TripPlanPage() {
     startDate: '',
     endDate: '',
     maxAttractions: '',
-    budget: '',
   })
 
   const [errors, setErrors]   = useState({})
@@ -91,8 +84,8 @@ export default function TripPlanPage() {
   const validateForm = () => {
     const newErrors = validateTripPlan(form, tripType)
     const fieldsToTouch = tripType === 'day' 
-      ? ['city', 'date', 'startTime', 'budget']
-      : ['city', 'hotel', 'startDate', 'endDate', 'maxAttractions', 'budget']
+      ? ['city', 'date', 'startTime']
+      : ['city', 'hotel', 'startDate', 'endDate', 'maxAttractions']
     setTouched(fieldsToTouch.reduce((acc, field) => ({ ...acc, [field]: true }), {}))
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -115,20 +108,6 @@ export default function TripPlanPage() {
         if (newErrors[f]) next[f] = newErrors[f]
         else delete next[f]
       })
-      return next
-    })
-  }
-
-  const handleBudget = (value) => {
-    const updatedForm = { ...form, budget: value }
-    const newErrors   = validateTripPlan(updatedForm, tripType)
-    setForm(updatedForm)
-    updateFormData('budget', value)
-    setTouched((prev) => ({ ...prev, budget: true }))
-    setErrors((prev) => {
-      const next = { ...prev }
-      if (newErrors.budget) next.budget = newErrors.budget
-      else delete next.budget
       return next
     })
   }
@@ -420,39 +399,12 @@ export default function TripPlanPage() {
           </>
         )}
 
-        {/* ── Budget (shown for both trip types) ── */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Budget <span className="text-red-500">*</span>
-          </label>
-          <div className="flex gap-3">
-            {BUDGET_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleBudget(option.value)}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-medium transition-all duration-200 ${
-                  form.budget === option.value
-                    ? 'border-blue-700 bg-blue-700 text-white shadow-md shadow-blue-200'
-                    : `border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:text-blue-700 ${errors.budget && touched.budget ? 'ring-2 ring-red-500' : ''}`
-                }`}
-              >
-                <span>{option.emoji}</span>
-                <span>{option.label}</span>
-              </button>
-            ))}
-          </div>
-          {errors.budget && touched.budget && <p className="text-red-500 text-xs mt-1">{errors.budget}</p>}
-        </div>
-
         {/* ── Continue ── */}
         <button
           type="button"
           onClick={handleContinue}
           disabled={
-            Object.keys(errors).length > 0 || 
-            !form.city || 
-            !form.budget ||
+            !form.city ||
             (tripType === 'day' && (!form.date || !form.startTime)) ||
             (tripType === 'overnight' && (!form.hotel || !form.startDate || !form.endDate || !form.maxAttractions))
           }

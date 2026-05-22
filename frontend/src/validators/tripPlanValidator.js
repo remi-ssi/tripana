@@ -8,10 +8,6 @@ export const validateTripPlan = (form, tripType = form.tripType) => {
     newErrors.city = ERROR_MESSAGES.CITY_REQUIRED
   }
 
-  if (!form.budget) {
-    newErrors.budget = ERROR_MESSAGES.BUDGET_REQUIRED
-  }
-
   // Day Tour validation
   if (tripType === 'day') {
     if (!form.date) {
