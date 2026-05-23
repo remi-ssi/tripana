@@ -5,6 +5,8 @@ from fastapi import APIRouter, Query, HTTPException
 
 from app.config import settings
 from app.services.mapbox_usage_service import track_geocoding, track_map_load, get_usage
+from app.services.google_places_service import search_attractions, get_place_details
+from app.services.google_places_usage_service import get_usage as get_google_places_usage
 
 router = APIRouter()
 
@@ -206,3 +208,76 @@ async def get_mapbox_token():
 async def mapbox_usage():
     """Check current Mapbox API usage stats for this month."""
     return get_usage()
+
+
+# ── Google Places API Endpoints ──────────────────────────────────
+# These endpoints keep the Google Places API key secure on the server-side
+# The frontend can call these endpoints without exposing the API key
+
+
+@router.get("/attractions/search")
+async def search_google_attractions(
+    q: str = Query(..., min_length=2, description="Search query for attractions (e.g., 'restaurants', 'museums')"),
+    lat: float | None = Query(None, description="Latitude for location bias"),
+    lng: float | None = Query(None, description="Longitude for location bias"),
+    radius: int = Query(5000, ge=1000, le=50000, description="Search radius in meters"),
+    limit: int = Query(20, ge=1, le=50, description="Maximum number of results"),
+):
+    """
+    Search for attractions using Google Places API.
+    
+    The API key is kept on the server-side and never exposed to the client.
+    This ensures your API key remains secure and prevents unauthorized usage.
+    
+    Args:
+        q: Search query (e.g., "restaurants", "museums", "hotels")
+        lat: Latitude for location bias (optional)
+        lng: Longitude for location bias (optional)
+        radius: Search radius in meters (default 5000m = 5km)
+        limit: Maximum results to return (default 20, max 50)
+    
+    Returns:
+        List of attractions with details: name, address, coordinates, rating, etc.
+    """
+    location = None
+    if lat is not None and lng is not None:
+        location = (lat, lng)
+    
+    results = await search_attractions(
+        query=q,
+        location=location,
+        radius=radius,
+        limit=limit
+    )
+    
+    return {"results": results}
+
+
+@router.get("/attractions/details/{place_id}")
+async def get_attraction_details(
+    place_id: str = Query(..., description="Google Place ID")
+):
+    """
+    Get detailed information about a specific attraction.
+    
+    Args:
+        place_id: Google Place ID
+    
+    Returns:
+        Detailed information including reviews, opening hours, photos, etc.
+    """
+    details = await get_place_details(place_id)
+    return details
+
+
+@router.get("/attractions/usage")
+async def google_places_usage():
+    """
+    Check current Google Places API usage stats and quota remaining.
+    
+    Returns:
+        Current usage, remaining quota, percentage used, and quota status
+    """
+    return get_google_places_usage()
+
+

@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     # Mapbox settings
     MAPBOX_TOKEN: str = ""
 
+    # Google Places API settings
+    GOOGLE_PLACES_API_KEY: str = ""
+    GOOGLE_PLACES_MONTHLY_QUOTA: int = 10_000  # Default: 10,000 requests/month (adjust based on your plan)
+
     # OTP settings
     OTP_CLEANUP_INTERVAL_SECONDS: int = 60
 
