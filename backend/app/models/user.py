@@ -26,4 +26,11 @@ class User(Base):
         "UserPreference",
         back_populates="user",
         cascade="all, delete-orphan"
-    )   
+    )
+    
+    # Relationship to trips
+    trips: Mapped[List["Trip"]] = relationship(
+        "Trip",
+        back_populates="user",
+        foreign_keys="Trip.userid"
+    )
