@@ -29,3 +29,29 @@ export const isEmpty = (str) => {
 
 //Sleep function for delays
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// Format Google Places type to readable tag
+export const formatTypeTag = (type) => {
+  if (!type) return 'Attraction'
+  
+  const typeMap = {
+    'tourist_attraction': 'Attraction',
+    'restaurant': 'Food',
+    'cafe': 'Cafe',
+    'museum': 'Museum',
+    'park': 'Nature',
+    'natural_feature': 'Nature',
+    'shopping_mall': 'Shopping',
+    'bar': 'Nightlife',
+    'night_club': 'Nightlife',
+    'beach': 'Beach',
+    'historical_landmark': 'Historical',
+    'art_gallery': 'Art',
+    'aquarium': 'Aquarium',
+    'zoo': 'Zoo',
+    'place_of_worship': 'Cultural',
+    'lodging': 'Lodging',
+  }
+  
+  return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1)
+}

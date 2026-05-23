@@ -1,73 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from './PageLayout'
-import { validateAttractions } from '../validators/attractionValidator'
-
-const ATTRACTIONS = [
-  {
-    id: 1,
-    name: 'Grand Palace',
-    description: 'A stunning complex of buildings at the heart of Bangkok, featuring intricate Thai architecture and the revered...',
-    tags: ['Culture', 'Temples'],
-    rating: 4.8,
-    reviews: 12543,
-    duration: '2-3 hours',
-    image: 'https://images.unsplash.com/photo-1563492065599-3520f775eeed?w=400&h=220&fit=crop',
-  },
-  {
-    id: 2,
-    name: 'Wat Pho Temple',
-    description: 'Home to the famous Reclining Buddha, this temple is one of the largest and oldest in Bangkok...',
-    tags: ['Culture', 'Temples'],
-    rating: 4.7,
-    reviews: 9821,
-    duration: '2-3 hours',
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=220&fit=crop',
-  },
-  {
-    id: 3,
-    name: 'Chatuchak Market',
-    description: 'One of the world\'s largest weekend markets with over 15,000 stalls selling everything imaginable...',
-    tags: ['Shopping', 'Food'],
-    rating: 4.6,
-    reviews: 8234,
-    duration: '2-3 hours',
-    image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=400&h=220&fit=crop',
-  },
-  {
-    id: 4,
-    name: 'Khao San Road',
-    description: 'The famous backpacker street of Bangkok filled with street food, bars, and vibrant nightlife...',
-    tags: ['Nightlife', 'Food'],
-    rating: 4.3,
-    reviews: 6102,
-    duration: '2-3 hours',
-    image: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=400&h=220&fit=crop',
-  },
-  {
-    id: 5,
-    name: 'Lumphini Park',
-    description: 'A large public park in the heart of Bangkok offering a peaceful escape from the city bustle...',
-    tags: ['Nature', 'Relaxation'],
-    rating: 4.5,
-    reviews: 5430,
-    duration: '2-3 hours',
-    image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=220&fit=crop',
-  },
-  {
-    id: 6,
-    name: 'Jim Thompson House',
-    description: 'A museum complex of six traditional Thai houses showcasing Thai silk and Southeast Asian art...',
-    tags: ['Culture', 'Art'],
-    rating: 4.4,
-    reviews: 4211,
-    duration: '2-3 hours',
-    image: 'https://images.unsplash.com/photo-1555400038-63f5ba517a47?w=400&h=220&fit=crop',
-  },
-]
+import { validateAttractions, validateTripPlanData, hasErrors } from '../validators/attractionValidator'
+import { useTripPlan } from '../contexts/TripPlanContext'
+import { getRecommendedPlaces } from '../services/attraction'
+import { apiClient } from '../api/apiClient'
+import { formatTypeTag } from '../utils/helpers'
 
 export default function AttractionsPage() {
   const navigate = useNavigate()
+  const { formData } = useTripPlan()
+  
+  const [attractions, setAttractions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selected, setSelected] = useState([])
@@ -75,17 +22,79 @@ export default function AttractionsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const cardsPerPage = 9
 
-  const categories = ['all', ...new Set(ATTRACTIONS.flatMap((a) => a.tags))]
+  // ════════════════════════════════════════════════════════════════════════
+  // FETCH RECOMMENDATIONS ON MOUNT
+  // Loads attractions based on user preferences and trip location
+  // ════════════════════════════════════════════════════════════════════════
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        // Validate trip plan data
+        const tripErrors = validateTripPlanData(formData)
+        if (hasErrors(tripErrors)) {
+          throw new Error(tripErrors.city || tripErrors.interests || 'Invalid trip plan data')
+        }
+
+        console.log('📍 Fetching attractions for:', {
+          city: formData.city,
+          preferences: formData.interests,
+        })
+
+        // Get recommended attractions based on preferences
+        const recommendedAttractions = await getRecommendedPlaces({
+          locationCity: formData.city,
+          userPreferences: formData.interests,
+        })
+
+        if (recommendedAttractions.length === 0) {
+          throw new Error('No attractions found matching your preferences. Try adjusting your filters.')
+        }
+
+        // Convert API format to display format
+        const formattedAttractions = recommendedAttractions.map((place, index) => ({
+          id: place.id || `place_${index}`,
+          name: place.name || 'Unknown Place',
+          description: place.address || 'No description available',
+          tags: place.types ? place.types.slice(0, 2).map(t => formatTypeTag(t)) : ['Attraction'],
+          rating: place.rating || 0,
+          reviews: place.reviews || 0,
+          duration: '2-3 hours',
+          image: place.photos && place.photos.length > 0
+            ? place.photos[0]
+            : 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&h=220&fit=crop',
+        }))
+
+        setAttractions(formattedAttractions)
+      } catch (err) {
+        console.error('Error fetching recommendations:', err)
+        setError(err.message || 'Failed to load attractions. Please try again.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchRecommendations()
+  }, [formData])
+
+  // ════════════════════════════════════════════════════════════════════════
+  // GENERATE CATEGORIES FROM ATTRACTIONS
+  // Extracts unique tags from all attractions for filtering
+  // ════════════════════════════════════════════════════════════════════════
+  const categories = ['all', ...new Set(attractions.flatMap((a) => a.tags))]
 
   const handleContinue = () => {
     const newErrors = validateAttractions(selected)
     setErrors(newErrors)
-    if (Object.keys(newErrors).length === 0) {
+    if (!hasErrors(newErrors)) {
       navigate('/break')
     }
   }
 
-  const filtered = ATTRACTIONS.filter(
+  // FILTERING AND PAGINATION
+  const filtered = attractions.filter(
     (a) => {
       const matchesSearch =
         a.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -104,10 +113,29 @@ export default function AttractionsPage() {
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     )
-    // Clear error when user selects attractions
+    // Clear errors when user selects attractions
     if (errors.attractions) {
       setErrors({})
     }
+  }
+
+  // LOADING STATE
+  if (loading) {
+    return (
+      <PageLayout
+        currentStep="attractions"
+        title="Search Attractions"
+        subtitle="Loading personalized recommendations..."
+        contentClassName="max-w-7xl"
+      >
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700 mb-4"></div>
+          <p className="text-gray-600 text-lg">Finding the best attractions for you...</p>
+          <p className="text-gray-400 text-sm mt-2">Location: <span className="font-semibold">{formData.city}</span></p>
+          <p className="text-gray-400 text-sm">Interests: <span className="font-semibold">{formData.interests?.slice(0, 3).join(', ')}</span></p>
+        </div>
+      </PageLayout>
+    )
   }
 
   return (
@@ -117,6 +145,15 @@ export default function AttractionsPage() {
       subtitle="Select the attractions you'd like to visit during your trip"
       contentClassName="max-w-7xl"
     >
+      {/* ERROR STATE */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-300 rounded-lg">
+          <p className="text-red-600 text-sm">
+            ❌ {error}
+          </p>
+        </div>
+      )}
+
       {/* Search + Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
         <div className="flex-1 relative">
@@ -208,6 +245,13 @@ export default function AttractionsPage() {
           )
         })}
       </div>
+
+      {/* Empty State */}
+      {attractions.length === 0 && !loading && (
+        <div className="text-center py-8">
+          <p className="text-gray-500">No attractions found. Please adjust your preferences.</p>
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
