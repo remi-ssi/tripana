@@ -1,8 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { useAuth } from '../hooks/AuthProfile'
 
 const TripPlanContext = createContext()
-
-const STORAGE_KEY = 'tripPlanFormData'
 
 const initialFormState = {
   tripType: '', // 'day' or 'overnight'
@@ -21,31 +20,22 @@ const initialFormState = {
 export function TripPlanProvider({ children }) {
   const [formData, setFormData] = useState(initialFormState)
   const [isLoaded, setIsLoaded] = useState(false)
+  const { user } = useAuth() // Monitor auth state
 
-  // Load data from localStorage on mount
+  // Mark as loaded after initial render
   useEffect(() => {
-    const savedData = localStorage.getItem(STORAGE_KEY)
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData)
-        setFormData(parsed)
-      } catch (error) {
-        console.error('Failed to load trip plan data:', error)
-      }
-    }
     setIsLoaded(true)
   }, [])
 
-  // Save data to localStorage whenever it changes
+  // Clear trip data when user logs out (user becomes null)
   useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData))
+    if (isLoaded && user === null) {
+      setFormData(initialFormState)
     }
-  }, [formData, isLoaded])
+  }, [user, isLoaded])
 
   const clearFormData = () => {
     setFormData(initialFormState)
-    localStorage.removeItem(STORAGE_KEY)
   }
 
   const updateFormData = (field, value) => {
