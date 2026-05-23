@@ -1,0 +1,377 @@
+"""
+Local Attraction Search Service
+Handles searching local database first, then falling back to Google API
+Implements SAW scoring system and automatic place caching
+"""
+
+from typing import List, Optional, Dict
+import logging
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.repositories.place_repository import PlaceRepository
+from app.services.google_places_service import search_attractions as search_google_attractions
+from app.services.google_places_service import get_place_details
+
+logger = logging.getLogger(__name__)
+
+# Scoring weights — must sum to 1.0
+# Rating(0.40), Relevance(0.35), Popularity(0.25)
+SCORING_WEIGHTS = {
+    "WEIGHT_RATING": 0.40,
+    "WEIGHT_POPULARITY": 0.25,
+    "WEIGHT_RELEVANCE": 0.35,
+    "RATING_MIN": 1,
+    "RATING_MAX": 5,
+    "POPULARITY_LOG_MAX": 50000,
+    "MIN_RATING_THRESHOLD": 3,
+}
+
+# Preference to keywords mapping
+PREFERENCE_TO_KEYWORDS = {
+    "Beaches": ["beach", "resort", "swimming", "water sport"],
+    "Water Activities": ["water sport", "aquarium", "diving", "snorkeling"],
+    "Food Trip": ["restaurant", "cafe", "food court", "street food"],
+    "Local Food": ["local restaurant", "market", "food stall"],
+    "Hiking": ["hiking trail", "park", "mountain", "nature reserve"],
+    "Shopping": ["shopping mall", "market", "boutique", "store"],
+    "Nightlife": ["bar", "club", "lounge", "entertainment"],
+    "Art": ["art gallery", "museum", "art museum"],
+    "Historical Sites": ["historical landmark", "monument", "temple", "archaeological"],
+    "Photography": ["scenic viewpoint", "landscape", "park", "monument"],
+    "Wildlife": ["wildlife sanctuary", "zoo", "nature reserve", "aquarium"],
+    "Camping": ["campground", "outdoor", "nature"],
+    "Relaxation": ["spa", "wellness", "resort", "hot spring"],
+    "Island Hopping": ["island", "ferry", "beach", "resort"],
+}
+
+
+class LocalAttractionSearchService:
+    """Service for searching attractions with local database first, then Google API."""
+    
+    def __init__(self, db: AsyncSession):
+        self.db = db
+        self.place_repo = PlaceRepository(db)
+    
+    async def search_attractions(
+        self,
+        location_city: str,
+        user_preferences: List[str],
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
+        radius: int = 10000,
+        limit: int = 20,
+    ) -> List[Dict]:
+        """
+        Search for attractions with priority to local database.
+        
+        Steps:
+        1. Search local database filtered by city and user preferences
+        2. If results found, score and return top matches
+        3. If no local results, search Google API
+        4. Save fetched results to local database (with deduplication)
+        5. Score and return top matches
+        """
+        try:
+            if not location_city or location_city.strip() == "":
+                raise ValueError("Location city is required")
+            
+            if not user_preferences or len(user_preferences) == 0:
+                raise ValueError("At least one preference is required")
+            
+            # Step 1: Try local database search
+            logger.info(f"Searching local database for {location_city} with preferences: {user_preferences}")
+            local_results = await self._search_local_database(
+                location_city, 
+                user_preferences
+            )
+            
+            if local_results and len(local_results) > 0:
+                logger.info(f"Found {len(local_results)} local results")
+                scored_results = self._score_places(local_results, user_preferences)
+                return self._format_results(scored_results[:limit])
+            
+            # Step 2: If no local results, search Google API
+            logger.info(f"No local results found. Searching Google API...")
+            google_results = await self._search_google_api(
+                location_city,
+                user_preferences,
+                latitude,
+                longitude,
+                radius,
+                limit * 2  # Fetch more to get 20 after dedup
+            )
+            
+            if not google_results:
+                logger.warning(f"No results from Google API for {location_city}")
+                return []
+            
+            # Step 3: Save to database with deduplication
+            logger.info(f"Saving {len(google_results)} results to database...")
+            await self._save_places_to_database(location_city, google_results)
+            
+            # Step 4: Score and return results
+            scored_results = self._score_places(google_results, user_preferences)
+            return self._format_results(scored_results[:limit])
+        
+        except Exception as e:
+            logger.error(f"Error in search_attractions: {str(e)}", exc_info=True)
+            raise
+    
+    async def _search_local_database(
+        self,
+        city: str,
+        user_preferences: List[str],
+    ) -> List[Dict]:
+        """
+        Search local database with filtering logic:
+        1. Check if address city matches the requested city
+        2. Check if types match user preferences
+        Only return places that match BOTH criteria.
+        """
+        try:
+            # Use the repository's city and preference filtering
+            places = await self.place_repo.search_by_city_and_preferences(
+                city,
+                user_preferences,
+                PREFERENCE_TO_KEYWORDS
+            )
+            
+            # Convert Place ORM objects to dictionaries
+            results = []
+            for place in places:
+                results.append({
+                    "id": place.google_place_id,
+                    "name": place.name,
+                    "address": place.address,
+                    "coordinates": {
+                        "lat": place.latitude,
+                        "lng": place.longitude,
+                    },
+                    "rating": place.rating,
+                    "user_ratings_total": place.user_ratings_total,
+                    "types": place.types,
+                    "opening_hours": place.opening_hours,
+                    "photos": place.photos,
+                    "website": place.website,
+                    "price_level": place.price_level,
+                })
+            
+            return results
+        except Exception as e:
+            logger.error(f"Error searching local database: {str(e)}", exc_info=True)
+            return []
+    
+    async def _search_google_api(
+        self,
+        location_city: str,
+        user_preferences: List[str],
+        latitude: Optional[float],
+        longitude: Optional[float],
+        radius: int,
+        limit: int,
+    ) -> List[Dict]:
+        """Search Google Places API."""
+        try:
+            # Build targeted search queries from user preferences
+            search_queries = self._build_search_queries(location_city, user_preferences)
+            
+            all_results = []
+            for query in search_queries:
+                search_params = {
+                    "query": query,
+                    "radius": radius,
+                    "limit": limit,
+                }
+                
+                if latitude is not None and longitude is not None:
+                    search_params["location"] = (latitude, longitude)
+                
+                results = await search_google_attractions(**search_params)
+                all_results.extend(results)
+            
+            # Remove duplicates by place ID
+            unique_results = {}
+            for place in all_results:
+                place_id = place.get("id")
+                if place_id and place_id not in unique_results:
+                    unique_results[place_id] = place
+            
+            return list(unique_results.values())
+        except Exception as e:
+            logger.error(f"Error searching Google API: {str(e)}", exc_info=True)
+            return []
+    
+    async def _save_places_to_database(
+        self,
+        location_city: str,
+        places: List[Dict],
+    ) -> int:
+        """
+        Save fetched places to database with deduplication via Google Place ID.
+        Returns count of newly saved places.
+        """
+        saved_count = 0
+        try:
+            for place in places:
+                google_place_id = place.get("id")
+                
+                # Check if already exists (deduplication)
+                if await self.place_repo.exists_by_google_place_id(google_place_id):
+                    logger.debug(f"Place {google_place_id} already exists, skipping")
+                    continue
+                
+                # Create new place record
+                try:
+                    await self.place_repo.create(
+                        google_place_id=google_place_id,
+                        name=place.get("name", ""),
+                        address=place.get("address", ""),
+                        city=location_city,
+                        latitude=place.get("coordinates", {}).get("lat", 0.0),
+                        longitude=place.get("coordinates", {}).get("lng", 0.0),
+                        rating=place.get("rating"),
+                        user_ratings_total=place.get("user_ratings_total"),
+                        types=place.get("types", []),
+                        opening_hours=place.get("opening_hours"),
+                        photos=place.get("photos", []),
+                        website=place.get("website"),
+                        price_level=place.get("price_level"),
+                    )
+                    saved_count += 1
+                    logger.debug(f"Saved place: {place.get('name')} ({google_place_id})")
+                except Exception as e:
+                    logger.warning(f"Failed to save place {google_place_id}: {str(e)}")
+                    continue
+            
+            # Commit all changes
+            await self.db.commit()
+            logger.info(f"Successfully saved {saved_count} new places to database")
+            
+        except Exception as e:
+            logger.error(f"Error saving places to database: {str(e)}", exc_info=True)
+            await self.db.rollback()
+        
+        return saved_count
+    
+    def _build_search_queries(self, city: str, user_preferences: List[str]) -> List[str]:
+        """Build optimized search queries based on user preferences."""
+        if len(user_preferences) <= 2:
+            keywords = self._extract_and_combine_keywords(user_preferences)
+            return [f"{' '.join(keywords[:4])} in {city}"]
+        
+        if len(user_preferences) <= 4:
+            mid = (len(user_preferences) + 1) // 2
+            keywords1 = self._extract_and_combine_keywords(user_preferences[:mid])
+            keywords2 = self._extract_and_combine_keywords(user_preferences[mid:])
+            return [
+                f"{' '.join(keywords1[:3])} in {city}",
+                f"{' '.join(keywords2[:3])} in {city}",
+            ]
+        
+        # Split into thirds
+        third = (len(user_preferences) + 2) // 3
+        keywords1 = self._extract_and_combine_keywords(user_preferences[:third])
+        keywords2 = self._extract_and_combine_keywords(user_preferences[third:2*third])
+        keywords3 = self._extract_and_combine_keywords(user_preferences[2*third:])
+        return [
+            f"{' '.join(keywords1[:3])} in {city}",
+            f"{' '.join(keywords2[:3])} in {city}",
+            f"{' '.join(keywords3[:3])} in {city}",
+        ]
+    
+    def _extract_and_combine_keywords(self, preferences: List[str]) -> List[str]:
+        """Extract and combine keywords from preferences."""
+        keyword_set = set()
+        for pref in preferences:
+            keywords = PREFERENCE_TO_KEYWORDS.get(pref, [pref.lower()])
+            keyword_set.update(keywords)
+        return list(keyword_set)
+    
+    def _score_places(self, places: List[Dict], user_preferences: List[str]) -> List[Dict]:
+        """Score places using SAW (Simple Additive Weighting) scoring system."""
+        scored_places = []
+        
+        for place in places:
+            score = self._calculate_place_score(place, user_preferences)
+            if score > 0:
+                scored_places.append({
+                    **place,
+                    "score": score,
+                })
+        
+        # Filter by minimum rating threshold (unless we have few results)
+        filtered = [p for p in scored_places if p.get("rating", 0) >= SCORING_WEIGHTS["MIN_RATING_THRESHOLD"]]
+        if len(filtered) == 0:
+            filtered = scored_places  # Return all if none meet threshold
+        
+        # Sort by score descending
+        return sorted(filtered, key=lambda x: x["score"], reverse=True)
+    
+    def _calculate_place_score(self, place: Dict, user_preferences: List[str]) -> float:
+        """
+        Calculate SAW score for a place:
+        Score = (0.40 × RatingScore) + (0.25 × PopularityScore) + (0.35 × RelevanceScore)
+        """
+        rating = place.get("rating") or 0
+        rating_score = (
+            ((rating - SCORING_WEIGHTS["RATING_MIN"]) / 
+             (SCORING_WEIGHTS["RATING_MAX"] - SCORING_WEIGHTS["RATING_MIN"])) * 100
+            if rating > 0 else 0
+        )
+        
+        review_count = place.get("user_ratings_total") or 0
+        popularity_score = (
+            min(((__import__('math').log10(review_count) / 
+                  __import__('math').log10(SCORING_WEIGHTS["POPULARITY_LOG_MAX"])) * 100), 100)
+            if review_count > 0 else 0
+        )
+        
+        matched_prefs = self._count_preference_matches(place, user_preferences)
+        relevance_score = (matched_prefs / len(user_preferences) * 100) if user_preferences else 0
+        
+        if relevance_score == 0:
+            return 0
+        
+        return (
+            SCORING_WEIGHTS["WEIGHT_RATING"] * rating_score +
+            SCORING_WEIGHTS["WEIGHT_POPULARITY"] * popularity_score +
+            SCORING_WEIGHTS["WEIGHT_RELEVANCE"] * relevance_score
+        )
+    
+    def _count_preference_matches(self, place: Dict, user_preferences: List[str]) -> int:
+        """Count how many user preferences match the place's Google types."""
+        place_types = [t.lower() for t in (place.get("types") or [])]
+        match_count = 0
+        
+        for pref in user_preferences:
+            pref_keywords = PREFERENCE_TO_KEYWORDS.get(pref, [])
+            has_match = any(
+                keyword in ptype
+                for keyword in pref_keywords
+                for ptype in place_types
+            )
+            if has_match:
+                match_count += 1
+        
+        return match_count
+    
+    def _format_results(self, scored_places: List[Dict]) -> List[Dict]:
+        """Format results for API response."""
+        return [
+            {
+                "id": place.get("id"),
+                "name": place.get("name"),
+                "address": place.get("address"),
+                "coordinates": place.get("coordinates"),
+                "rating": place.get("rating"),
+                "reviews": place.get("user_ratings_total"),
+                "types": place.get("types"),
+                "opening_hours": place.get("opening_hours"),
+                "photos": place.get("photos"),
+                "website": place.get("website"),
+                "price_level": place.get("price_level"),
+                "score": place.get("score"),
+            }
+            for place in scored_places
+        ]

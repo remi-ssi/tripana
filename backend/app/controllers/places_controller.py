@@ -1,12 +1,16 @@
 # place/ city related endpoints — proxies Mapbox API to keep token server-side
 import uuid
 import httpx
-from fastapi import APIRouter, Query, Path, HTTPException
+from fastapi import APIRouter, Query, Path, HTTPException, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.database import get_db
 from app.services.mapbox_usage_service import track_geocoding, track_map_load, get_usage
 from app.services.google_places_service import search_attractions, get_place_details
 from app.services.google_places_usage_service import get_usage as get_google_places_usage
+from app.services.local_attraction_search_service import LocalAttractionSearchService, PREFERENCE_TO_KEYWORDS
+from app.services.fetch_and_save_places_service import fetch_and_save_attractions
 
 router = APIRouter()
 
@@ -253,6 +257,81 @@ async def search_google_attractions(
     return {"results": results}
 
 
+@router.get("/attractions/recommendations")
+async def get_recommended_places(
+    city: str = Query(..., min_length=2, description="City name for attraction search"),
+    preferences: str = Query(..., description="Comma-separated list of user preferences (e.g., 'Beaches,Food Trip,Shopping')"),
+    lat: float | None = Query(None, description="Latitude for location bias"),
+    lng: float | None = Query(None, description="Longitude for location bias"),
+    radius: int = Query(10000, ge=1000, le=50000, description="Search radius in meters"),
+    limit: int = Query(20, ge=1, le=50, description="Maximum number of results"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get recommended attractions based on user preferences.
+    
+    Implementation:
+    1. Searches local database first (filtered by city and user preference types)
+    2. If no results found, searches Google Places API
+    3. Automatically saves fetched results to local database (deduplication via Google Place ID)
+    4. Returns top-scored results using SAW (Simple Additive Weighting) scoring
+    
+    Scoring factors:
+    - Rating: 40%
+    - Popularity (review count): 25%
+    - Preference relevance: 35%
+    
+    Local DB search optimization:
+    - First checks if address city matches requested city
+    - Then checks if attraction types match user preferences
+    - Only retrieves and displays places matching both criteria
+    
+    Args:
+        city: City name to search in
+        preferences: Comma-separated preference list
+        lat: Latitude for location bias (optional)
+        lng: Longitude for location bias (optional)
+        radius: Search radius in meters (default 10000m)
+        limit: Maximum results (default 20, max 50)
+    
+    Returns:
+        List of recommended attractions with scores and all details
+    """
+    try:
+        # Parse preferences
+        user_preferences = [pref.strip() for pref in preferences.split(",") if pref.strip()]
+        
+        if not user_preferences:
+            raise HTTPException(
+                status_code=400,
+                detail="At least one preference is required"
+            )
+        
+        # Initialize local search service
+        search_service = LocalAttractionSearchService(db)
+        
+        # Search with local DB first, then Google API
+        location = None
+        if lat is not None and lng is not None:
+            location = (lat, lng)
+        
+        results = await search_service.search_attractions(
+            location_city=city,
+            user_preferences=user_preferences,
+            latitude=lat if lat is not None else None,
+            longitude=lng if lng is not None else None,
+            radius=radius,
+            limit=limit,
+        )
+        
+        return {"results": results}
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching recommendations: {str(e)}")
+
+
 @router.get("/attractions/details/{place_id}")
 async def get_attraction_details(
     place_id: str = Path(..., description="Google Place ID")
@@ -268,6 +347,60 @@ async def get_attraction_details(
     """
     details = await get_place_details(place_id)
     return details
+
+
+@router.post("/attractions/fetch-and-save")
+async def fetch_and_save_places_endpoint(
+    city: str = Query(..., min_length=2, description="City name to fetch attractions for"),
+    preferences: str = Query(..., description="Comma-separated list of user preferences"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Fetch up to 50 attractions from Google Places API and save to local database.
+    
+    Features:
+    - Fetches attractions for each user preference (keyword-based search)
+    - Deduplicates by Google Place ID to avoid duplicates in database
+    - Verifies each place belongs to the requested city
+    - Automatically saves to local database for future offline access
+    - Returns statistics: saved count, skipped duplicates, wrong city count, errors
+    
+    Args:
+        city: City name to search in
+        preferences: Comma-separated preference list (e.g., 'Beaches,Food Trip,Shopping')
+    
+    Returns:
+        Dictionary with:
+        - saved_count: Number of new places saved to database
+        - skipped_duplicates: Number of places already in database
+        - wrong_city_count: Number of places not matching requested city
+        - errors: List of any errors encountered
+    """
+    try:
+        # Parse preferences
+        user_preferences = [pref.strip() for pref in preferences.split(",") if pref.strip()]
+        
+        if not user_preferences:
+            raise HTTPException(
+                status_code=400,
+                detail="At least one preference is required"
+            )
+        
+        # Fetch and save attractions from Google API
+        stats = await fetch_and_save_attractions(
+            db=db,
+            city=city,
+            preferences=user_preferences,
+            preference_keywords=PREFERENCE_TO_KEYWORDS,
+            limit=50  # Fetch up to 50 per preference
+        )
+        
+        return stats
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching and saving attractions: {str(e)}")
 
 
 @router.get("/attractions/usage")
