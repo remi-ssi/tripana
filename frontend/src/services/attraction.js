@@ -1,11 +1,9 @@
 // Search attractions through backend API (keeps Google Places API key secure)
 import { apiClient } from "../api/apiClient.js";
 
-// ════════════════════════════════════════════════════════════════════════════════
 // PREFERENCE TO SEARCH KEYWORD MAPPING
 // Maps user interests/preferences to Google Places search keywords
 // Minimizes API calls by grouping related preferences
-// ════════════════════════════════════════════════════════════════════════════════
 
 const PREFERENCE_TO_KEYWORDS = {
   "Beaches": ["beach", "resort", "swimming", "water sport"],
@@ -75,55 +73,65 @@ export async function getRecommendedPlaces({
     const allKeywords = extractAndCombineKeywords(userPreferences);
     console.log("📝 Search keywords generated:", allKeywords);
 
-    // ── STEP 2: Determine primary search query (most representative) ──────
-    // Use the first preference as primary, add secondary keywords if space permits
-    const primaryQuery = buildPrimarySearchQuery(locationCity, allKeywords);
-    console.log("🎯 Primary search query:", primaryQuery);
+    // ── STEP 2: Build targeted search queries (grouped for relevance) ────
+    // Instead of combining all keywords into one vague query,
+    // split into 2-3 targeted searches for better relevance
+    const searchQueries = buildTargetedSearchQueries(locationCity, userPreferences);
+    console.log(`🎯 Built ${searchQueries.length} targeted search queries:`, searchQueries);
 
-    // ── STEP 3: Make ONE API call (minimize costs) ────────────────────────
-    const searchParams = {
-      query: primaryQuery,
-      radius: 10000, // 10km radius for broader search
-      limit: 50, // Fetch more results to filter and score
-    };
+    // ── STEP 3: Execute multiple targeted searches ─────────────────────── 
+    let allResults = [];
+    for (const query of searchQueries) {
+      const searchParams = {
+        query: query,
+        radius: 10000,
+        limit: 40, // Fetch 40 per query instead of 50 for one vague query
+      };
 
-    // Add location coordinates if provided
-    if (latitude !== null && longitude !== null) {
-      searchParams.latitude = latitude;
-      searchParams.longitude = longitude;
+      if (latitude !== null && longitude !== null) {
+        searchParams.latitude = latitude;
+        searchParams.longitude = longitude;
+      }
+
+      const results = await searchAttractions(searchParams);
+      allResults = allResults.concat(results);
+      console.log(`  → Query "${query}": ${results.length} results`);
     }
 
-    console.log("📡 Calling API with params:", searchParams);
-    const rawResults = await searchAttractions(searchParams);
-    console.log(`📦 API returned ${rawResults.length} results`);
+    // Deduplicate by place ID
+    const uniqueResults = Array.from(
+      new Map(allResults.map((place) => [place.id, place])).values()
+    );
+    console.log(`📦 Total ${allResults.length} results → ${uniqueResults.length} unique after deduplication`);
 
-    // ── STEP 4: Score and rank results ────────────────────────────────────
-    const scoredResults = rawResults
+    // ── STEP 4: Verify relevance using Google Places types ──────────────
+    const verifiedResults = verifyRelevanceByGoogleTypes(uniqueResults, userPreferences);
+    console.log(`🏷️ ${verifiedResults.length}/${uniqueResults.length} match user preferences (by Google types)`);
+
+    // ── STEP 5: Score and rank results ────────────────────────────────────
+    const scoredResults = verifiedResults
       .map((place) => ({
         ...place,
         score: calculatePlaceScore(place, userPreferences),
       }))
       .filter((place) => place.score > 0) // Keep only places that match at least one preference
-      .filter((place) => place.rating >= SCORING_WEIGHTS.MIN_RATING_THRESHOLD || rawResults.length < 5) // Filter low-rated unless few results
+      .filter((place) => place.rating >= SCORING_WEIGHTS.MIN_RATING_THRESHOLD || allResults.length < 5) // Filter low-rated unless few results
       .sort((a, b) => b.score - a.score); // Sort by score descending
 
     console.log(`✅ Scored ${scoredResults.length} valid results`);
 
-    // ── STEP 5: Return top 20 ────────────────────────────────────────────
+    // ── STEP 6: Return top 20 ────────────────────────────────────────────
     const topResults = scoredResults.slice(0, 20).map(formatAttractionData);
 
     console.log(`🎯 Returning top ${topResults.length} recommendations`);
     return topResults;
   } catch (error) {
-    console.error("❌ Error getting recommendations:", error);
+    console.error("Error getting recommendations:", error);
     throw error;
   }
 }
 
-/**
- * Extract relevant keywords from user preferences
- * Deduplicates and combines all keywords
- */
+ //Extract relevant keywords from user preferences and Deduplicates and combines all keywords
 function extractAndCombineKeywords(preferences) {
   const keywordSet = new Set();
 
@@ -136,24 +144,62 @@ function extractAndCombineKeywords(preferences) {
 }
 
 /**
- * Build optimized search query for primary API call
- * Combines location with most relevant keywords
+ * Build multiple targeted search queries (2-3 queries) instead of one vague query
+ * Groups user preferences into logical categories for maximum relevance
+ * 
+ * Strategy:
+ * - 1-2 preferences: 1 query
+ * - 3-4 preferences: 2 queries (split logically)
+ * - 5+ preferences: 3 queries (split into groups)
+ * 
+ * Example: User wants [Food, Beach, Nightlife]
+ * Query 1: "restaurant food cafe in Bangkok"
+ * Query 2: "beach resort swimming bar nightlife in Bangkok"
+ * 
+ * This ensures better relevance vs combining all into one vague query
  */
-function buildPrimarySearchQuery(city, keywords) {
-  // Select top 3-4 most representative keywords to keep query concise
-  const topKeywords = keywords.slice(0, 3);
-  const keywordString = topKeywords.join(" ");
-  return `${keywordString} in ${city}`;
+function buildTargetedSearchQueries(city, userPreferences) {
+  if (userPreferences.length <= 2) {
+    // For 1-2 preferences, single focused query
+    const keywords = extractAndCombineKeywords(userPreferences);
+    const keywordString = keywords.slice(0, 4).join(" ");
+    return [`${keywordString} in ${city}`];
+  }
+
+  if (userPreferences.length <= 4) {
+    // For 3-4 preferences, split into 2 targeted queries
+    const mid = Math.ceil(userPreferences.length / 2);
+    const group1 = userPreferences.slice(0, mid);
+    const group2 = userPreferences.slice(mid);
+
+    const keywords1 = extractAndCombineKeywords(group1);
+    const keywords2 = extractAndCombineKeywords(group2);
+
+    const query1 = `${keywords1.slice(0, 3).join(" ")} in ${city}`;
+    const query2 = `${keywords2.slice(0, 3).join(" ")} in ${city}`;
+
+    return [query1, query2];
+  }
+
+  // For 5+ preferences, split into 3 targeted queries
+  const third = Math.ceil(userPreferences.length / 3);
+  const group1 = userPreferences.slice(0, third);
+  const group2 = userPreferences.slice(third, third * 2);
+  const group3 = userPreferences.slice(third * 2);
+
+  const keywords1 = extractAndCombineKeywords(group1);
+  const keywords2 = extractAndCombineKeywords(group2);
+  const keywords3 = extractAndCombineKeywords(group3);
+
+  const query1 = `${keywords1.slice(0, 3).join(" ")} in ${city}`;
+  const query2 = `${keywords2.slice(0, 3).join(" ")} in ${city}`;
+  const query3 = `${keywords3.slice(0, 3).join(" ")} in ${city}`;
+
+  return [query1, query2, query3];
 }
 
-/**
- * Calculate recommendation score for each place
- * 
- * Score = (rating * 20) + reviewBoost + preferenceMatchBoost
- * 
- * Max possible score: ~150+
- * Min acceptable score: depends on matches
- */
+//Calculate recommendation score for each place
+//Score = (rating * 20) + reviewBoost + preferenceMatchBoost
 function calculatePlaceScore(place, userPreferences) {
   let score = 0;
 
@@ -176,27 +222,20 @@ function calculatePlaceScore(place, userPreferences) {
   return score;
 }
 
-/**
- * Count how many user preferences match this place's types/categories
- * Returns count of matching preferences
- */
+//Count how many user preferences match this place's GOOGLE types only
 function countPreferenceMatches(place, userPreferences) {
   const placeTypes = (place.types || []).map((t) => t.toLowerCase());
-  const placeKeywords = (
-    place.name.toLowerCase() +
-    " " +
-    place.address.toLowerCase()
-  ).split(" ");
 
   let matchCount = 0;
 
   userPreferences.forEach((pref) => {
-    const keywords = PREFERENCE_TO_KEYWORDS[pref] || [];
-    const hasMatch = keywords.some(
-      (kw) =>
-        placeTypes.some((t) => t.includes(kw)) ||
-        placeKeywords.some((pk) => pk.includes(kw))
+    const prefKeywords = PREFERENCE_TO_KEYWORDS[pref] || [];
+    
+    // Check if any preference keyword matches this place's Google types
+    const hasMatch = prefKeywords.some((keyword) =>
+      placeTypes.some((type) => type.includes(keyword))
     );
+    
     if (hasMatch) {
       matchCount++;
     }
@@ -207,7 +246,6 @@ function countPreferenceMatches(place, userPreferences) {
 
 /**
  * Search for attractions using Google Places API
- * The API key is kept secure on the backend - never exposed to the frontend
  * 
  * @param {Object} params - Search parameters
  * @param {string} params.query - Search query (e.g., "restaurants in Bangkok")
@@ -276,6 +314,36 @@ export async function getAttractionDetails(placeId) {
     console.error("Error fetching attraction details:", error);
     throw error;
   }
+}
+
+/**
+ * Verify that API results actually match user preferences
+ * Based on Google Places' official types/categories, NOT business names
+ * 
+ * This is crucial for Philippine businesses with quirky names
+ * Example: "Purple Monkey" with type ["bar", "night_club"] matches Nightlife preference
+ * even though the name doesn't indicate what it is.
+ * 
+ * @param {Array} results - Raw results from Google Places API
+ * @param {Array} userPreferences - User's selected preferences
+ * @returns {Array} Filtered results that match user preferences by Google types
+ */
+function verifyRelevanceByGoogleTypes(results, userPreferences) {
+  return results.filter((place) => {
+    const placeTypes = (place.types || []).map((t) => t.toLowerCase());
+
+    // Check if this place's Google types match ANY user preference
+    const hasRelevantType = userPreferences.some((pref) => {
+      const prefKeywords = PREFERENCE_TO_KEYWORDS[pref] || [];
+
+      // Does this place have at least 1 type matching this preference?
+      return prefKeywords.some((keyword) =>
+        placeTypes.some((type) => type.includes(keyword))
+      );
+    });
+
+    return hasRelevantType;
+  });
 }
 
 /**
