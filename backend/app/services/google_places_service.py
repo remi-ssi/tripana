@@ -106,6 +106,14 @@ async def search_attractions(
             status_code=502,
             detail=f"Failed to connect to Google Places API: {str(e)}"
         )
+    except Exception as e:
+        import traceback
+        print(f"Error in search_attractions: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error searching attractions: {str(e)}"
+        )
 
 
 async def get_place_details(place_id: str) -> dict:
@@ -183,4 +191,12 @@ async def get_place_details(place_id: str) -> dict:
         raise HTTPException(
             status_code=502,
             detail=f"Failed to connect to Google Places API: {str(e)}"
+        )
+    except Exception as e:
+        import traceback
+        print(f"Error in get_place_details: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error getting place details: {str(e)}"
         )

@@ -1,7 +1,7 @@
 # place/ city related endpoints — proxies Mapbox API to keep token server-side
 import uuid
 import httpx
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, Path, HTTPException
 
 from app.config import settings
 from app.services.mapbox_usage_service import track_geocoding, track_map_load, get_usage
@@ -255,7 +255,7 @@ async def search_google_attractions(
 
 @router.get("/attractions/details/{place_id}")
 async def get_attraction_details(
-    place_id: str = Query(..., description="Google Place ID")
+    place_id: str = Path(..., description="Google Place ID")
 ):
     """
     Get detailed information about a specific attraction.
