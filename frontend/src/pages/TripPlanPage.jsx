@@ -192,7 +192,7 @@ export default function TripPlanPage() {
 
         {/* ── City ── */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">
+          <label className="block text-md font-semibold text-gray-700 mb-1">
             Where To <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -203,12 +203,12 @@ export default function TripPlanPage() {
               onChange={(e) => { setCitySearchInput(e.target.value); setShowCitySuggestions(true) }}
               onFocus={() => citySearchInput && setShowCitySuggestions(true)}
               onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)}
-              className={`w-full px-4 py-3 rounded-xl border ${errors.city && touched.city ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.city && touched.city ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
+              className={`w-full px-4 py-3 rounded-xl border ${errors.city && touched.city ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.city && touched.city ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base`}
             />
             {showCitySuggestions && citySearchInput && (
               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto">
                 {cityLoading && (
-                  <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+                  <div className="px-4 py-3 text-base text-gray-500 flex items-center gap-2">
                     <svg className="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -217,7 +217,7 @@ export default function TripPlanPage() {
                   </div>
                 )}
                 {!cityLoading && citySuggestions.length === 0 && (
-                  <div className="px-4 py-2 text-sm text-gray-500">No results found in the Philippines</div>
+                  <div className="px-4 py-2 text-base text-gray-500">No results found in the Philippines</div>
                 )}
                 {!cityLoading && citySuggestions.map((city, idx) => (
                   <button
@@ -227,7 +227,7 @@ export default function TripPlanPage() {
                     className="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition border-b border-gray-100 last:border-b-0"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-800">{city.shortName || city.name}</span>
+                      <span className="text-base font-medium text-gray-800">{city.shortName || city.name}</span>
                       {city.typeLabel && (
                         <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 uppercase tracking-wide">
                           {city.typeLabel}
@@ -235,14 +235,14 @@ export default function TripPlanPage() {
                       )}
                     </div>
                     {city.shortName && city.name !== city.shortName && (
-                      <span className="block text-xs text-gray-400 truncate mt-0.5">{city.name}</span>
+                      <span className="block text-sm text-gray-400 truncate mt-0.5">{city.name}</span>
                     )}
                   </button>
                 ))}
               </div>
             )}
           </div>
-          {errors.city && touched.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+          {errors.city && touched.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
         </div>
 
         {/* ── DAY TOUR FIELDS ── */}
@@ -250,7 +250,7 @@ export default function TripPlanPage() {
           <>
             {/* Date */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-base font-semibold text-gray-700 mb-1">
                 Date <span className="text-red-500">*</span>
               </label>
               <input
@@ -258,23 +258,23 @@ export default function TripPlanPage() {
                 min={today}
                 value={form.date}
                 onChange={(e) => handleChange('date', e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border ${errors.date && touched.date ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.date && touched.date ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
+                className={`w-full px-4 py-3 rounded-xl border ${errors.date && touched.date ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.date && touched.date ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base cursor-pointer`}
               />
-              {errors.date && touched.date && <p className="text-red-500 text-xs mt-1">{errors.date}</p>}
+              {errors.date && touched.date && <p className="text-red-500 text-sm mt-1">{errors.date}</p>}
             </div>
 
             {/* Start Time */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-base font-semibold text-gray-700 mb-1">
                 Start Time <span className="text-red-500">*</span>
               </label>
               <input
                 type="time"
                 value={form.startTime}
                 onChange={(e) => handleChange('startTime', e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border ${errors.startTime && touched.startTime ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.startTime && touched.startTime ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
+                className={`w-full px-4 py-3 rounded-xl border ${errors.startTime && touched.startTime ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.startTime && touched.startTime ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base cursor-pointer`}
               />
-              {errors.startTime && touched.startTime && <p className="text-red-500 text-xs mt-1">{errors.startTime}</p>}
+              {errors.startTime && touched.startTime && <p className="text-red-500 text-sm mt-1">{errors.startTime}</p>}
             </div>
           </>
         )}
@@ -284,7 +284,7 @@ export default function TripPlanPage() {
           <>
             {/* Hotel / Where to Stay */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-base font-semibold text-gray-700 mb-1">
                 Where to Stay <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -299,7 +299,7 @@ export default function TripPlanPage() {
                   }}
                   onFocus={() => hotelSearchInput && setShowHotelSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowHotelSuggestions(false), 200)}
-                  className={`w-full px-4 py-3 pr-12 rounded-xl border-2 ${errors.hotel && touched.hotel ? 'border-red-500' : 'border-blue-700'} bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.hotel && touched.hotel ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
+                  className={`w-full px-4 py-3 pr-12 rounded-xl border-2 ${errors.hotel && touched.hotel ? 'border-red-500' : 'border-blue-700'} bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.hotel && touched.hotel ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base`}
                 />
 
                 {/* 📍 icon — always opens map */}
@@ -318,7 +318,7 @@ export default function TripPlanPage() {
                 {showHotelSuggestions && hotelSearchInput.length >= 2 && (
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto">
                     {hotelLoading && (
-                      <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+                      <div className="px-4 py-3 text-base text-gray-500 flex items-center gap-2">
                         <svg className="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -327,29 +327,29 @@ export default function TripPlanPage() {
                       </div>
                     )}
                     {!hotelLoading && hotelSuggestions.length === 0 && (
-                      <div className="px-4 py-3 text-sm text-gray-500">No places found — try the map pin instead</div>
+                      <div className="px-4 py-3 text-base text-gray-500">No places found — try the map pin instead</div>
                     )}
                     {!hotelLoading && hotelSuggestions.map((place) => (
                       <button
                         key={place.id}
                         type="button"
                         onClick={() => handleSelectHotel(place)}
-                        className="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition text-sm border-b border-gray-100 last:border-b-0"
+                        className="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition text-base border-b border-gray-100 last:border-b-0"
                       >
                         <span className="font-medium text-gray-800">{place.name}</span>
-                        <span className="text-gray-400 text-xs block mt-0.5 truncate">{place.fullAddress}</span>
+                        <span className="text-gray-400 text-sm block mt-0.5 truncate">{place.fullAddress}</span>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-              {errors.hotel && touched.hotel && <p className="text-red-500 text-xs mt-1">{errors.hotel}</p>}
+              {errors.hotel && touched.hotel && <p className="text-red-500 text-sm mt-1">{errors.hotel}</p>}
             </div>
 
             {/* Start & End Date */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                <label className="block text-base font-semibold text-gray-700 mb-1">
                   Start Date <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -357,12 +357,12 @@ export default function TripPlanPage() {
                   min={today}
                   value={form.startDate}
                   onChange={(e) => handleChange('startDate', e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border ${errors.startDate && touched.startDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.startDate && touched.startDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
+                  className={`w-full px-4 py-3 rounded-xl border ${errors.startDate && touched.startDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.startDate && touched.startDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base cursor-pointer`}
                 />
-                {errors.startDate && touched.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>}
+                {errors.startDate && touched.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                <label className="block text-base font-semibold text-gray-700 mb-1">
                   End Date <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -370,19 +370,19 @@ export default function TripPlanPage() {
                   min={form.startDate || today}
                   value={form.endDate}
                   onChange={(e) => handleChange('endDate', e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border ${errors.endDate && touched.endDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.endDate && touched.endDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm cursor-pointer`}
+                  className={`w-full px-4 py-3 rounded-xl border ${errors.endDate && touched.endDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.endDate && touched.endDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base cursor-pointer`}
                 />
-                {errors.endDate && touched.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>}
+                {errors.endDate && touched.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
               </div>
             </div>
 
             {/* Max Attractions */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1">
+              <label className="block text-base font-semibold text-gray-700 mb-1 flex items-center gap-1">
                 Max Attractions per Day <span className="text-red-500">*</span>
                 <div className="relative group ml-1 inline-block">
-                  <button type="button" className="flex items-center justify-center w-4 h-4 rounded-full border border-gray-400 text-gray-400 hover:border-blue-700 hover:text-blue-700 transition text-xs font-bold leading-none">i</button>
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 bg-gray-800 text-white text-xs rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-10">
+                  <button type="button" className="flex items-center justify-center w-4 h-4 rounded-full border border-gray-400 text-gray-400 hover:border-blue-700 hover:text-blue-700 transition text-sm font-bold leading-none">i</button>
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 bg-gray-800 text-white text-sm rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-10">
                     Set the maximum number of attractions you'd like to visit per day. This helps us create a balanced and enjoyable itinerary without overloading your schedule.
                     <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-800" />
                   </div>
@@ -392,9 +392,9 @@ export default function TripPlanPage() {
                 type="number" min="1" max="20" placeholder="e.g., 5"
                 value={form.maxAttractions}
                 onChange={(e) => handleChange('maxAttractions', e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border ${errors.maxAttractions && touched.maxAttractions ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.maxAttractions && touched.maxAttractions ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-sm`}
+                className={`w-full px-4 py-3 rounded-xl border ${errors.maxAttractions && touched.maxAttractions ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.maxAttractions && touched.maxAttractions ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base`}
               />
-              {errors.maxAttractions && touched.maxAttractions && <p className="text-red-500 text-xs mt-1">{errors.maxAttractions}</p>}
+              {errors.maxAttractions && touched.maxAttractions && <p className="text-red-500 text-sm mt-1">{errors.maxAttractions}</p>}
             </div>
           </>
         )}
@@ -408,7 +408,7 @@ export default function TripPlanPage() {
             (tripType === 'day' && (!form.date || !form.startTime)) ||
             (tripType === 'overnight' && (!form.hotel || !form.startDate || !form.endDate || !form.maxAttractions))
           }
-          className="w-full py-4 rounded-2xl bg-blue-700 hover:bg-blue-800 active:bg-blue-900 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold text-base transition-colors duration-200 shadow-md shadow-blue-200 mt-2"
+          className="w-full py-4 rounded-2xl bg-blue-700 hover:bg-blue-800 active:bg-blue-900 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold text-lg transition-colors duration-200 shadow-md shadow-blue-200 mt-2"
         >
           Continue to Preferences
         </button>

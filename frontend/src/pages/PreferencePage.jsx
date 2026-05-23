@@ -36,6 +36,7 @@ export default function PreferencePage() {
     }
   }
 
+  // Separate handler for budget to ensure validation and context update is consistent
   const handleBudget = (value) => {
     setBudget(value)
     setTouched((prev) => ({ ...prev, budget: true }))
@@ -54,8 +55,8 @@ export default function PreferencePage() {
         {/* Pace Level */}
         <div className={`rounded-xl p-2 ${errors.paceLevel && touched.paceLevel ? 'ring-2 ring-red-500' : ''}`}>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-semibold text-gray-700">Trip Pace</label>
-            <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full">{paceLabels[paceLevel - 1]}</span>
+            <label className="text-lg font-semibold text-gray-700">Trip Pace</label>
+            <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full">{paceLabels[paceLevel - 1]}</span>
           </div>
           <input
             type="range"
@@ -74,15 +75,15 @@ export default function PreferencePage() {
             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-700"
           />
           <div className="flex justify-between mt-1">
-            <span className="text-xs text-gray-400">😴 Chill</span>
-            <span className="text-xs text-gray-400">🔥 Intense</span>
+            <span className="text-sm text-gray-400">😴 Chill</span>
+            <span className="text-sm text-gray-400">🔥 Intense</span>
           </div>
           {errors.paceLevel && touched.paceLevel && <p className="text-red-500 text-xs mt-2">{errors.paceLevel}</p>}
         </div>
 
         {/* Interests */}
         <div className={`rounded-xl p-2 ${errors.interests && touched.interests ? 'ring-2 ring-red-500' : ''}`}>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Your Interests</label>
+          <label className="block text-lg font-semibold text-gray-700 mb-2">Your Interests</label>
           <div className="flex flex-wrap gap-2">
             {INTEREST_TAGS.map((tag) => {
               const active = interests.includes(tag)
@@ -101,7 +102,7 @@ export default function PreferencePage() {
                     // Save to context
                     updateMultipleFields({ interests: updatedInterests })
                   }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${active ? 'bg-blue-700 border-blue-700 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-700'}`}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 ${active ? 'bg-blue-700 border-blue-700 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-700'}`}
                 >
                   {tag}
                 </button>
@@ -113,7 +114,7 @@ export default function PreferencePage() {
 
         {/* Budget */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <label className="block text-lg font-semibold text-gray-700 mb-2">
             Budget <span className="text-red-500">*</span>
           </label>
           <div className="flex gap-3">
