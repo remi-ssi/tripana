@@ -329,7 +329,13 @@ export default function ChangePasswordFull() {
         {/* Back to Login */}
         <button
           type="button"
-          onClick={() => setShowConfirmExit(true)}
+          onClick={() => {
+            if (submitted) {
+              navigate("/login", { replace: true });
+            } else {
+              setShowConfirmExit(true);
+            }
+          }}
           className="text-sm text-blue-700 hover:text-blue-900 hover:underline transition-colors duration-150"
         >
           Back to Login

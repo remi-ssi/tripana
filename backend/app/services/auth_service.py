@@ -215,8 +215,9 @@ async def send_otp(email: str, db: AsyncSession, is_resend: bool = False) -> dic
             state.blocked_until = now + timedelta(minutes=VERIFY_BLOCK_MINUTES)
             return {"error": f"Resend limit reached. Verification blocked for {VERIFY_BLOCK_MINUTES} minutes."}
 
-        # If there's a recent OTP, tell user to wait before resending.
-        if state.last_sent_at and state.last_sent_at >= now - timedelta(seconds=RESEND_WAIT_SECONDS):
+        # If there's a recent OTP, tell user to wait before resending (only for explicit resend).
+        # Allow login/registration attempts to bypass this cooldown to improve UX.
+        if is_resend and state.last_sent_at and state.last_sent_at >= now - timedelta(seconds=RESEND_WAIT_SECONDS):
             wait_seconds = int(
                 (state.last_sent_at + timedelta(seconds=RESEND_WAIT_SECONDS) - now).total_seconds()
             )

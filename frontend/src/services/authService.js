@@ -21,8 +21,13 @@ export const authService = {
  //Login user with email and password
   login: async (email, password) => {
     try {
-      return await apiClient.post('/auth/login', { email, password })
+      console.log('[AuthService] Sending login request with encrypted data');
+      const response = await apiClient.post('/auth/login', { email, password });
+      console.log('[AuthService] Login successful, response:', response);
+      return response;
     } catch (error) {
+      console.error('[AuthService] Login error:', error.message, 'Status:', error.status);
+      
       if (error?.status === 401) {
         throw new Error('Invalid Credentials')
       }

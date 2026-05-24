@@ -251,6 +251,9 @@ async def register(request: Request, db: AsyncSession = Depends(get_db)):
         user_data = UserCreate(**decrypted_data)
         
         return await _register_impl(user_data, db)
+    except HTTPException:
+        # Let HTTPException pass through with its original status code
+        raise
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON body")
     except Exception as e:
@@ -280,6 +283,9 @@ async def verify_otp(
         
         result = await _verify_impl(otp_data, db)
         return _attach_cookie_and_strip_token(response, result)
+    except HTTPException:
+        # Let HTTPException pass through with its original status code
+        raise
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON body")
     except Exception as e:
@@ -292,17 +298,27 @@ async def login(request: Request, db: AsyncSession = Depends(get_db)):
     try:
         # Read raw JSON body
         body = await request.json()
+        logger.debug(f"[Login] Received body keys: {list(body.keys())}")
         
         # Decrypt if data comes encrypted from frontend
         decrypted_data = decrypt_dict(body)
+        logger.debug(f"[Login] After decryption - email: {decrypted_data.get('email', 'MISSING')}")
         
         # Validate with Pydantic schema (now with decrypted data)
         login_data = LoginRequest(**decrypted_data)
+        logger.debug(f"[Login] Pydantic validation passed for email: {login_data.email}")
         
-        return await _login_impl(login_data, db)
-    except json.JSONDecodeError:
+        result = await _login_impl(login_data, db)
+        logger.debug(f"[Login] _login_impl result: {result}")
+        return result
+    except HTTPException:
+        # Let HTTPException pass through with its original status code
+        raise
+    except json.JSONDecodeError as e:
+        logger.error(f"[Login] JSONDecodeError: {str(e)}")
         raise HTTPException(status_code=400, detail="Invalid JSON body")
     except Exception as e:
+        logger.error(f"[Login] Exception: {type(e).__name__}: {str(e)}")
         raise HTTPException(status_code=422, detail=str(e))
 
 
@@ -331,6 +347,9 @@ async def verify_login(
                 "has_preferences": await service.has_preferences(result["user"]["user_id"]),
             }
         return _attach_cookie_and_strip_token(response, result)
+    except HTTPException:
+        # Let HTTPException pass through with its original status code
+        raise
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON body")
     except Exception as e:

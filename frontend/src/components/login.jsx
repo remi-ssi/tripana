@@ -76,16 +76,18 @@ export default function Login({ onSwitchToSignup }) {
     if (!errors) {
       setIsLoading(true);
       try {
-        // Encrypt sensitive data before sending
+        // Encrypt sensitive data before sending for security
         const encryptedData = await encryptObject({
           email: formData.email,
           password: formData.password,
         });
         
-        await authService.login(encryptedData.email, encryptedData.password);
+        const response = await authService.login(encryptedData.email, encryptedData.password);
+        
         setOtpEmail(formData.email);
         setShowOTPModal(true);
       } catch (error) {
+        console.error('[Login] Login error:', error);
         setErrors({ submit: error.message || "Invalid Credentials" });
       } finally {
         setIsLoading(false);
@@ -96,7 +98,7 @@ export default function Login({ onSwitchToSignup }) {
   // Handle OTP verification after login
   const handleVerifyOTP = async (otp) => {
     try {
-      // Encrypt sensitive data before sending
+      // Encrypt sensitive data before sending for security
       const encryptedData = await encryptObject({
         email: otpEmail,
         code: otp,
