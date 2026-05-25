@@ -11,6 +11,8 @@ import SummaryPage from './pages/SummaryPage'
 import ForgotPassword from './pages/forgotPassword'
 import ChangePasswordFull from './pages/changePass'
 import LandingPage from './pages/landing_page'
+import PrivacyPolicy from './pages/privacy'
+import TermsAndConditions from './pages/termsAndCondition'
 import { AuthOnlyRoute, GuestOnlyRoute } from './routes/guards'
 import { TripPlanProvider } from './contexts/TripPlanContext'
 
@@ -93,6 +95,8 @@ function App() {
             </AuthOnlyRoute>
           }
         />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/" element={<LandingPage />} />
       </Routes>
     </BrowserRouter>

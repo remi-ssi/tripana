@@ -149,7 +149,7 @@ export default function AttractionsPage() {
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-300 rounded-lg">
           <p className="text-red-600 text-sm">
-            ❌ {error}
+             {error}
           </p>
         </div>
       )}
