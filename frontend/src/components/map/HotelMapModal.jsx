@@ -38,6 +38,15 @@ export default function HotelMapModal({ isOpen, selectedPlace, onClose, onConfir
     mapRef.current = mapHook.map?.current || null
   }, [mapHook])
 
+  // Reset pinned coords when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setPinnedCoords(null)
+      setIsUsingLocation(false)
+      setShowLocationPermission(false)
+    }
+  }, [isOpen])
+
   // ── Zoom to pinned coords when current location is selected ──
   useEffect(() => {
     if (!pinnedCoords || !mapRef.current) return
@@ -107,17 +116,23 @@ export default function HotelMapModal({ isOpen, selectedPlace, onClose, onConfir
     setIsPinning(true)
     try {
       const result = await reverseGeocodePlace(pinnedCoords.lng, pinnedCoords.lat)
+      
+      // Ensure we have a valid name
+      const name = result?.name?.trim() || `Location (${pinnedCoords.lat.toFixed(4)}, ${pinnedCoords.lng.toFixed(4)})`
+      const fullAddress = result?.fullAddress?.trim() || name
+      
       onConfirm({
-        name:        result.name,
-        fullAddress: result.fullAddress,
+        name,
+        fullAddress,
         coordinates: pinnedCoords,
       })
     } catch (err) {
       console.error('[HotelMapModal] Reverse geocoding failed:', err)
-      // Fallback: use raw coordinates as name
+      // Fallback: use coordinates as name
+      const fallbackName = `Location (${pinnedCoords.lat.toFixed(4)}, ${pinnedCoords.lng.toFixed(4)})`
       onConfirm({
-        name:        `${pinnedCoords.lat.toFixed(5)}, ${pinnedCoords.lng.toFixed(5)}`,
-        fullAddress: `${pinnedCoords.lat.toFixed(5)}, ${pinnedCoords.lng.toFixed(5)}`,
+        name: fallbackName,
+        fullAddress: fallbackName,
         coordinates: pinnedCoords,
       })
     } finally {
@@ -186,43 +201,49 @@ export default function HotelMapModal({ isOpen, selectedPlace, onClose, onConfir
             Use Current Location
           </button>
 
-          {pinnedCoords ? (
+        {pinnedCoords ? (
             /* User clicked the map manually */
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-blue-700">📍 Pin placed!</p>
-                <p className="text-xs text-gray-500 truncate">
-                  {pinnedCoords.lat.toFixed(5)}, {pinnedCoords.lng.toFixed(5)}
-                </p>
+            <div className="space-y-2">
+              <p className="text-xs text-center text-gray-600 font-medium">📍 Location selected</p>
+              <div className="flex items-center justify-between gap-3 bg-blue-50 p-3 rounded-xl border border-blue-200">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-blue-700">Coordinates</p>
+                  <p className="text-xs text-gray-600 truncate">
+                    {pinnedCoords.lat.toFixed(5)}, {pinnedCoords.lng.toFixed(5)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleConfirmPin}
+                  disabled={isPinning}
+                  className="flex-shrink-0 px-5 py-2.5 rounded-lg bg-blue-700 text-white text-sm font-semibold hover:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed transition"
+                >
+                  {isPinning ? 'Saving…' : '✓ Confirm'}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleConfirmPin}
-                disabled={isPinning}
-                className="flex-shrink-0 px-4 py-2 rounded-xl bg-blue-700 text-white text-xs font-semibold hover:bg-blue-800 disabled:opacity-60 transition"
-              >
-                {isPinning ? 'Saving…' : 'Confirm Location'}
-              </button>
             </div>
           ) : selectedPlace ? (
             /* Place came from search */
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-gray-800 text-sm">{selectedPlace.name}</h3>
-                <p className="text-xs text-gray-500 mt-0.5 truncate">{selectedPlace.fullAddress}</p>
+            <div className="space-y-2">
+              <p className="text-xs text-center text-gray-600 font-medium">Review location</p>
+              <div className="flex items-center justify-between gap-3 bg-green-50 p-3 rounded-xl border border-green-200">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-800 text-sm">{selectedPlace.name}</h3>
+                  <p className="text-xs text-gray-600 mt-0.5 truncate">{selectedPlace.fullAddress}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleConfirmSearched}
+                  className="flex-shrink-0 px-5 py-2.5 rounded-lg bg-green-700 text-white text-sm font-semibold hover:bg-green-800 transition"
+                >
+                  ✓ Confirm
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleConfirmSearched}
-                className="flex-shrink-0 px-4 py-2 rounded-xl bg-blue-700 text-white text-xs font-semibold hover:bg-blue-800 transition"
-              >
-                Confirm Location
-              </button>
             </div>
           ) : (
             /* No pin yet */
-            <p className="text-xs text-gray-500 text-center py-1">
-              🗺️ Tap anywhere on the map to drop a pin
+            <p className="text-xs text-gray-500 text-center py-2 bg-gray-50 rounded-lg">
+              🗺️ Tap on the map to place a pin, or use current location below
             </p>
           )}
         </div>

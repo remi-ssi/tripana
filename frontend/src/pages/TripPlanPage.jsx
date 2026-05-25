@@ -165,8 +165,17 @@ export default function TripPlanPage() {
   }
 
   const handleContinue = () => {
-    if (validateForm()) {
+    const isValid = validateForm()
+    console.log('[TripPlanPage] Form validation:', {
+      isValid,
+      tripType,
+      form,
+      errors,
+    })
+    if (isValid) {
       navigate('/preference')
+    } else {
+      console.log('[TripPlanPage] Navigation blocked - validation failed')
     }
   }
 

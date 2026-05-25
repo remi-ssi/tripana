@@ -8,11 +8,6 @@ export const validateTripPlan = (form, tripType = form.tripType) => {
     newErrors.city = ERROR_MESSAGES.CITY_REQUIRED
   }
 
-  // Budget validation (required for all trip types)
-  if (!form.budget || form.budget.trim() === '') {
-    newErrors.budget = 'Budget is required'
-  }
-
   // Day Tour validation
   if (tripType === 'day') {
     if (!form.date) {
