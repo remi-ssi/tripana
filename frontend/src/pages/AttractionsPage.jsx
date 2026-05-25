@@ -22,10 +22,8 @@ export default function AttractionsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const cardsPerPage = 9
 
-  // ════════════════════════════════════════════════════════════════════════
   // FETCH RECOMMENDATIONS ON MOUNT
   // Loads attractions based on user preferences and trip location
-  // ════════════════════════════════════════════════════════════════════════
   useEffect(() => {
     const fetchRecommendations = async () => {
       try {
@@ -41,12 +39,14 @@ export default function AttractionsPage() {
         console.log('📍 Fetching attractions for:', {
           city: formData.city,
           preferences: formData.interests,
+          budget: formData.budget,
         })
 
-        // Get recommended attractions based on preferences
+        // Get recommended attractions based on preferences and budget
         const recommendedAttractions = await getRecommendedPlaces({
           locationCity: formData.city,
           userPreferences: formData.interests,
+          budget: formData.budget,
         })
 
         if (recommendedAttractions.length === 0) {
@@ -79,10 +79,8 @@ export default function AttractionsPage() {
     fetchRecommendations()
   }, [formData])
 
-  // ════════════════════════════════════════════════════════════════════════
   // GENERATE CATEGORIES FROM ATTRACTIONS
   // Extracts unique tags from all attractions for filtering
-  // ════════════════════════════════════════════════════════════════════════
   const categories = ['all', ...new Set(attractions.flatMap((a) => a.tags))]
 
   const handleContinue = () => {

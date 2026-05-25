@@ -57,6 +57,7 @@ export async function fetchAndSavePlaces({
 export async function getRecommendedPlaces({
   locationCity,
   userPreferences = [],
+  budget,
   latitude = null,
   longitude = null,
 }) {
@@ -69,6 +70,10 @@ export async function getRecommendedPlaces({
       throw new Error("At least one preference is required");
     }
 
+    if (!budget) {
+      throw new Error("Budget is required");
+    }
+
     // Call the new backend endpoint with smart search logic:
     // 1. Searches local database first (filtered by city and preference types)
     // 2. If no local results, searches Google API
@@ -76,7 +81,8 @@ export async function getRecommendedPlaces({
     const params = new URLSearchParams({
       city: locationCity.trim(),
       preferences: userPreferences.join(","),
-      limit: "20",
+      budget: budget,
+      limit: "30",
     });
 
     if (latitude !== null && longitude !== null) {
@@ -100,7 +106,7 @@ export async function searchAttractions({
   query,
   latitude = null,
   longitude = null,
-  radius = 5000,
+  radius = 5000, 
   limit = 20,
 }) {
   try {

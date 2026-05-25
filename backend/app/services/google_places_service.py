@@ -16,7 +16,7 @@ async def search_attractions(
     query: str,
     location: tuple[float, float] | None = None,
     radius: int = 5000,
-    limit: int = 20,
+    limit: int = 30,
 ) -> list[dict]:
     """
     Search for attractions using Google Places API.

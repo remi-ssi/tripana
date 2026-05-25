@@ -261,25 +261,32 @@ async def search_google_attractions(
 async def get_recommended_places(
     city: str = Query(..., min_length=2, description="City name for attraction search"),
     preferences: str = Query(..., description="Comma-separated list of user preferences (e.g., 'Beaches,Food Trip,Shopping')"),
+    budget: str = Query(..., description="Budget tier: budget-friendly, balanced, or luxury"),
     lat: float | None = Query(None, description="Latitude for location bias"),
     lng: float | None = Query(None, description="Longitude for location bias"),
     radius: int = Query(10000, ge=1000, le=50000, description="Search radius in meters"),
-    limit: int = Query(20, ge=1, le=50, description="Maximum number of results"),
+    limit: int = Query(30, ge=1, le=50, description="Maximum number of results"),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Get recommended attractions based on user preferences.
+    Get recommended attractions based on user preferences and budget.
     
     Implementation:
     1. Searches local database first (filtered by city and user preference types)
-    2. If no results found, searches Google Places API
+    2. If no results found, searches Google Places API for 50 places
     3. Automatically saves fetched results to local database (deduplication via Google Place ID)
-    4. Returns top-scored results using SAW (Simple Additive Weighting) scoring
+    4. Returns top 30 scored results using SAW (Simple Additive Weighting) scoring
     
-    Scoring factors:
-    - Rating: 40%
+    Scoring factors (total 100%):
+    - Relevance: 35%
+    - Rating: 30%
     - Popularity (review count): 25%
-    - Preference relevance: 35%
+    - Price level: 10%
+    
+    Budget price levels:
+    - budget-friendly: price levels 1-2
+    - balanced: price levels 2-4 (default)
+    - luxury: price levels 3-4
     
     Local DB search optimization:
     - First checks if address city matches requested city
@@ -289,13 +296,14 @@ async def get_recommended_places(
     Args:
         city: City name to search in
         preferences: Comma-separated preference list
+        budget: Budget tier (budget-friendly, balanced, luxury)
         lat: Latitude for location bias (optional)
         lng: Longitude for location bias (optional)
         radius: Search radius in meters (default 10000m)
-        limit: Maximum results (default 20, max 50)
+        limit: Maximum results (default 30, max 50)
     
     Returns:
-        List of recommended attractions with scores and all details
+        List of top 30 recommended attractions with scores and all details
     """
     try:
         # Parse preferences
@@ -318,6 +326,7 @@ async def get_recommended_places(
         results = await search_service.search_attractions(
             location_city=city,
             user_preferences=user_preferences,
+            budget=budget,
             latitude=lat if lat is not None else None,
             longitude=lng if lng is not None else None,
             radius=radius,

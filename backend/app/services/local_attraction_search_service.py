@@ -16,15 +16,24 @@ from app.services.google_places_service import get_place_details
 logger = logging.getLogger(__name__)
 
 # Scoring weights — must sum to 1.0
-# Rating(0.40), Relevance(0.35), Popularity(0.25)
+# Relevance(0.35), Rating(0.30), Popularity(0.25), Price Level(0.10)
 SCORING_WEIGHTS = {
-    "WEIGHT_RATING": 0.40,
-    "WEIGHT_POPULARITY": 0.25,
     "WEIGHT_RELEVANCE": 0.35,
+    "WEIGHT_RATING": 0.30,
+    "WEIGHT_POPULARITY": 0.25,
+    "WEIGHT_PRICE_LEVEL": 0.10,
     "RATING_MIN": 1,
     "RATING_MAX": 5,
     "POPULARITY_LOG_MAX": 50000,
     "MIN_RATING_THRESHOLD": 3,
+    "PRICE_LEVEL_MAX": 4,
+}
+
+# Budget to price level mapping
+BUDGET_TO_PRICE_LEVEL = {
+    "budget-friendly": [1, 2],
+    "balanced": [2, 3, 4],
+    "luxury": [3, 4],
 }
 
 # Preference to keywords mapping
@@ -57,20 +66,21 @@ class LocalAttractionSearchService:
         self,
         location_city: str,
         user_preferences: List[str],
+        budget: str,
         latitude: Optional[float] = None,
         longitude: Optional[float] = None,
         radius: int = 10000,
-        limit: int = 20,
+        limit: int = 30,
     ) -> List[Dict]:
         """
         Search for attractions with priority to local database.
         
         Steps:
         1. Search local database filtered by city and user preferences
-        2. If results found, score and return top matches
-        3. If no local results, search Google API
+        2. If results found, score by budget/preferences and return top 30
+        3. If no local results, search Google API for 50 places
         4. Save fetched results to local database (with deduplication)
-        5. Score and return top matches
+        5. Score and return top 30 matches
         """
         try:
             if not location_city or location_city.strip() == "":
@@ -78,6 +88,9 @@ class LocalAttractionSearchService:
             
             if not user_preferences or len(user_preferences) == 0:
                 raise ValueError("At least one preference is required")
+            
+            if not budget:
+                raise ValueError("Budget is required")
             
             # Step 1: Try local database search
             logger.info(f"Searching local database for {location_city} with preferences: {user_preferences}")
@@ -88,7 +101,7 @@ class LocalAttractionSearchService:
             
             if local_results and len(local_results) > 0:
                 logger.info(f"Found {len(local_results)} local results")
-                scored_results = self._score_places(local_results, user_preferences)
+                scored_results = self._score_places(local_results, user_preferences, budget)
                 return self._format_results(scored_results[:limit])
             
             # Step 2: If no local results, search Google API
@@ -99,7 +112,7 @@ class LocalAttractionSearchService:
                 latitude,
                 longitude,
                 radius,
-                limit * 2  # Fetch more to get 20 after dedup
+                50  # Fetch 50 places to get top 30 after scoring
             )
             
             if not google_results:
@@ -111,7 +124,7 @@ class LocalAttractionSearchService:
             await self._save_places_to_database(location_city, google_results)
             
             # Step 4: Score and return results
-            scored_results = self._score_places(google_results, user_preferences)
+            scored_results = self._score_places(google_results, user_preferences, budget)
             return self._format_results(scored_results[:limit])
         
         except Exception as e:
@@ -288,11 +301,17 @@ class LocalAttractionSearchService:
             keyword_set.update(keywords)
         return list(keyword_set)
     
-    def _score_places(self, places: List[Dict], user_preferences: List[str]) -> List[Dict]:
-        """Score places using SAW (Simple Additive Weighting) scoring system."""
+    def _score_places(self, places: List[Dict], user_preferences: List[str], budget: str) -> List[Dict]:
+        """Score places using SAW (Simple Additive Weighting) scoring system with budget filter."""
+        allowed_price_levels = BUDGET_TO_PRICE_LEVEL.get(budget, [1, 2, 3, 4])
         scored_places = []
         
         for place in places:
+            # Filter by price level if available
+            price_level = place.get("price_level")
+            if price_level and price_level not in allowed_price_levels:
+                continue
+                
             score = self._calculate_place_score(place, user_preferences)
             if score > 0:
                 scored_places.append({
@@ -311,8 +330,9 @@ class LocalAttractionSearchService:
     def _calculate_place_score(self, place: Dict, user_preferences: List[str]) -> float:
         """
         Calculate SAW score for a place:
-        Score = (0.40 × RatingScore) + (0.25 × PopularityScore) + (0.35 × RelevanceScore)
+        Score = (0.35 × RelevanceScore) + (0.30 × RatingScore) + (0.25 × PopularityScore) + (0.10 × PriceLevelScore)
         """
+        # Rating score (30%)
         rating = place.get("rating") or 0
         rating_score = (
             ((rating - SCORING_WEIGHTS["RATING_MIN"]) / 
@@ -320,6 +340,7 @@ class LocalAttractionSearchService:
             if rating > 0 else 0
         )
         
+        # Popularity score (25%)
         review_count = place.get("user_ratings_total") or 0
         popularity_score = (
             min(((__import__('math').log10(review_count) / 
@@ -327,16 +348,22 @@ class LocalAttractionSearchService:
             if review_count > 0 else 0
         )
         
+        # Relevance score (35%)
         matched_prefs = self._count_preference_matches(place, user_preferences)
         relevance_score = (matched_prefs / len(user_preferences) * 100) if user_preferences else 0
         
         if relevance_score == 0:
             return 0
         
+        # Price level score (10%) — normalized inversely (higher price = lower score)
+        price_level = place.get("price_level") or 2  # Default to middle price level
+        price_level_score = ((SCORING_WEIGHTS["PRICE_LEVEL_MAX"] - price_level + 1) / SCORING_WEIGHTS["PRICE_LEVEL_MAX"]) * 100
+        
         return (
+            SCORING_WEIGHTS["WEIGHT_RELEVANCE"] * relevance_score +
             SCORING_WEIGHTS["WEIGHT_RATING"] * rating_score +
             SCORING_WEIGHTS["WEIGHT_POPULARITY"] * popularity_score +
-            SCORING_WEIGHTS["WEIGHT_RELEVANCE"] * relevance_score
+            SCORING_WEIGHTS["WEIGHT_PRICE_LEVEL"] * price_level_score
         )
     
     def _count_preference_matches(self, place: Dict, user_preferences: List[str]) -> int:
