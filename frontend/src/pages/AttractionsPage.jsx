@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import PageLayout from './PageLayout'
 import { validateAttractions, validateTripPlanData, hasErrors } from '../validators/attractionValidator'
 import { useTripPlan } from '../contexts/TripPlanContext'
-import { getRecommendedPlaces } from '../services/attraction'
-import { apiClient } from '../api/apiClient'
 import { formatTypeTag } from '../utils/helpers'
 
 export default function AttractionsPage() {
@@ -43,6 +41,7 @@ export default function AttractionsPage() {
         })
 
         // Get recommended attractions based on preferences and budget
+        const { getRecommendedPlaces } = await import('../services/attraction')
         const recommendedAttractions = await getRecommendedPlaces({
           locationCity: formData.city,
           userPreferences: formData.interests,

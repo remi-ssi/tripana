@@ -5,7 +5,7 @@ import HotelMapModal from '../components/map/HotelMapModal'
 import { validateTripPlan } from '../validators/tripPlanValidator'
 import useCitySuggestions from '../hooks/useCitySuggestions'
 import useDebounce from '../hooks/useDebounce'
-import { getPlaceSuggestions, getPlaceDetails } from '../api/places_api'
+import { searchHotels, getHotelCoordinates } from '../services/placeSearchService'
 import { useTripPlan } from '../contexts/TripPlanContext'
 
 export default function TripPlanPage() {
@@ -68,7 +68,7 @@ export default function TripPlanPage() {
     const run = async () => {
       setHotelLoading(true)
       try {
-        const results = await getPlaceSuggestions(debouncedHotelQuery)
+        const results = await searchHotels(debouncedHotelQuery, form.city)
         setHotelSuggestions(results)
       } catch (err) {
         console.error('Hotel search failed:', err)
@@ -78,7 +78,7 @@ export default function TripPlanPage() {
       }
     }
     run()
-  }, [debouncedHotelQuery])
+  }, [debouncedHotelQuery, form.city])
 
   // ── Form helpers ───────────────────────────────────────
   const validateForm = () => {
@@ -139,11 +139,10 @@ export default function TripPlanPage() {
     if (place.coordinates) {
       setSelectedPlace(place)
     } else {
-      try {
-        const details = await getPlaceDetails(place.id)
+      const details = await getHotelCoordinates(place.id)
+      if (details) {
         setSelectedPlace(details)
-      } catch (err) {
-        console.error('Failed to retrieve place details:', err)
+      } else {
         setSelectedPlace(place)
       }
     }
