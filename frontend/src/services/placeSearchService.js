@@ -115,26 +115,19 @@ export async function getMapboxToken() {
 }
 
 /**
- * Search for hotel/accommodation suggestions within a specific city
+ * Search for hotel/accommodation suggestions
  * @param {string} query - Search query
- * @param {string} city - City to filter hotels by
- * @returns {Promise<Array>} List of place suggestions within the city
+ * @returns {Promise<Array>} List of place suggestions
  */
-export async function searchHotels(query, city) {
+export async function searchHotels(query) {
   const { getPlaceSuggestions } = await import('../api/places_api')
   
   if (!query || query.trim().length < 2) {
     return []
   }
 
-  if (!city || city.trim().length === 0) {
-    return []
-  }
-
   try {
-    // Append city to query to scope results to that city
-    const scopedQuery = `${query.trim()} in ${city}`
-    const results = await getPlaceSuggestions(scopedQuery)
+    const results = await getPlaceSuggestions(query)
     return results || []
   } catch (err) {
     console.error('Hotel search failed:', err)

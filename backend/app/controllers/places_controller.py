@@ -28,11 +28,14 @@ async def search_places(
     country: str = Query("ph", description="Country code"),
     limit: int = Query(5, ge=1, le=10),
     types: str = Query("poi", description="Comma-separated Mapbox feature types"),
+    proximity: str = Query(None, description="Longitude,latitude to bias results (e.g., '120.5,16.4')"),
 ):
     """
     Search for places using Mapbox Search Box API (suggest).
     Returns suggestions with mapbox_id — call /retrieve to get coordinates.
     Falls back to Geocoding v5 if Search Box returns no results.
+    
+    proximity parameter: Pass 'lng,lat' to bias results toward a location (e.g., city coordinates)
     """
     token = settings.MAPBOX_TOKEN
     if not token:
@@ -59,6 +62,10 @@ async def search_places(
             "limit": limit,
             "types": "poi",
         }
+        
+        # Add proximity if provided (biases results toward location)
+        if proximity:
+            suggest_params["proximity"] = proximity
 
         async with httpx.AsyncClient() as client:
             resp = await client.get(MAPBOX_SUGGEST_URL, params=suggest_params)
@@ -95,6 +102,10 @@ async def search_places(
         "types": geocode_types,
         "language": "en",
     }
+    
+    # Add proximity if provided (biases results toward location)
+    if proximity:
+        geocode_params["proximity"] = proximity
 
     async with httpx.AsyncClient() as client:
         resp = await client.get(f"{MAPBOX_GEOCODE_URL}/{q}.json", params=geocode_params)

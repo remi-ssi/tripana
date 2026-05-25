@@ -1,6 +1,8 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
+import mapboxgl from 'mapbox-gl'
 import useMap from '../../hooks/useMap'
 import { reverseGeocodePlace } from '../../api/places_api'
+import CurrentLocationPermissionModal from '../currentLocation'
 
 /**
  * HotelMapModal — self-contained map modal for selecting a hotel/place.
@@ -13,20 +15,91 @@ import { reverseGeocodePlace } from '../../api/places_api'
  */
 export default function HotelMapModal({ isOpen, selectedPlace, onClose, onConfirm }) {
   const mapContainerRef = useRef(null)
+  const mapRef = useRef(null)
 
   // Coords set by clicking the map (manual pin)
   const [pinnedCoords, setPinnedCoords] = useState(null)
   const [isPinning, setIsPinning]       = useState(false)
+  const [isUsingLocation, setIsUsingLocation] = useState(false)
+  const [showLocationPermission, setShowLocationPermission] = useState(false)
 
   // Reset pinnedCoords when modal opens/closes
   // (handled via key prop in parent or reset inside onClose)
 
-  useMap(
+  const mapHook = useMap(
     mapContainerRef,
     selectedPlace?.coordinates ?? null,
     isOpen,
     (coords) => setPinnedCoords(coords),
   )
+
+  // Capture the map instance from the hook
+  useEffect(() => {
+    mapRef.current = mapHook.map?.current || null
+  }, [mapHook])
+
+  // ── Zoom to pinned coords when current location is selected ──
+  useEffect(() => {
+    if (!pinnedCoords || !mapRef.current) return
+
+    // Remove any existing marker
+    const existingMarkers = document.querySelectorAll('.mapboxgl-marker')
+    existingMarkers.forEach(m => m.remove())
+
+    // Create and place a marker at the pinned location
+    const marker = new mapboxgl.Marker({ color: '#1d4ed8', draggable: true })
+      .setLngLat([pinnedCoords.lng, pinnedCoords.lat])
+      .addTo(mapRef.current)
+
+    // Allow dragging to update coordinates
+    marker.on('dragend', () => {
+      const pos = marker.getLngLat()
+      setPinnedCoords({ lng: pos.lng, lat: pos.lat })
+    })
+
+    // Zoom to the pinned location with animation
+    mapRef.current.flyTo({
+      center: [pinnedCoords.lng, pinnedCoords.lat],
+      zoom: 15,
+      duration: 1000,
+    })
+  }, [pinnedCoords])
+
+  // ── Use current device location ────────────────────────
+  const handleRequestLocation = () => {
+    setShowLocationPermission(true)
+  }
+
+  const handlePermissionApproved = async () => {
+    setIsUsingLocation(true)
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          timeout: 10000,
+          enableHighAccuracy: true,
+        })
+      })
+
+      const coords = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      }
+
+      // Set the pin on the map (don't confirm yet)
+      setPinnedCoords(coords)
+      setShowLocationPermission(false)
+    } catch (err) {
+      console.error('Geolocation error:', err)
+      alert('Could not get your location. Please check your device settings and try again.')
+      setShowLocationPermission(false)
+    } finally {
+      setIsUsingLocation(false)
+    }
+  }
+
+  const handlePermissionDenied = () => {
+    setShowLocationPermission(false)
+  }
 
   // ── Confirm a manually-pinned location ──────────────────
   const handleConfirmPin = async () => {
@@ -78,8 +151,8 @@ export default function HotelMapModal({ isOpen, selectedPlace, onClose, onConfir
       style={{ animation: 'fadeIn .2s ease' }}
     >
       <div
-        className="relative w-[92%] max-w-lg rounded-2xl shadow-2xl overflow-hidden bg-white"
-        style={{ height: '68vh', animation: 'scaleIn .25s ease' }}
+        className="relative w-[92%] max-w-2xl rounded-2xl shadow-2xl overflow-hidden bg-white"
+        style={{ height: '80vh', animation: 'scaleIn .25s ease' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── X button ── */}
@@ -99,7 +172,20 @@ export default function HotelMapModal({ isOpen, selectedPlace, onClose, onConfir
         <div ref={mapContainerRef} className="w-full h-full" />
 
         {/* ── Bottom bar ── */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm px-4 py-3 border-t border-gray-100">
+        <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm px-4 py-4 border-t border-gray-100 space-y-3">
+          {/* Use Current Location button */}
+          <button
+            type="button"
+            onClick={handleRequestLocation}
+            disabled={isUsingLocation || isPinning}
+            className="w-full px-4 py-2.5 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+              <path fillRule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-2.083 3.701-5.125 3.701-9.077 0-4.715-3.73-8.293-8-8.293s-8 3.578-8 8.293c0 3.952 1.757 6.994 3.701 9.077a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+            </svg>
+            Use Current Location
+          </button>
+
           {pinnedCoords ? (
             /* User clicked the map manually */
             <div className="flex items-center justify-between gap-3">
@@ -141,6 +227,15 @@ export default function HotelMapModal({ isOpen, selectedPlace, onClose, onConfir
           )}
         </div>
       </div>
+
+      {/* ── Location Permission Modal ── */}
+      <CurrentLocationPermissionModal
+        isOpen={showLocationPermission}
+        onConfirm={handlePermissionApproved}
+        onCancel={handlePermissionDenied}
+        isLoading={isUsingLocation}
+      />
     </div>
   )
 }
+

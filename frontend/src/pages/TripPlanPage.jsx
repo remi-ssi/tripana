@@ -68,7 +68,7 @@ export default function TripPlanPage() {
     const run = async () => {
       setHotelLoading(true)
       try {
-        const results = await searchHotels(debouncedHotelQuery, form.city)
+        const results = await searchHotels(debouncedHotelQuery)
         setHotelSuggestions(results)
       } catch (err) {
         console.error('Hotel search failed:', err)
@@ -78,7 +78,7 @@ export default function TripPlanPage() {
       }
     }
     run()
-  }, [debouncedHotelQuery, form.city])
+  }, [debouncedHotelQuery])
 
   // ── Form helpers ───────────────────────────────────────
   const validateForm = () => {
