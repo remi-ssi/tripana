@@ -13,6 +13,7 @@ import ChangePasswordFull from './pages/changePass'
 import LandingPage from './pages/landing_page'
 import PrivacyPolicy from './pages/privacy'
 import TermsAndConditions from './pages/termsAndCondition'
+import TripanaAbout from './pages/aboutUs'
 import { AuthOnlyRoute, GuestOnlyRoute } from './routes/guards'
 import { TripPlanProvider } from './contexts/TripPlanContext'
 
@@ -97,6 +98,8 @@ function App() {
         />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsAndConditions />} />
+        <Route path="/about" element={<TripanaAbout />} />
+        <Route path="/features" element={<div className="min-h-screen flex items-center justify-center"><h1>Features Page (Coming Soon)</h1></div>} />
         <Route path="/" element={<LandingPage />} />
       </Routes>
     </BrowserRouter>

@@ -271,10 +271,10 @@ export default function BreakPage() {
         </div>
 
         <button
-          onClick={() => navigate('/preference')}
+          onClick={() => navigate('/attractions')}
           className="w-full text-center text-sm text-gray-400 hover:text-blue-700 transition-colors"
         >
-          ← Back to Preference
+          ← Back to Attraction
         </button>
       </div>
     </PageLayout>

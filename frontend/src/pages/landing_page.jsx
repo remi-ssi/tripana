@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import fullLogo from "../assets/Logo.png";
 import PhMap from "../assets/Philippines_flights.gif";
+import { Navbar } from "../components/landingNavBar";
 
 // ─── Philippines Map SVG ───────────────────────────────────────────────────────
 function PhilippinesMap() {
@@ -12,57 +12,6 @@ function PhilippinesMap() {
       className="h-[600px] w-full max-w-[600px] select-none drop-shadow-[0_24px_60px_rgba(37,99,235,0.18)]"
       draggable="false"
     />
-  );
-}
-
-// ─── Navbar ────────────────────────────────────────────────────────────────────
-function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  return (
-    <nav
-      className={`fixed left-0 right-0 top-0 z-50 flex items-center justify-between px-10 py-4 backdrop-blur-[14px] transition-all duration-300 animate-[slideDown_0.7s_ease_both] ${
-        scrolled
-          ? "bg-[rgba(244,245,247,0.92)] border-b border-black/10"
-          : "bg-[rgba(244,245,247,0.5)] border-b border-transparent"
-      }`}
-    >
-      {/* Logo */}
-      <img
-        src={fullLogo}
-        alt="Tripana"
-        className="h-11 w-auto select-none"
-      />
-
-      {/* Links */}
-      <ul className="flex gap-8 list-none m-0 p-0">
-        {["Features", "About Us", "Contact"].map((link) => (
-          <li key={link}>
-            <a
-              href="#"
-              className="text-sm font-medium text-gray-500 no-underline transition-colors duration-200 hover:text-[#1a1f36]"
-            >
-              {link}
-            </a>
-          </li>
-        ))}
-      </ul>
-
-      {/* CTA */}
-      <button
-        onClick={() => navigate("/login?mode=login")}
-        className="cursor-pointer rounded-full border-none bg-[#2563EB] px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-px hover:bg-blue-700 active:scale-95"
-      >
-        Log In
-      </button>
-    </nav>
   );
 }
 

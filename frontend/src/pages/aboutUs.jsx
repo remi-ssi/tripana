@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { Navbar } from "../components/landingNavBar";
+import fullLogo from "../assets/Logo.png";
 
 // ── Scroll-reveal hook ──────────────────────────────────────────────────────
 function useReveal(threshold = 0.15) {
@@ -82,64 +84,7 @@ const commitments = [
   },
 ];
 
-// ── Logo ────────────────────────────────────────────────────────────────────
-function TripanaLogo({ size = "text-5xl" }) {
-  return (
-    <span
-      className={`font-black tracking-tight leading-none ${size}`}
-      style={{ fontFamily: "'Nunito', sans-serif" }}
-    >
-      <span style={{ color: "#1B3A6B" }}>tri</span>
-      <span
-        style={{ color: "#F5820A", display: "inline-block", transform: "rotate(-25deg)" }}
-        className="mx-0.5"
-      >
-        ✈
-      </span>
-      <span style={{ color: "#F5820A" }}>p</span>
-      <span style={{ color: "#1B3A6B" }}>ana</span>
-    </span>
-  );
-}
-
-// ── NavBar ──────────────────────────────────────────────────────────────────
-function NavBar() {
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 30);
-    window.addEventListener("scroll", fn);
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
-
-  return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4 transition-all duration-400 ${
-        scrolled
-          ? "bg-white/90 backdrop-blur-md shadow-sm border-b border-blue-100"
-          : "bg-transparent"
-      }`}
-    >
-      <TripanaLogo size="text-2xl" />
-      <ul
-        className="hidden md:flex gap-8 text-sm font-semibold"
-        style={{ color: "#5A7BAD", fontFamily: "'Poppins', sans-serif" }}
-      >
-        {["Mission", "Destinations", "Commitments"].map((label) => (
-          <li key={label}>
-            <a
-              href={`#${label.toLowerCase()}`}
-              className="hover:text-[#1B3A6B] transition-colors duration-200 pb-0.5 border-b-2 border-transparent hover:border-[#F5820A]"
-            >
-              {label}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
-
-// ── Hero ────────────────────────────────────────────────────────────────────
+// ── Hero ──────────────────────────────────────────────────────────────────────
 function Hero() {
   return (
     <section
@@ -168,7 +113,7 @@ function Hero() {
       <div className="relative z-10 max-w-3xl w-full">
         {/* Logo hero */}
         <div style={{ animation: "fadeUp 0.9s ease both" }}>
-          <TripanaLogo size="text-7xl md:text-9xl" />
+          <img src={fullLogo} alt="Tripana" className="h-32 md:h-48 w-auto mx-auto" />
         </div>
 
         {/* Tagline */}
@@ -527,7 +472,7 @@ function Footer() {
 export default function TripanaAbout() {
   return (
     <div style={{ background: "#EBF2FA" }}>
-      <NavBar />
+      <Navbar />
       <Hero />
       <Mission />
       <Destinations />
