@@ -16,26 +16,45 @@ class PlaceRepository:
         self.db = db
     
     async def create(self, googleplaceid: str, destination: Optional[str] = None, 
-                    address: Optional[str] = None, latitude: Optional[float] = None, 
-                    longitude: Optional[float] = None, rating: Optional[float] = None,
-                    userratinqtotal: Optional[int] = None, openinghours: Optional[str] = None, 
-                    is_open_now: Optional[bool] = None, photos: Optional[str] = None,
-                    website: Optional[str] = None, pricelevel: Optional[int] = None,
-                    phonenumber: Optional[str] = None) -> Place:
-        """Create a new place record."""
+                    address: Optional[str] = None, city: Optional[str] = None,
+                    latitude: Optional[float] = None, longitude: Optional[float] = None, 
+                    rating: Optional[float] = None, userratinqtotal: Optional[int] = None, 
+                    openinghours: Optional[str] = None, is_open_now: Optional[bool] = None, 
+                    photos: Optional[str] = None, website: Optional[str] = None, 
+                    pricelevel: Optional[int] = None, phonenumber: Optional[str] = None,
+                    name: Optional[str] = None, types: Optional[list] = None,
+                    opening_hours: Optional[str] = None, user_ratings_total: Optional[int] = None,
+                    google_place_id: Optional[str] = None, price_level: Optional[int] = None) -> Place:
+        """Create a new place record.
+        
+        Supports both old and new parameter naming conventions for backward compatibility:
+        - googleplaceid / google_place_id
+        - destination / name
+        - openinghours / opening_hours
+        - userratinqtotal / user_ratings_total
+        - pricelevel / price_level
+        """
+        # Handle alternative parameter names for backward compatibility
+        final_googleplaceid = googleplaceid or google_place_id
+        final_destination = destination or name
+        final_openinghours = openinghours or opening_hours
+        final_userratinqtotal = userratinqtotal or user_ratings_total
+        final_pricelevel = pricelevel or price_level
+        
         place = Place(
-            googleplaceid=googleplaceid,
-            destination=destination,
+            googleplaceid=final_googleplaceid,
+            destination=final_destination,
             address=address,
+            city=city,
             latitude=latitude,
             longitude=longitude,
             rating=rating,
-            userratinqtotal=userratinqtotal,
-            openinghours=openinghours,
+            userratinqtotal=final_userratinqtotal,
+            openinghours=final_openinghours,
             is_open_now=is_open_now,
             photos=photos,
             website=website,
-            pricelevel=pricelevel,
+            pricelevel=final_pricelevel,
             phonenumber=phonenumber,
         )
         self.db.add(place)
@@ -64,6 +83,64 @@ class PlaceRepository:
             .limit(limit)
         )
         return result.scalars().all()
+    
+    async def search_by_city(self, city: str, limit: int = 100) -> List[Place]:
+        """Search for places by city (exact match)."""
+        result = await self.db.execute(
+            select(Place)
+            .where(Place.city == city)
+            .limit(limit)
+        )
+        return result.scalars().all()
+    
+    async def search_by_city_and_preferences(
+        self, 
+        city: str, 
+        user_preferences: List[str],
+        preference_to_keywords: dict,
+        limit: int = 100
+    ) -> List[Place]:
+        """
+        Search for places by city and user preferences.
+        
+        Args:
+            city: The city to search in (exact match)
+            user_preferences: List of user preference names
+            preference_to_keywords: Mapping of preferences to keywords
+            limit: Maximum number of results
+        
+        Returns:
+            List of Place objects matching the city and preferences
+        """
+        # Get all places in the city first
+        result = await self.db.execute(
+            select(Place)
+            .where(Place.city == city)
+            .limit(limit * 2)  # Get extra results to filter by preferences
+        )
+        all_places = result.scalars().all()
+        
+        if not all_places:
+            return []
+        
+        # Filter by preferences if any keywords match
+        filtered_places = []
+        for place in all_places:
+            destination_lower = (place.destination or "").lower()
+            address_lower = (place.address or "").lower()
+            
+            # Check if any preference keywords match the place
+            for pref in user_preferences:
+                keywords = preference_to_keywords.get(pref, [pref.lower()])
+                for keyword in keywords:
+                    if keyword.lower() in destination_lower or keyword.lower() in address_lower:
+                        filtered_places.append(place)
+                        break
+                else:
+                    continue
+                break
+        
+        return filtered_places[:limit]
     
     async def get_all(self, limit: int = 100, offset: int = 0) -> List[Place]:
         """Get all places with pagination."""

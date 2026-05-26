@@ -63,13 +63,14 @@ async def fetch_and_save_attractions(
                     # Get address
                     address = google_place.get("address", "")
                     
-                    # Save to database
+                    # Save to database with city field
                     try:
                         coords = google_place.get("coordinates", {})
                         await repo.create(
                             googleplaceid=google_place_id,
                             destination=google_place.get("name", ""),
                             address=address,
+                            city=city,
                             latitude=coords.get("lat", 0.0),
                             longitude=coords.get("lng", 0.0),
                             rating=google_place.get("rating"),
