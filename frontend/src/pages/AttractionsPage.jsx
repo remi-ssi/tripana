@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from './PageLayout'
+import AttractionModal from '../components/placeInfo'
 import { validateAttractions, validateTripPlanData, hasErrors } from '../validators/attractionValidator'
 import { useTripPlan } from '../contexts/TripPlanContext'
+import { useLazyLoad } from '../hooks/lazyLoad'
 import { formatTypeTag } from '../utils/helpers'
 
 export default function AttractionsPage() {
@@ -19,6 +21,13 @@ export default function AttractionsPage() {
   const [errors, setErrors] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
   const cardsPerPage = 9
+  
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedPlace, setSelectedPlace] = useState(null)
+  
+  // Lazy loading hook for images
+  const { imageRefs, observeImages } = useLazyLoad({ rootMargin: '50px' })
 
   // FETCH RECOMMENDATIONS ON MOUNT
   // Loads attractions based on user preferences and trip location
@@ -78,6 +87,11 @@ export default function AttractionsPage() {
     fetchRecommendations()
   }, [formData])
 
+  // Observe images when pagination changes
+  useEffect(() => {
+    observeImages()
+  }, [currentPage, observeImages])
+
   // GENERATE CATEGORIES FROM ATTRACTIONS
   // Extracts unique tags from all attractions for filtering
   const categories = ['all', ...new Set(attractions.flatMap((a) => a.tags))]
@@ -87,6 +101,22 @@ export default function AttractionsPage() {
     setErrors(newErrors)
     if (!hasErrors(newErrors)) {
       navigate('/break')
+    }
+  }
+
+  const handleOpenModal = (attraction) => {
+    setSelectedPlace(attraction)
+    setModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setModalOpen(false)
+    setSelectedPlace(null)
+  }
+
+  const handleSelectFromModal = () => {
+    if (selectedPlace) {
+      toggleAttraction(selectedPlace.id)
     }
   }
 
@@ -189,20 +219,19 @@ export default function AttractionsPage() {
         {paginatedAttractions.map((attraction) => {
           const isSelected = selected.includes(attraction.id)
           return (
-            <button
+            <div
               key={attraction.id}
-              type="button"
-              onClick={() => toggleAttraction(attraction.id)}
-              aria-pressed={isSelected}
-              className={`w-full text-left rounded-2xl border-2 overflow-hidden bg-white transition-all duration-200 ${isSelected ? 'border-teal-400 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'}`}
+              onClick={() => handleOpenModal(attraction)}
+              className={`relative w-full text-left rounded-2xl border-2 overflow-hidden bg-white transition-all duration-200 cursor-pointer ${isSelected ? 'border-teal-400 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'}`}
             >
               {/* Image */}
               <div className="relative">
                 <img
-                  src={attraction.image}
+                  ref={(el) => { if (el) imageRefs.current[attraction.id] = el }}
+                  data-src={attraction.image}
                   alt={attraction.name}
-                  className="w-full h-36 object-cover"
-                  onError={(e) => { e.target.style.background = '#e5e7eb'; e.target.style.display = 'none' }}
+                  className="w-full h-36 object-cover bg-gray-100"
+                  onError={(e) => { e.target.style.background = '#e5e7eb'; e.target.src = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&h=220&fit=crop' }}
                 />
                 {/* Selected checkmark */}
                 {isSelected && (
@@ -224,21 +253,32 @@ export default function AttractionsPage() {
                     <span key={tag} className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{tag}</span>
                   ))}
                 </div>
-                {/* Rating + Select */}
-                <div className="flex items-center justify-between mt-1">
+                {/* Rating + Select Button */}
+                <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
                   <div className="flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-yellow-400">
                       <path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" clipRule="evenodd" />
                     </svg>
                     <span className="text-xs font-semibold text-gray-700">{attraction.rating}</span>
-                    <span className="text-xs text-gray-400">({attraction.reviews.toLocaleString()} reviews)</span>
+                    <span className="text-xs text-gray-400">({attraction.reviews.toLocaleString()})</span>
                   </div>
-                  <span className={`text-xs font-semibold transition-colors ${isSelected ? 'text-teal-500' : 'text-gray-400'}`}>
-                    {isSelected ? 'Selected' : 'Select'}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleAttraction(attraction.id)
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                      isSelected
+                        ? 'bg-teal-500 text-white hover:bg-teal-600'
+                        : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                    }`}
+                  >
+                    {isSelected ? '✓ Added' : 'Select'}
+                  </button>
                 </div>
               </div>
-            </button>
+            </div>
           )
         })}
       </div>
@@ -307,6 +347,29 @@ export default function AttractionsPage() {
           ← Back to Preference
         </button>
       </div>
+
+      {/* Attraction Details Modal */}
+      {selectedPlace && (
+        <AttractionModal
+          place={{
+            destination: selectedPlace.name,
+            address: selectedPlace.description,
+            latitude: 0,
+            longitude: 0,
+            rating: selectedPlace.rating,
+            userratinqtotal: selectedPlace.reviews,
+            pricelevel: null,
+            phonenumber: null,
+            website: null,
+            openinghours: null,
+            photos: selectedPlace.image ? [selectedPlace.image] : [],
+          }}
+          isOpen={modalOpen}
+          onClose={handleCloseModal}
+          onSelect={handleSelectFromModal}
+          isSelected={selected.includes(selectedPlace.id)}
+        />
+      )}
     </PageLayout>
   )
 }
