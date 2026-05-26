@@ -81,6 +81,7 @@ async def search_attractions(
             # Format results to return only necessary data
             formatted_results = []
             for place in results[:limit]:
+                opening_hours_data = place.get("opening_hours", {})
                 formatted_place = {
                     "id": place.get("place_id"),
                     "name": place.get("name", ""),
@@ -91,11 +92,12 @@ async def search_attractions(
                     },
                     "rating": place.get("rating"),
                     "user_ratings_total": place.get("user_ratings_total"),
-                    "types": place.get("types", []),
-                    "opening_hours": place.get("opening_hours", {}).get("open_now"),
+                    "is_open_now": opening_hours_data.get("open_now"),
+                    "opening_hours": None,  # Full hours require Details API call
                     "photos": place.get("photos", []),
                     "website": place.get("website"),
                     "price_level": place.get("price_level"),
+                    "phone_number": None,  # Phone requires Details API call
                 }
                 formatted_results.append(formatted_place)
             

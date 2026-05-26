@@ -154,20 +154,19 @@ class LocalAttractionSearchService:
             results = []
             for place in places:
                 results.append({
-                    "id": place.google_place_id,
-                    "name": place.name,
+                    "id": place.googleplaceid,
+                    "name": place.destination,
                     "address": place.address,
                     "coordinates": {
                         "lat": place.latitude,
                         "lng": place.longitude,
                     },
                     "rating": place.rating,
-                    "user_ratings_total": place.user_ratings_total,
-                    "types": place.types,
-                    "opening_hours": place.opening_hours,
+                    "user_ratings_total": place.userratinqtotal,
+                    "opening_hours": place.openinghours,
                     "photos": place.photos,
                     "website": place.website,
-                    "price_level": place.price_level,
+                    "price_level": place.pricelevel,
                 })
             
             return results

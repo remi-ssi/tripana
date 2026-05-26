@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.place import Place
 from app.repositories.place_repository import PlaceRepository
 from app.services.google_places_service import search_attractions
-from app.utils.location_extractor import extract_city_from_address
 
 
 async def fetch_and_save_attractions(
@@ -42,7 +41,6 @@ async def fetch_and_save_attractions(
     stats = {
         "saved_count": 0,
         "skipped_duplicates": 0,
-        "wrong_city_count": 0,
         "errors": []
     }
     
@@ -81,32 +79,26 @@ async def fetch_and_save_attractions(
                         stats["skipped_duplicates"] += 1
                         continue
                     
-                    # Extract city from the formatted address
+                    # Get address
                     address = google_place.get("address", "")
-                    extracted_city = extract_city_from_address(address)
-                    
-                    # Verify the place is in the requested city
-                    if not extracted_city or not _city_matches(city, extracted_city):
-                        stats["wrong_city_count"] += 1
-                        continue
                     
                     # Save to database
                     try:
                         coords = google_place.get("coordinates", {})
                         await repo.create(
-                            google_place_id=google_place_id,
-                            name=google_place.get("name", ""),
+                            googleplaceid=google_place_id,
+                            destination=google_place.get("name", ""),
                             address=address,
-                            city=extracted_city,
                             latitude=coords.get("lat", 0.0),
                             longitude=coords.get("lng", 0.0),
                             rating=google_place.get("rating"),
-                            user_ratings_total=google_place.get("user_ratings_total"),
-                            types=google_place.get("types", []),
-                            opening_hours=str(google_place.get("opening_hours")) if google_place.get("opening_hours") else None,
-                            photos=google_place.get("photos", []),
+                            userratinqtotal=google_place.get("user_ratings_total"),
+                            openinghours=str(google_place.get("opening_hours")) if google_place.get("opening_hours") else None,
+                            is_open_now=google_place.get("is_open_now"),
+                            photos=google_place.get("photos"),
                             website=google_place.get("website"),
-                            price_level=google_place.get("price_level")
+                            pricelevel=google_place.get("price_level"),
+                            phonenumber=google_place.get("phone_number")
                         )
                         stats["saved_count"] += 1
                     except Exception as e:
@@ -130,25 +122,3 @@ async def fetch_and_save_attractions(
         stats["errors"].append({"commit_error": str(e)})
     
     return stats
-
-
-def _city_matches(requested_city: str, extracted_city: str) -> bool:
-    """
-    Check if two city names match (case-insensitive, partial match allowed).
-    """
-    req = requested_city.lower().strip()
-    ext = extracted_city.lower().strip()
-    
-    # Exact match
-    if req == ext:
-        return True
-    
-    # Partial match (one contains the other)
-    if req in ext or ext in req:
-        return True
-    
-    # Handle common variations (e.g., "Manila City" vs "Manila")
-    if req.replace(" city", "") == ext.replace(" city", ""):
-        return True
-    
-    return False
