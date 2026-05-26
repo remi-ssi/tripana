@@ -11,6 +11,7 @@ from app.services.google_places_service import search_attractions, get_place_det
 from app.services.google_places_usage_service import get_usage as get_google_places_usage
 from app.services.local_attraction_search_service import LocalAttractionSearchService, PREFERENCE_TO_KEYWORDS
 from app.services.fetch_and_save_places_service import fetch_and_save_attractions
+from app.utils.google_photo_utils import generate_google_photo_url
 
 router = APIRouter()
 
@@ -315,6 +316,24 @@ async def get_recommended_places(
             radius=radius,
             limit=limit,
         )
+        
+        # Generate photo URLs from photos JSON
+        import json
+        for result in results:
+            photos_json = result.get("photos")
+            if photos_json:
+                try:
+                    photos_list = json.loads(photos_json) if isinstance(photos_json, str) else photos_json
+                    if photos_list and len(photos_list) > 0:
+                        photo_reference = photos_list[0].get("photo_reference")
+                        if photo_reference:
+                            result["photoUrl"] = generate_google_photo_url(
+                                photo_reference,
+                                settings.GOOGLE_PLACES_API_KEY,
+                                max_width=400
+                            )
+                except (json.JSONDecodeError, TypeError, IndexError):
+                    pass  # Silently skip if photos_json is invalid
         
         return {"results": results}
     

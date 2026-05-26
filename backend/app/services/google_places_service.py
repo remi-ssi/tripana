@@ -64,6 +64,11 @@ async def search_attractions(
             formatted_results = []
             for place in results[:limit]:
                 opening_hours_data = place.get("opening_hours", {})
+                # Store photos array as JSON string (contains photo_reference for dynamic URL generation)
+                import json
+                photos_list = place.get("photos", [])
+                photos_json = json.dumps(photos_list) if photos_list else None
+                
                 formatted_place = {
                     "id": place.get("place_id"),
                     "name": place.get("name", ""),
@@ -76,7 +81,7 @@ async def search_attractions(
                     "user_ratings_total": place.get("user_ratings_total"),
                     "is_open_now": opening_hours_data.get("open_now"),
                     "opening_hours": None,  # Full hours require Details API call
-                    "photos": place.get("photos", []),
+                    "photos": photos_json,  # Store photos JSON array with photo_reference for optimization
                     "website": place.get("website"),
                     "price_level": place.get("price_level"),
                     "phone_number": None,  # Phone requires Details API call

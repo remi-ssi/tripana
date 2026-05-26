@@ -228,9 +228,9 @@ class LocalAttractionSearchService:
                         user_ratings_total=place.get("user_ratings_total"),
                         types=place.get("types", []),
                         opening_hours=place.get("opening_hours"),
-                        photos=place.get("photos", []),
                         website=place.get("website"),
                         price_level=place.get("price_level"),
+                        photos=place.get("photos"),
                     )
                     saved_count += 1
                     logger.debug(f"Saved place: {place.get('name')} ({google_place_id})")

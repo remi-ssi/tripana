@@ -6,6 +6,7 @@ import { validateAttractions, validateTripPlanData, hasErrors } from '../validat
 import { useTripPlan } from '../contexts/TripPlanContext'
 import { useLazyLoad } from '../hooks/lazyLoad'
 import { formatTypeTag } from '../utils/helpers'
+import { getAttractionImageUrl, handleImageError } from '../utils/imageUrl'
 
 export default function AttractionsPage() {
   const navigate = useNavigate()
@@ -70,9 +71,9 @@ export default function AttractionsPage() {
           rating: place.rating || 0,
           reviews: place.reviews || 0,
           duration: '2-3 hours',
-          image: place.photos && place.photos.length > 0
-            ? place.photos[0]
-            : 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&h=220&fit=crop',
+          photoUrl: place.photoUrl,
+          photos: place.photos,
+          types: place.types || [],
         }))
 
         setAttractions(formattedAttractions)
@@ -236,10 +237,10 @@ export default function AttractionsPage() {
               <div className="relative">
                 <img
                   ref={(el) => { if (el) imageRefs.current[attraction.id] = el }}
-                  data-src={attraction.image}
+                  data-src={getAttractionImageUrl(attraction)}
                   alt={attraction.name}
                   className="w-full h-36 object-cover bg-gray-100"
-                  onError={(e) => { e.target.style.background = '#e5e7eb'; e.target.src = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&h=220&fit=crop' }}
+                  onError={(e) => { handleImageError(e, attraction) }}
                 />
                 {/* Selected checkmark */}
                 {isSelected && (

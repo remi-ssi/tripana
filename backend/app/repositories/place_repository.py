@@ -33,6 +33,7 @@ class PlaceRepository:
         - openinghours / opening_hours
         - userratinqtotal / user_ratings_total
         - pricelevel / price_level
+        - photos: JSON array of photos with photo_reference for dynamic URL generation
         """
         # Handle alternative parameter names for backward compatibility
         final_googleplaceid = googleplaceid or google_place_id

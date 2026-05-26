@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getAttractionImageUrl, handleImageError } from "../utils/imageUrl";
 
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -79,7 +80,6 @@ function InfoRow({ icon, label, children }) {
 
 function AttractionModal({ place, isOpen, onClose, onSelect, isSelected }) {
   const [hoursExpanded, setHoursExpanded] = useState(false);
-  const [imgError, setImgError] = useState(false);
 
   // Close on Escape key
   useEffect(() => {
@@ -96,9 +96,7 @@ function AttractionModal({ place, isOpen, onClose, onSelect, isSelected }) {
 
   if (!isOpen || !place) return null;
 
-  const photo =
-    !imgError && place.photos?.length > 0 ? place.photos[0] : null;
-
+  const imageUrl = getAttractionImageUrl(place);
   const hours = Array.isArray(place.openinghours)
     ? place.openinghours
     : place.openinghours
@@ -117,21 +115,12 @@ function AttractionModal({ place, isOpen, onClose, onSelect, isSelected }) {
       >
         {/* ── Hero image ── */}
         <div className="relative w-full flex-shrink-0" style={{ height: 240 }}>
-          {photo ? (
-            <img
-              src={photo}
-              alt={place.destination}
-              className="w-full h-full object-cover"
-              onError={() => setImgError(true)}
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center">
-              <svg className="w-16 h-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-          )}
+          <img
+            src={imageUrl}
+            alt={place.destination || place.name || "Attraction"}
+            className="w-full h-full object-cover"
+            onError={(e) => handleImageError(e, place)}
+          />
 
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
