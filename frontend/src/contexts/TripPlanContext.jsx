@@ -15,6 +15,7 @@ const initialFormState = {
   budget: '',
   paceLevel: 2,
   interests: [],
+  attractions: [], // selected attractions from AttractionsPage
 }
 
 export function TripPlanProvider({ children }) {

@@ -9,7 +9,7 @@ import { formatTypeTag } from '../utils/helpers'
 
 export default function AttractionsPage() {
   const navigate = useNavigate()
-  const { formData } = useTripPlan()
+  const { formData, updateFormData } = useTripPlan()
   
   const [attractions, setAttractions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -91,6 +91,14 @@ export default function AttractionsPage() {
   useEffect(() => {
     observeImages()
   }, [currentPage, observeImages])
+
+  // Save selected attractions to context
+  useEffect(() => {
+    const selectedAttractions = attractions.filter(attraction => 
+      selected.includes(attraction.id)
+    )
+    updateFormData('attractions', selectedAttractions)
+  }, [selected, attractions, updateFormData])
 
   // GENERATE CATEGORIES FROM ATTRACTIONS
   // Extracts unique tags from all attractions for filtering
