@@ -1,18 +1,5 @@
-"""
-Google Places API usage tracker — prevents exceeding pay-as-you-go quota.
-
-This service tracks API requests and blocks them at 80% of the monthly quota
-to ensure you never hit unexpected charges.
-
-Example quotas (adjust based on your billing):
-  • Starter: 10,000 requests/month
-  • Standard: 50,000 requests/month
-  • Enterprise: custom limits
-
-Thresholds:
-  80% → console WARNING
-  80% → requests are BLOCKED (extra safe — stops well before charges)
-"""
+# Google Places API Usage Tracking Service
+# This service tracks the number of API requests made to Google Places API
 
 import json
 import logging
@@ -22,8 +9,6 @@ from app.config import settings
 
 logger = logging.getLogger("google_places_usage")
 
-# ── Limits ──────────────────────────────────────────────
-# This is configurable via GOOGLE_PLACES_MONTHLY_QUOTA in .env
 # Default to 10,000 requests/month (safe for pay-as-you-go plans)
 MONTHLY_QUOTA = getattr(settings, "GOOGLE_PLACES_MONTHLY_QUOTA", 10_000)
 
@@ -37,9 +22,9 @@ _USAGE_FILE = Path(__file__).resolve().parents[2] / "google_places_usage.json"
 def _current_month() -> str:
     return datetime.utcnow().strftime("%Y-%m")
 
-
+# load usage data on module import (will reset if new month)
 def _load() -> dict:
-    """Load usage data from file, reset if new month."""
+    # Load usage data from file, or initialize if missing/corrupt/new month.
     if _USAGE_FILE.exists():
         try:
             data = json.loads(_USAGE_FILE.read_text())
@@ -50,31 +35,27 @@ def _load() -> dict:
     # New month or missing/corrupt file → reset
     return {"month": _current_month(), "api_requests": 0}
 
-
+# Save usage data on module import (to create file if missing)
 def _save(data: dict) -> None:
     """Save usage data to file."""
     _USAGE_FILE.write_text(json.dumps(data, indent=2))
 
-
+# Internal function to check limits and increment count
 def _check_and_increment(data: dict) -> bool:
-    """
-    Check FIRST, then increment only if allowed.
-    Returns True if the request should proceed, False if blocked.
-    """
     current = data["api_requests"]
     pct = current / MONTHLY_QUOTA
 
     # Block check — do NOT increment if blocked
     if pct >= BLOCK_PCT:
         logger.error(
-            "🚫 GOOGLE PLACES API BLOCKED — %d / %d (%.1f%%). "
+            "GOOGLE PLACES API BLOCKED — %d / %d (%.1f%%). "
             "Reached 80%% of monthly quota. Request denied to prevent charges.",
             current,
             MONTHLY_QUOTA,
             pct * 100,
         )
         print(
-            f"🚫 GOOGLE PLACES API BLOCKED — {current}/{MONTHLY_QUOTA} "
+            f"GOOGLE PLACES API BLOCKED — {current}/{MONTHLY_QUOTA} "
             f"({pct*100:.1f}%). Reached 80%% of monthly quota. "
             f"Request denied to prevent charges."
         )
@@ -101,20 +82,13 @@ def _check_and_increment(data: dict) -> bool:
 
     return True
 
-
-# ── Public API ──────────────────────────────────────────
-
+# Public function to be called before making a Google Places API request
 def track_api_request() -> bool:
-    """
-    Check limit, then increment API request counter.
-    Returns False if blocked (quota exceeded), True if request was allowed.
-    
-    This should be called BEFORE making a Google Places API request.
-    """
+   # Check if we can make an API request (not blocked) and increment usage count.
     data = _load()
     return _check_and_increment(data)
 
-
+# Public function to get current usage stats (for status endpoint or debugging)
 def get_usage() -> dict:
     """Return current usage stats for debugging / status endpoint."""
     data = _load()
@@ -133,9 +107,8 @@ def get_usage() -> dict:
         },
     }
 
-
+# Public function to reset usage (for testing or manual reset)
 def reset_usage() -> dict:
-    """Reset usage counter (for testing or manual reset)."""
     data = {"month": _current_month(), "api_requests": 0}
     _save(data)
     return data

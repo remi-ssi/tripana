@@ -17,26 +17,7 @@ async def fetch_and_save_attractions(
     preference_keywords: Dict[str, List[str]],
     limit: int = 50
 ) -> Dict:
-    """
-    Fetch attractions from Google Places API and save to local database.
-    
-    Strategy:
-    1. For each preference, search Google Places API
-    2. Collect all results
-    3. Deduplicate by google_place_id (only save if not already in DB)
-    4. Extract city from formatted_address to verify it matches the requested city
-    5. Save only places that match the requested city
-    
-    Args:
-        db: AsyncSession for database operations
-        city: The city to fetch places for
-        preferences: List of user preference categories
-        preference_keywords: Mapping of preferences to keywords for searching
-        limit: Maximum number of places to fetch per preference (default 50)
-    
-    Returns:
-        Dictionary with stats: saved_count, skipped_duplicates, wrong_city_count, errors
-    """
+    # Initialize repository and stats
     repo = PlaceRepository(db)
     stats = {
         "saved_count": 0,

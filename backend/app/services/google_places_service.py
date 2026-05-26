@@ -1,8 +1,4 @@
-"""
-Google Places API Service
-Securely handles Google Places API requests on the server-side to keep API key hidden from frontend.
-"""
-
+#Handles Google Places API requests on the server-side to keep API key hidden from frontend.
 import httpx
 from fastapi import HTTPException
 from app.config import settings
@@ -10,29 +6,15 @@ from app.services.google_places_usage_service import track_api_request
 
 
 GOOGLE_PLACES_API_BASE_URL = "https://maps.googleapis.com/maps/api/place"
-
-
+# Note: We use the Text Search API for general searches and the Details API for fetching detailed info about a specific place.
 async def search_attractions(
     query: str,
     location: tuple[float, float] | None = None,
     radius: int = 5000,
     limit: int = 30,
 ) -> list[dict]:
-    """
-    Search for attractions using Google Places API.
     
-    Args:
-        query: Search query (e.g., "restaurants", "museums")
-        location: (latitude, longitude) tuple for location bias
-        radius: Search radius in meters (default 5000m = 5km)
-        limit: Maximum number of results (default 20)
-    
-    Returns:
-        List of place results with name, address, coordinates, rating, etc.
-    
-    Raises:
-        HTTPException: If API key is not configured or API request fails
-    """
+    # Search for attractions using Google Places API based on a query and optional location bias.
     api_key = settings.GOOGLE_PLACES_API_KEY
     if not api_key:
         raise HTTPException(
@@ -117,20 +99,8 @@ async def search_attractions(
             detail=f"Error searching attractions: {str(e)}"
         )
 
-
+# Fetch detailed information about a specific place using its Google Place ID. This is used when a user clicks on an attraction to view more details.
 async def get_place_details(place_id: str) -> dict:
-    """
-    Get detailed information about a specific place.
-    
-    Args:
-        place_id: Google Place ID
-    
-    Returns:
-        Detailed place information
-    
-    Raises:
-        HTTPException: If API key is not configured or API request fails
-    """
     api_key = settings.GOOGLE_PLACES_API_KEY
     if not api_key:
         raise HTTPException(

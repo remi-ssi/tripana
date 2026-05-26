@@ -1,15 +1,5 @@
-"""
-Mapbox API usage tracker — prevents exceeding the free tier.
-
-Free limits (per month):
-  • Geocoding requests : 100 000
-  • Map loads (token fetches) :  50 000
-
-Thresholds:
-  80 % → console WARNING
-  80 % → requests are BLOCKED (extra safe — stops well before any charges)
-"""
-
+# Mapbox Usage Tracking Service
+# This service tracks the number of geocoding requests and map loads made to Mapbox API
 import json
 import logging
 from datetime import datetime
@@ -31,7 +21,7 @@ _USAGE_FILE = Path(__file__).resolve().parents[2] / "mapbox_usage.json"
 def _current_month() -> str:
     return datetime.utcnow().strftime("%Y-%m")
 
-
+# Load usage data from file, or initialize if missing/corrupt/new month.
 def _load() -> dict:
     if _USAGE_FILE.exists():
         try:
@@ -43,16 +33,12 @@ def _load() -> dict:
     # New month or missing/corrupt file → reset
     return {"month": _current_month(), "geocoding": 0, "map_loads": 0}
 
-
+# Save usage data to file.
 def _save(data: dict) -> None:
     _USAGE_FILE.write_text(json.dumps(data, indent=2))
 
-
+# Internal function to check limits and increment count
 def _check_and_increment(data: dict, key: str, limit: int, label: str) -> bool:
-    """
-    Check FIRST, then increment only if allowed.
-    Returns True if the request should proceed, False if blocked.
-    """
     current = data[key]
     pct = current / limit
 
@@ -88,21 +74,19 @@ def _check_and_increment(data: dict, key: str, limit: int, label: str) -> bool:
 
     return True
 
-
-# ── Public API ──────────────────────────────────────────
-
+# Public functions to track geocoding and map loads
 def track_geocoding() -> bool:
     """Check limit, then increment geocoding counter. Returns False if blocked."""
     data = _load()
     return _check_and_increment(data, "geocoding", GEOCODING_LIMIT, "GEOCODING")
 
-
+# Note: Map loads are tracked separately from geocoding, as they have a different limit and cost structure.
 def track_map_load() -> bool:
     """Check limit, then increment map-load counter. Returns False if blocked."""
     data = _load()
     return _check_and_increment(data, "map_loads", MAP_LOAD_LIMIT, "MAP LOAD")
 
-
+# Public function to get current usage stats for debugging / a status endpoint
 def get_usage() -> dict:
     """Return current usage stats for debugging / a status endpoint."""
     data = _load()

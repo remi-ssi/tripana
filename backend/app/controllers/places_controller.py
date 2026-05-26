@@ -30,13 +30,7 @@ async def search_places(
     types: str = Query("poi", description="Comma-separated Mapbox feature types"),
     proximity: str = Query(None, description="Longitude,latitude to bias results (e.g., '120.5,16.4')"),
 ):
-    """
-    Search for places using Mapbox Search Box API (suggest).
-    Returns suggestions with mapbox_id — call /retrieve to get coordinates.
-    Falls back to Geocoding v5 if Search Box returns no results.
-    
-    proximity parameter: Pass 'lng,lat' to bias results toward a location (e.g., city coordinates)
-    """
+   # Search for places using Mapbox APIs with server-side token management and usage tracking.
     token = settings.MAPBOX_TOKEN
     if not token:
         raise HTTPException(status_code=500, detail="Mapbox token is not configured")
@@ -49,9 +43,7 @@ async def search_places(
 
     session_token = str(uuid.uuid4())
 
-    # ── 1) Search Box API — only for POI searches ──────────────────
-    # The Search Box suggest API only returns business/POI results,
-    # so bypass it entirely for place/locality/district/region searches.
+   #Search Box API v1 for better POI/hotel results 
     if types.strip() == "poi":
         suggest_params = {
             "q": q,
@@ -84,7 +76,7 @@ async def search_places(
                     for s in suggestions
                 ]
 
-    # ── 2) Geocoding v5 — for place/locality/district/region AND as fallback ──
+    # ── 2) Geocoding v5 — for place/locality/district/region AND as fallback
     geocode_type_map = {
         "poi": "poi,address",
         "place": "place",
@@ -126,7 +118,7 @@ async def search_places(
         for f in data.get("features", [])
     ]
 
-
+# ── Mapbox Retrieve API for full place details (with coordinates) based on mapbox_id
 @router.get("/retrieve/{mapbox_id:path}")
 async def retrieve_place(mapbox_id: str):
     """Retrieve full place details (with coordinates) for a given mapbox_id."""
@@ -165,13 +157,12 @@ async def retrieve_place(mapbox_id: str):
         "category": ", ".join(props.get("poi_category", [])),
     }
 
-
+# ── Reverse Geocoding: coordinates → place name/address (for map pin drops)
 @router.get("/reverse")
 async def reverse_geocode(
     lng: float = Query(..., description="Longitude"),
     lat: float = Query(..., description="Latitude"),
 ):
-    """Reverse geocode: coordinates → place name / address."""
     token = settings.MAPBOX_TOKEN
     if not token:
         raise HTTPException(status_code=500, detail="Mapbox token is not configured")
@@ -202,7 +193,7 @@ async def reverse_geocode(
         "fullAddress": f.get("place_name", f"{lat:.5f}, {lng:.5f}"),
     }
 
-
+# ── Mapbox Token and Usage Endpoints 
 @router.get("/mapbox-token")
 async def get_mapbox_token():
     """Return the Mapbox public token so the frontend can render the map."""
@@ -218,42 +209,23 @@ async def get_mapbox_token():
 
     return {"token": token}
 
-
+# Endpoint to check current Mapbox API usage stats and quota remaining
 @router.get("/usage")
 async def mapbox_usage():
-    """Check current Mapbox API usage stats for this month."""
     return get_usage()
 
 
 # ── Google Places API Endpoints ──────────────────────────────────
 # These endpoints keep the Google Places API key secure on the server-side
-# The frontend can call these endpoints without exposing the API key
-
-
 @router.get("/attractions/search")
 async def search_google_attractions(
-    q: str = Query(..., min_length=2, description="Search query for attractions (e.g., 'restaurants', 'museums')"),
+    q: str = Query(..., min_length=2, description="Search query for attractions"),
     lat: float | None = Query(None, description="Latitude for location bias"),
     lng: float | None = Query(None, description="Longitude for location bias"),
     radius: int = Query(5000, ge=1000, le=50000, description="Search radius in meters"),
     limit: int = Query(20, ge=1, le=50, description="Maximum number of results"),
 ):
-    """
-    Search for attractions using Google Places API.
-    
-    The API key is kept on the server-side and never exposed to the client.
-    This ensures your API key remains secure and prevents unauthorized usage.
-    
-    Args:
-        q: Search query (e.g., "restaurants", "museums", "hotels")
-        lat: Latitude for location bias (optional)
-        lng: Longitude for location bias (optional)
-        radius: Search radius in meters (default 5000m = 5km)
-        limit: Maximum results to return (default 20, max 50)
-    
-    Returns:
-        List of attractions with details: name, address, coordinates, rating, etc.
-    """
+    # Search for attractions using Google Places API with server-side key management and usage tracking.
     location = None
     if lat is not None and lng is not None:
         location = (lat, lng)
@@ -267,7 +239,7 @@ async def search_google_attractions(
     
     return {"results": results}
 
-
+# Endpoint to get detailed information about a specific attraction by Google Place ID
 @router.get("/attractions/recommendations")
 async def get_recommended_places(
     city: str = Query(..., min_length=2, description="City name for attraction search"),
@@ -356,46 +328,18 @@ async def get_recommended_places(
 async def get_attraction_details(
     place_id: str = Path(..., description="Google Place ID")
 ):
-    """
-    Get detailed information about a specific attraction.
-    
-    Args:
-        place_id: Google Place ID
-    
-    Returns:
-        Detailed information including reviews, opening hours, photos, etc.
-    """
+    # Get detailed information about a specific attraction by Google Place ID.
     details = await get_place_details(place_id)
     return details
 
-
+# Endpoint to fetch attractions from Google Places API based on city and preferences, save to local DB, and return stats
 @router.post("/attractions/fetch-and-save")
 async def fetch_and_save_places_endpoint(
     city: str = Query(..., min_length=2, description="City name to fetch attractions for"),
     preferences: str = Query(..., description="Comma-separated list of user preferences"),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Fetch up to 50 attractions from Google Places API and save to local database.
-    
-    Features:
-    - Fetches attractions for each user preference (keyword-based search)
-    - Deduplicates by Google Place ID to avoid duplicates in database
-    - Verifies each place belongs to the requested city
-    - Automatically saves to local database for future offline access
-    - Returns statistics: saved count, skipped duplicates, wrong city count, errors
-    
-    Args:
-        city: City name to search in
-        preferences: Comma-separated preference list (e.g., 'Beaches,Food Trip,Shopping')
-    
-    Returns:
-        Dictionary with:
-        - saved_count: Number of new places saved to database
-        - skipped_duplicates: Number of places already in database
-        - wrong_city_count: Number of places not matching requested city
-        - errors: List of any errors encountered
-    """
+    # Fetch attractions from Google Places API based on city and preferences, save to local DB, and return stats about the operation.
     try:
         # Parse preferences
         user_preferences = [pref.strip() for pref in preferences.split(",") if pref.strip()]
@@ -422,7 +366,7 @@ async def fetch_and_save_places_endpoint(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching and saving attractions: {str(e)}")
 
-
+# Endpoint to check current Google Places API usage stats and quota remaining
 @router.get("/attractions/usage")
 async def google_places_usage():
     """

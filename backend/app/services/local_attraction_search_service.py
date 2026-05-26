@@ -1,14 +1,9 @@
-"""
-Local Attraction Search Service
-Handles searching local database first, then falling back to Google API
-Implements SAW scoring system and automatic place caching
-"""
+#Handles searching local database first, then falling back to Google API
+#Implements SAW scoring system and automatic place caching
 
 from typing import List, Optional, Dict
 import logging
-
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.repositories.place_repository import PlaceRepository
 from app.services.google_places_service import search_attractions as search_google_attractions
 from app.services.google_places_service import get_place_details
@@ -54,14 +49,15 @@ PREFERENCE_TO_KEYWORDS = {
     "Island Hopping": ["island", "ferry", "beach", "resort"],
 }
 
-
+# Note: This service is designed to be used by the API endpoint handler, which will pass in the database session and user query parameters. The service will handle all logic for searching the local database first, then falling back to Google API if needed, and scoring the results before returning them.
 class LocalAttractionSearchService:
-    """Service for searching attractions with local database first, then Google API."""
+    #Service for searching attractions with local database first, then Google API."""
     
     def __init__(self, db: AsyncSession):
         self.db = db
         self.place_repo = PlaceRepository(db)
     
+    # Main method to search attractions based on user query parameters.
     async def search_attractions(
         self,
         location_city: str,
@@ -72,16 +68,7 @@ class LocalAttractionSearchService:
         radius: int = 10000,
         limit: int = 30,
     ) -> List[Dict]:
-        """
-        Search for attractions with priority to local database.
-        
-        Steps:
-        1. Search local database filtered by city and user preferences
-        2. If results found, score by budget/preferences and return top 30
-        3. If no local results, search Google API for 50 places
-        4. Save fetched results to local database (with deduplication)
-        5. Score and return top 30 matches
-        """
+       # Search for attractions based on user query parameters, with local database caching and Google API fallback.
         try:
             if not location_city or location_city.strip() == "":
                 raise ValueError("Location city is required")
@@ -131,17 +118,13 @@ class LocalAttractionSearchService:
             logger.error(f"Error in search_attractions: {str(e)}", exc_info=True)
             raise
     
+    # Internal method to search local database with filtering logic.
     async def _search_local_database(
         self,
         city: str,
         user_preferences: List[str],
     ) -> List[Dict]:
-        """
-        Search local database with filtering logic:
-        1. Check if address city matches the requested city
-        2. Check if types match user preferences
-        Only return places that match BOTH criteria.
-        """
+        # Search local database for places matching the city and user preferences.
         try:
             # Use the repository's city and preference filtering
             places = await self.place_repo.search_by_city_and_preferences(
@@ -174,6 +157,7 @@ class LocalAttractionSearchService:
             logger.error(f"Error searching local database: {str(e)}", exc_info=True)
             return []
     
+    # Internal method to search Google API with optimized queries based on user preferences.
     async def _search_google_api(
         self,
         location_city: str,
@@ -183,7 +167,7 @@ class LocalAttractionSearchService:
         radius: int,
         limit: int,
     ) -> List[Dict]:
-        """Search Google Places API."""
+        #Search Google Places API.
         try:
             # Build targeted search queries from user preferences
             search_queries = self._build_search_queries(location_city, user_preferences)
@@ -214,15 +198,13 @@ class LocalAttractionSearchService:
             logger.error(f"Error searching Google API: {str(e)}", exc_info=True)
             return []
     
+    # Internal method to save places to database with deduplication and error handling.
     async def _save_places_to_database(
         self,
         location_city: str,
         places: List[Dict],
     ) -> int:
-        """
-        Save fetched places to database with deduplication via Google Place ID.
-        Returns count of newly saved places.
-        """
+        # Save places to database with deduplication. Returns the number of new places saved.
         saved_count = 0
         try:
             for place in places:
@@ -266,12 +248,14 @@ class LocalAttractionSearchService:
         
         return saved_count
     
+    # Internal method to build optimized search queries based on user preferences.
     def _build_search_queries(self, city: str, user_preferences: List[str]) -> List[str]:
-        """Build optimized search queries based on user preferences."""
+        # Combines preferences into fewer queries to maximize relevance while minimizing API calls.
         if len(user_preferences) <= 2:
             keywords = self._extract_and_combine_keywords(user_preferences)
             return [f"{' '.join(keywords[:4])} in {city}"]
         
+        # For 3-4 preferences, split into two queries
         if len(user_preferences) <= 4:
             mid = (len(user_preferences) + 1) // 2
             keywords1 = self._extract_and_combine_keywords(user_preferences[:mid])
@@ -292,6 +276,7 @@ class LocalAttractionSearchService:
             f"{' '.join(keywords3[:3])} in {city}",
         ]
     
+    # Internal method to extract and combine keywords from user preferences for search queries.
     def _extract_and_combine_keywords(self, preferences: List[str]) -> List[str]:
         """Extract and combine keywords from preferences."""
         keyword_set = set()
@@ -300,6 +285,7 @@ class LocalAttractionSearchService:
             keyword_set.update(keywords)
         return list(keyword_set)
     
+    # Internal method to score places using SAW scoring system with budget filtering.
     def _score_places(self, places: List[Dict], user_preferences: List[str], budget: str) -> List[Dict]:
         """Score places using SAW (Simple Additive Weighting) scoring system with budget filter."""
         allowed_price_levels = BUDGET_TO_PRICE_LEVEL.get(budget, [1, 2, 3, 4])
@@ -326,11 +312,11 @@ class LocalAttractionSearchService:
         # Sort by score descending
         return sorted(filtered, key=lambda x: x["score"], reverse=True)
     
+    # Internal method to calculate SAW score for a place based on relevance, rating, popularity, and price level.
     def _calculate_place_score(self, place: Dict, user_preferences: List[str]) -> float:
-        """
-        Calculate SAW score for a place:
-        Score = (0.35 × RelevanceScore) + (0.30 × RatingScore) + (0.25 × PopularityScore) + (0.10 × PriceLevelScore)
-        """
+        #Calculate SAW score for a place:
+        #Score = (0.35 × RelevanceScore) + (0.30 × RatingScore) + (0.25 × PopularityScore) + (0.10 × PriceLevelScore)
+        
         # Rating score (30%)
         rating = place.get("rating") or 0
         rating_score = (
@@ -365,6 +351,7 @@ class LocalAttractionSearchService:
             SCORING_WEIGHTS["WEIGHT_PRICE_LEVEL"] * price_level_score
         )
     
+    # Internal method to count how many user preferences match the place's Google types for relevance scoring.
     def _count_preference_matches(self, place: Dict, user_preferences: List[str]) -> int:
         """Count how many user preferences match the place's Google types."""
         place_types = [t.lower() for t in (place.get("types") or [])]
@@ -382,6 +369,7 @@ class LocalAttractionSearchService:
         
         return match_count
     
+    # Internal method to format scored places for API response.
     def _format_results(self, scored_places: List[Dict]) -> List[Dict]:
         """Format results for API response."""
         return [
