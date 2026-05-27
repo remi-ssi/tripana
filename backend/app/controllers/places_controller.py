@@ -299,15 +299,16 @@ async def get_recommended_places(
                 detail="At least one preference is required"
             )
         
-        # Initialize local search service
-        search_service = LocalAttractionSearchService(db)
+        # Initialize safe local search service with loop protection
+        from app.services.safe_attraction_service import SafeLocalAttractionSearchService
+        search_service = SafeLocalAttractionSearchService(db)
         
         # Search with local DB first, then Google API
         location = None
         if lat is not None and lng is not None:
             location = (lat, lng)
         
-        results = await search_service.search_attractions(
+        results = await search_service.search_attractions_safe(
             location_city=city,
             user_preferences=user_preferences,
             budget=budget,
