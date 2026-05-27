@@ -2,16 +2,39 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from './PageLayout'
 import HotelMapModal from '../components/map/HotelMapModal'
+import { ClearButtonIcon } from '../components/ClearButtonIcon'
 import { validateTripPlan } from '../validators/tripPlanValidator'
 import useCitySuggestions from '../hooks/useCitySuggestions'
 import useDebounce from '../hooks/useDebounce'
-import { searchHotels, getHotelCoordinates } from '../services/placeSearchService'
 import { useTripPlan } from '../contexts/TripPlanContext'
+import { useFormHandler } from '../hooks/useFormHandler'
+import { useHotelSearch } from '../hooks/useHotelSearch'
+import { useMapModal } from '../hooks/useMapModal'
 
 export default function TripPlanPage() {
   const navigate = useNavigate()
   const { formData, updateFormData, isLoaded } = useTripPlan()
   const tripType = formData.tripType
+
+  // Custom hooks
+  const { form, errors, touched, handleChange, validateForm, clearField, loadFormData } = useFormHandler(tripType, updateFormData)
+  const {
+    hotelSearchInput,
+    setHotelSearchInput,
+    showHotelSuggestions,
+    setShowHotelSuggestions,
+    hotelSuggestions,
+    hotelLoading,
+    clearHotelSearch,
+    fetchHotelCoordinates,
+  } = useHotelSearch()
+  const { showMapModal, selectedPlace, openMapForPinning, closeMapModal, openMapWithPlace, setSelectedPlace } = useMapModal()
+
+  // City search
+  const [citySearchInput, setCitySearchInput] = useState('')
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false)
+  const debouncedCityQuery = useDebounce(citySearchInput, 500)
+  const { suggestions: citySuggestions, isLoading: cityLoading } = useCitySuggestions(debouncedCityQuery)
 
   // Redirect if no trip type selected
   useEffect(() => {
@@ -20,162 +43,44 @@ export default function TripPlanPage() {
     }
   }, [isLoaded, tripType, navigate])
 
-  const [form, setForm] = useState({
-    city: '',
-    hotel: '',
-    date: '',
-    startTime: '',
-    startDate: '',
-    endDate: '',
-    maxAttractions: '',
-  })
-
-  const [errors, setErrors]   = useState({})
-  const [touched, setTouched] = useState({})
-
   // Load saved data from context on mount
   useEffect(() => {
     if (isLoaded && Object.keys(formData).some((key) => formData[key])) {
-      setForm(formData)
+      loadFormData(formData)
       setCitySearchInput(formData.city)
       setHotelSearchInput(formData.hotel)
     }
   }, [isLoaded, formData])
 
-  // ── City autocomplete ──────────────────────────────────
-  const [citySearchInput, setCitySearchInput]       = useState('')
-  const [showCitySuggestions, setShowCitySuggestions] = useState(false)
-  const debouncedCityQuery = useDebounce(citySearchInput, 500)
-  const { suggestions: citySuggestions, isLoading: cityLoading } = useCitySuggestions(debouncedCityQuery)
-
-  // ── Hotel search (debounced — API fires 500 ms after user stops typing) ──
-  const [hotelSearchInput, setHotelSearchInput]       = useState('')
-  const [showHotelSuggestions, setShowHotelSuggestions] = useState(false)
-  const [hotelSuggestions, setHotelSuggestions]       = useState([])
-  const [hotelLoading, setHotelLoading]               = useState(false)
-  const debouncedHotelQuery = useDebounce(hotelSearchInput, 500)
-
-  // ── Map modal ──────────────────────────────────────────
-  const [showMapModal, setShowMapModal]   = useState(false)
-  const [selectedPlace, setSelectedPlace] = useState(null) // place with coordinates (map center)
-
-  // ── Fetch hotel suggestions whenever the debounced query changes ──
-  useEffect(() => {
-    if (!debouncedHotelQuery || debouncedHotelQuery.trim().length < 2) {
-      setHotelSuggestions([])
-      return
-    }
-    const run = async () => {
-      setHotelLoading(true)
-      try {
-        const results = await searchHotels(debouncedHotelQuery)
-        setHotelSuggestions(results)
-      } catch (err) {
-        console.error('Hotel search failed:', err)
-        setHotelSuggestions([])
-      } finally {
-        setHotelLoading(false)
-      }
-    }
-    run()
-  }, [debouncedHotelQuery])
-
-  // ── Form helpers ───────────────────────────────────────
-  const validateForm = () => {
-    const newErrors = validateTripPlan(form, tripType)
-    const fieldsToTouch = tripType === 'day' 
-      ? ['city', 'date', 'startTime']
-      : ['city', 'hotel', 'startDate', 'endDate', 'maxAttractions']
-    setTouched(fieldsToTouch.reduce((acc, field) => ({ ...acc, [field]: true }), {}))
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleChange = (field, value) => {
-    const updatedForm = { ...form, [field]: value }
-    const newErrors   = validateTripPlan(updatedForm, tripType)
-    setForm(updatedForm)
-    updateFormData(field, value)
-    setTouched((prev) => ({ ...prev, [field]: true }))
-    
-    // Update errors for relevant fields
-    setErrors((prev) => {
-      const next   = { ...prev }
-      const fieldsToCheck = field === 'startDate' || field === 'endDate'
-        ? [field, 'startDate', 'endDate']
-        : [field]
-      fieldsToCheck.forEach((f) => {
-        if (newErrors[f]) next[f] = newErrors[f]
-        else delete next[f]
-      })
-      return next
-    })
-  }
-
   // ── City selection ─────────────────────────────────────
   const handleSelectCity = (cityName) => {
-    const updatedForm = { ...form, city: cityName }
-    const newErrors   = validateTripPlan(updatedForm)
-    setForm(updatedForm)
-    updateFormData('city', cityName) // Save to context
+    handleChange('city', cityName)
     setCitySearchInput(cityName)
     setShowCitySuggestions(false)
-    setTouched((prev) => ({ ...prev, city: true }))
-    setErrors((prev) => {
-      const next = { ...prev }
-      if (newErrors.city) next.city = newErrors.city
-      else delete next.city
-      return next
-    })
   }
 
   // ── Hotel: click suggestion → retrieve coords → open map ──
   const handleSelectHotel = async (place) => {
     setHotelSearchInput(place.name)
     handleChange('hotel', place.name)
-    updateFormData('hotel', place.name) // Save to context
     setShowHotelSuggestions(false)
 
-    if (place.coordinates) {
-      setSelectedPlace(place)
-    } else {
-      const details = await getHotelCoordinates(place.id)
-      if (details) {
-        setSelectedPlace(details)
-      } else {
-        setSelectedPlace(place)
-      }
-    }
-    setShowMapModal(true)
+    const placeWithCoords = await fetchHotelCoordinates(place)
+    openMapWithPlace(placeWithCoords)
   }
 
-  // ── Pin icon → open blank map (manual pin, no search needed) ──
-  const handleOpenMapForPinning = () => {
-    setSelectedPlace(null)
-    setShowMapModal(true)
-  }
-
-  // ── HotelMapModal confirms a location (search OR manual pin) ──
+  // ── Map modal handlers ──
   const handleMapConfirm = (place) => {
     setHotelSearchInput(place.name)
     handleChange('hotel', place.name)
-    updateFormData('hotel', place.name) // Save to context
     setSelectedPlace(place)
-    setShowMapModal(false)
+    closeMapModal()
   }
 
   const handleContinue = () => {
     const isValid = validateForm()
-    console.log('[TripPlanPage] Form validation:', {
-      isValid,
-      tripType,
-      form,
-      errors,
-    })
     if (isValid) {
       navigate('/preference')
-    } else {
-      console.log('[TripPlanPage] Navigation blocked - validation failed')
     }
   }
 
@@ -211,8 +116,18 @@ export default function TripPlanPage() {
               onChange={(e) => { setCitySearchInput(e.target.value); setShowCitySuggestions(true) }}
               onFocus={() => citySearchInput && setShowCitySuggestions(true)}
               onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)}
-              className={`w-full px-4 py-3 rounded-xl border ${errors.city && touched.city ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.city && touched.city ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base`}
+              className={`w-full px-4 py-3 pr-10 rounded-xl border ${errors.city && touched.city ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.city && touched.city ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base`}
             />
+            {citySearchInput && (
+              <button
+                type="button"
+                onClick={() => { setCitySearchInput(''); handleSelectCity(''); setShowCitySuggestions(false) }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                title="Clear"
+              >
+                <ClearButtonIcon />
+              </button>
+            )}
             {showCitySuggestions && citySearchInput && (
               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto">
                 {cityLoading && (
@@ -261,13 +176,25 @@ export default function TripPlanPage() {
               <label className="block text-base font-semibold text-gray-700 mb-1">
                 Date <span className="text-red-500">*</span>
               </label>
-              <input
-                type="date"
-                min={today}
-                value={form.date}
-                onChange={(e) => handleChange('date', e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border ${errors.date && touched.date ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.date && touched.date ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base cursor-pointer`}
-              />
+              <div className="relative">
+                <input
+                  type="date"
+                  min={today}
+                  value={form.date}
+                  onChange={(e) => handleChange('date', e.target.value)}
+                  className={`w-full px-4 py-3 pr-10 rounded-xl border ${errors.date && touched.date ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.date && touched.date ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base cursor-pointer`}
+                />
+                {form.date && (
+                  <button
+                    type="button"
+                    onClick={() => handleChange('date', '')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                    title="Clear"
+                  >
+                    <ClearButtonIcon />
+                  </button>
+                )}
+              </div>
               {errors.date && touched.date && <p className="text-red-500 text-sm mt-1">{errors.date}</p>}
             </div>
 
@@ -276,12 +203,24 @@ export default function TripPlanPage() {
               <label className="block text-base font-semibold text-gray-700 mb-1">
                 Start Time <span className="text-red-500">*</span>
               </label>
-              <input
-                type="time"
-                value={form.startTime}
-                onChange={(e) => handleChange('startTime', e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border ${errors.startTime && touched.startTime ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.startTime && touched.startTime ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base cursor-pointer`}
-              />
+              <div className="relative">
+                <input
+                  type="time"
+                  value={form.startTime}
+                  onChange={(e) => handleChange('startTime', e.target.value)}
+                  className={`w-full px-4 py-3 pr-10 rounded-xl border ${errors.startTime && touched.startTime ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.startTime && touched.startTime ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base cursor-pointer`}
+                />
+                {form.startTime && (
+                  <button
+                    type="button"
+                    onClick={() => handleChange('startTime', '')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                    title="Clear"
+                  >
+                    <ClearButtonIcon />
+                  </button>
+                )}
+              </div>
               {errors.startTime && touched.startTime && <p className="text-red-500 text-sm mt-1">{errors.startTime}</p>}
             </div>
           </>
@@ -295,61 +234,73 @@ export default function TripPlanPage() {
               <label className="block text-base font-semibold text-gray-700 mb-1">
                 Where to Stay <span className="text-red-500">*</span>
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search for a hotel or transient house…"
-                  value={hotelSearchInput}
-                  onChange={(e) => {
-                    setHotelSearchInput(e.target.value)
-                    handleChange('hotel', e.target.value)
-                    setShowHotelSuggestions(true)
-                  }}
-                  onFocus={() => hotelSearchInput && setShowHotelSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowHotelSuggestions(false), 200)}
-                  className={`w-full px-4 py-3 pr-12 rounded-xl border-2 ${errors.hotel && touched.hotel ? 'border-red-500' : 'border-blue-700'} bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.hotel && touched.hotel ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base`}
-                />
+              <div className="flex items-center gap-3">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    placeholder="Search for a hotel or transient house…"
+                    value={hotelSearchInput}
+                    onChange={(e) => {
+                      setHotelSearchInput(e.target.value)
+                      handleChange('hotel', e.target.value)
+                      setShowHotelSuggestions(true)
+                    }}
+                    onFocus={() => hotelSearchInput && setShowHotelSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowHotelSuggestions(false), 200)}
+                    className={`w-full px-4 py-3 pr-10 rounded-xl border-2 ${errors.hotel && touched.hotel ? 'border-red-500' : 'border-blue-700'} bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.hotel && touched.hotel ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base`}
+                  />
+                  {hotelSearchInput && (
+                    <button
+                      type="button"
+                      onClick={() => { setHotelSearchInput(''); handleChange('hotel', ''); setShowHotelSuggestions(false) }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                      title="Clear"
+                    >
+                      <ClearButtonIcon />
+                    </button>
+                  )}
 
-                {/* 📍 icon — always opens map */}
+                  {/* Suggestions dropdown */}
+                  {showHotelSuggestions && hotelSearchInput.length >= 2 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto">
+                      {hotelLoading && (
+                        <div className="px-4 py-3 text-base text-gray-500 flex items-center gap-2">
+                          <svg className="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Searching places…
+                        </div>
+                      )}
+                      {!hotelLoading && hotelSuggestions.length === 0 && (
+                        <div className="px-4 py-3 text-base text-gray-500">No places found — try the map pin instead</div>
+                      )}
+                      {!hotelLoading && hotelSuggestions.map((place) => (
+                        <button
+                          key={place.id}
+                          type="button"
+                          onClick={() => handleSelectHotel(place)}
+                          className="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition text-base border-b border-gray-100 last:border-b-0"
+                        >
+                          <span className="font-medium text-gray-800">{place.name}</span>
+                          <span className="text-gray-400 text-sm block mt-0.5 truncate">{place.fullAddress}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Pin icon — outside input, right next to it */}
                 <button
                   type="button"
-                  onClick={handleOpenMapForPinning}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-700 hover:text-blue-800 transition cursor-pointer"
+                  onClick={openMapForPinning}
+                  className="flex-shrink-0 text-blue-700 hover:text-blue-800 transition cursor-pointer p-3 rounded-xl hover:bg-blue-50"
                   title="Pin a location on the map"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
                     <path fillRule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-2.083 3.701-5.125 3.701-9.077 0-4.715-3.73-8.293-8-8.293s-8 3.578-8 8.293c0 3.952 1.757 6.994 3.701 9.077a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
                   </svg>
                 </button>
-
-                {/* Suggestions dropdown */}
-                {showHotelSuggestions && hotelSearchInput.length >= 2 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto">
-                    {hotelLoading && (
-                      <div className="px-4 py-3 text-base text-gray-500 flex items-center gap-2">
-                        <svg className="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                        Searching places…
-                      </div>
-                    )}
-                    {!hotelLoading && hotelSuggestions.length === 0 && (
-                      <div className="px-4 py-3 text-base text-gray-500">No places found — try the map pin instead</div>
-                    )}
-                    {!hotelLoading && hotelSuggestions.map((place) => (
-                      <button
-                        key={place.id}
-                        type="button"
-                        onClick={() => handleSelectHotel(place)}
-                        className="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition text-base border-b border-gray-100 last:border-b-0"
-                      >
-                        <span className="font-medium text-gray-800">{place.name}</span>
-                        <span className="text-gray-400 text-sm block mt-0.5 truncate">{place.fullAddress}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
               {errors.hotel && touched.hotel && <p className="text-red-500 text-sm mt-1">{errors.hotel}</p>}
             </div>
@@ -360,26 +311,50 @@ export default function TripPlanPage() {
                 <label className="block text-base font-semibold text-gray-700 mb-1">
                   Start Date <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
-                  min={today}
-                  value={form.startDate}
-                  onChange={(e) => handleChange('startDate', e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border ${errors.startDate && touched.startDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.startDate && touched.startDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base cursor-pointer`}
-                />
+                <div className="relative">
+                  <input
+                    type="date"
+                    min={today}
+                    value={form.startDate}
+                    onChange={(e) => handleChange('startDate', e.target.value)}
+                    className={`w-full px-4 py-3 pr-10 rounded-xl border ${errors.startDate && touched.startDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.startDate && touched.startDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base cursor-pointer`}
+                  />
+                  {form.startDate && (
+                    <button
+                      type="button"
+                      onClick={() => handleChange('startDate', '')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                      title="Clear"
+                    >
+                      <ClearButtonIcon />
+                    </button>
+                  )}
+                </div>
                 {errors.startDate && touched.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>}
               </div>
               <div>
                 <label className="block text-base font-semibold text-gray-700 mb-1">
                   End Date <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
-                  min={form.startDate || today}
-                  value={form.endDate}
-                  onChange={(e) => handleChange('endDate', e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl border ${errors.endDate && touched.endDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.endDate && touched.endDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base cursor-pointer`}
-                />
+                <div className="relative">
+                  <input
+                    type="date"
+                    min={form.startDate || today}
+                    value={form.endDate}
+                    onChange={(e) => handleChange('endDate', e.target.value)}
+                    className={`w-full px-4 py-3 pr-10 rounded-xl border ${errors.endDate && touched.endDate ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 ${errors.endDate && touched.endDate ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base cursor-pointer`}
+                  />
+                  {form.endDate && (
+                    <button
+                      type="button"
+                      onClick={() => handleChange('endDate', '')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                      title="Clear"
+                    >
+                      <ClearButtonIcon />
+                    </button>
+                  )}
+                </div>
                 {errors.endDate && touched.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
               </div>
             </div>
@@ -396,12 +371,24 @@ export default function TripPlanPage() {
                   </div>
                 </div>
               </label>
-              <input
-                type="number" min="1" max="20" placeholder="e.g., 5"
-                value={form.maxAttractions}
-                onChange={(e) => handleChange('maxAttractions', e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border ${errors.maxAttractions && touched.maxAttractions ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.maxAttractions && touched.maxAttractions ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base`}
-              />
+              <div className="relative">
+                <input
+                  type="number" min="1" max="20" placeholder="e.g., 5"
+                  value={form.maxAttractions}
+                  onChange={(e) => handleChange('maxAttractions', e.target.value)}
+                  className={`w-full px-4 py-3 pr-10 rounded-xl border ${errors.maxAttractions && touched.maxAttractions ? 'border-red-500' : 'border-gray-200'} bg-gray-100 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 ${errors.maxAttractions && touched.maxAttractions ? 'focus:ring-red-500' : 'focus:ring-blue-700'} focus:border-transparent transition text-base`}
+                />
+                {form.maxAttractions && (
+                  <button
+                    type="button"
+                    onClick={() => handleChange('maxAttractions', '')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                    title="Clear"
+                  >
+                    <ClearButtonIcon />
+                  </button>
+                )}
+              </div>
               {errors.maxAttractions && touched.maxAttractions && <p className="text-red-500 text-sm mt-1">{errors.maxAttractions}</p>}
             </div>
           </>
@@ -427,7 +414,7 @@ export default function TripPlanPage() {
       <HotelMapModal
         isOpen={showMapModal}
         selectedPlace={selectedPlace}
-        onClose={() => setShowMapModal(false)}
+        onClose={closeMapModal}
         onConfirm={handleMapConfirm}
       />
 
