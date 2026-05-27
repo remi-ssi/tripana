@@ -206,13 +206,19 @@ class LocalAttractionSearchService:
     ) -> int:
         # Save places to database with deduplication. Returns the number of new places saved.
         saved_count = 0
-        try:
-            for place in places:
+        
+        for place in places:
+            try:
                 google_place_id = place.get("id")
                 
                 # Check if already exists (deduplication)
-                if await self.place_repo.exists_by_google_place_id(google_place_id):
-                    logger.debug(f"Place {google_place_id} already exists, skipping")
+                try:
+                    if await self.place_repo.exists_by_google_place_id(google_place_id):
+                        logger.debug(f"Place {google_place_id} already exists, skipping")
+                        continue
+                except Exception as e:
+                    logger.warning(f"Error checking place existence {google_place_id}: {str(e)}")
+                    await self.db.rollback()
                     continue
                 
                 # Create new place record
@@ -232,20 +238,20 @@ class LocalAttractionSearchService:
                         price_level=place.get("price_level"),
                         photos=place.get("photos"),
                     )
+                    await self.db.commit()
                     saved_count += 1
                     logger.debug(f"Saved place: {place.get('name')} ({google_place_id})")
                 except Exception as e:
                     logger.warning(f"Failed to save place {google_place_id}: {str(e)}")
+                    await self.db.rollback()
                     continue
-            
-            # Commit all changes
-            await self.db.commit()
-            logger.info(f"Successfully saved {saved_count} new places to database")
-            
-        except Exception as e:
-            logger.error(f"Error saving places to database: {str(e)}", exc_info=True)
-            await self.db.rollback()
+                    
+            except Exception as e:
+                logger.error(f"Unexpected error saving place: {str(e)}")
+                await self.db.rollback()
+                continue
         
+        logger.info(f"Successfully saved {saved_count} new places to database")
         return saved_count
     
     # Internal method to build optimized search queries based on user preferences.

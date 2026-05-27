@@ -11,13 +11,19 @@ async def test_health_check(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_create_user(client: AsyncClient):
-    payload = {"email": "test@example.com", "username": "testuser", "password": "secret"}
+    payload = {
+        "first_name": "Test",
+        "last_name": "User",
+        "email": "test@example.com",
+        "password": "secret",
+    }
     response = await client.post("/api/v1/users/", json=payload)
     assert response.status_code == 201
     data = response.json()
     assert data["email"] == "test@example.com"
-    assert data["username"] == "testuser"
-    assert "id" in data
+    assert data["first_name"] == "Test"
+    assert data["last_name"] == "User"
+    assert "user_id" in data
 
 
 @pytest.mark.asyncio

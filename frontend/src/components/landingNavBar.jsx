@@ -25,13 +25,14 @@ export function Navbar() {
       <img
         src={fullLogo}
         alt="Tripana"
-        className="h-11 w-auto select-none"
+        className="h-11 w-auto select-none cursor-pointer hover:opacity-80 transition-opacity"
+        onClick={() => navigate("/")}
       />
 
       {/* Links */}
       <ul className="flex gap-8 list-none m-0 p-0">
         {[
-          { label: "Features", path: "/features" },
+          { label: "Features", path: "/" },
           { label: "About Us", path: "/about" },
           { label: "Terms and Conditions", path: "/terms" },
           { label: "Privacy Policy", path: "/privacy" },

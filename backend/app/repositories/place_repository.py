@@ -71,10 +71,17 @@ class PlaceRepository:
     
     async def exists_by_google_place_id(self, google_place_id: str) -> bool:
         """Check if a place already exists by Google Place ID."""
-        result = await self.db.execute(
-            select(Place).where(Place.googleplaceid == google_place_id).limit(1)
-        )
-        return result.scalars().first() is not None
+        try:
+            result = await self.db.execute(
+                select(Place).where(Place.googleplaceid == google_place_id).limit(1)
+            )
+            return result.scalars().first() is not None
+        except Exception as e:
+            # If there's any error, assume it doesn't exist to avoid blocking the flow
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error checking if place exists {google_place_id}: {str(e)}")
+            return False
     
     async def search_by_destination(self, destination: str, limit: int = 50) -> List[Place]:
         """Search for places by destination."""
