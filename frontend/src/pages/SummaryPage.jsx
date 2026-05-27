@@ -55,16 +55,29 @@ export default function ReviewPage() {
             {/* Trip Details */}
             <SectionCard icon="📍" title="Trip details" onEdit={() => navigate('/trip-details')}>
               <div className="grid grid-cols-2 gap-7">
-                <div>
-                  <InfoRow label="Destination" value={tripDetails.destination} />
-                  <InfoRow label="Hotel / Base" value={tripDetails.hotel} />
-                  <InfoRow label="Start date" value={tripDetails.startDate} last />
-                </div>
-                <div>
-                  <InfoRow label="End date" value={tripDetails.endDate} />
-                  <InfoRow label="Start time" value={tripDetails.startTime} />
-                  <InfoRow label="Max attractions" value={`${tripDetails.maxAttractions} per day`} last />
-                </div>
+                {formData.tripType === 'overnight' ? (
+                  <>
+                    <div>
+                      <InfoRow label="Destination" value={tripDetails.destination} />
+                      <InfoRow label="Hotel / Base" value={tripDetails.hotel} />
+                      <InfoRow label="Start date" value={tripDetails.startDate} last />
+                    </div>
+                    <div>
+                      <InfoRow label="End date" value={tripDetails.endDate} />
+                      <InfoRow label="Max attractions" value={`${tripDetails.maxAttractions} per day`} last />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <InfoRow label="Destination" value={tripDetails.destination} />
+                      <InfoRow label="Date" value={tripDetails.startDate} last />
+                    </div>
+                    <div>
+                      <InfoRow label="Start time" value={tripDetails.startTime} last />
+                    </div>
+                  </>
+                )}
               </div>
             </SectionCard>
 
@@ -139,7 +152,9 @@ export default function ReviewPage() {
               <div className="px-4.5 py-3.25 border-b border-gray-200 bg-blue-700">
                 <p className="text-sm font-bold text-white mb-0.25">Trip snapshot</p>
                 <span className="text-xs text-blue-100">
-                  {tripDetails.destination} · {tripDetails.startDate.split(',')[0].split(' ').slice(0, 2).join(' ')}–{tripDetails.endDate.split(',')[0].split(' ')[1]}, {tripDetails.startDate.split(', ')[1]}
+                  {tripDetails.destination} · {formData.tripType === 'overnight' 
+                    ? `${tripDetails.startDate.split(',')[0].split(' ').slice(0, 2).join(' ')}–${tripDetails.endDate.split(',')[0].split(' ')[1]}, ${tripDetails.startDate.split(', ')[1]}`
+                    : tripDetails.startDate}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 p-3.5 pb-1.5">
@@ -161,22 +176,33 @@ export default function ReviewPage() {
                 </div>
               </div>
               <div className="flex flex-col px-4.5 pt-2.5 pb-3.5">
-                <div className="flex justify-between py-1.5 border-b border-gray-100">
-                  <span className="text-xs text-gray-700">Start date</span>
-                  <span className="text-xs font-semibold text-gray-900">{tripDetails.startDate}</span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-gray-100">
-                  <span className="text-xs text-gray-700">End date</span>
-                  <span className="text-xs font-semibold text-gray-900">{tripDetails.endDate}</span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-gray-100">
-                  <span className="text-xs text-gray-700">Start time</span>
-                  <span className="text-xs font-semibold text-gray-900">{tripDetails.startTime}</span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-gray-100">
-                  <span className="text-xs text-gray-700">Base</span>
-                  <span className="text-xs font-semibold text-gray-900">Blue Rock Resort</span>
-                </div>
+                {formData.tripType === 'overnight' ? (
+                  <>
+                    <div className="flex justify-between py-1.5 border-b border-gray-100">
+                      <span className="text-xs text-gray-700">Start date</span>
+                      <span className="text-xs font-semibold text-gray-900">{tripDetails.startDate}</span>
+                    </div>
+                    <div className="flex justify-between py-1.5 border-b border-gray-100">
+                      <span className="text-xs text-gray-700">End date</span>
+                      <span className="text-xs font-semibold text-gray-900">{tripDetails.endDate}</span>
+                    </div>
+                    <div className="flex justify-between py-1.5 border-b border-gray-100">
+                      <span className="text-xs text-gray-700">Base</span>
+                      <span className="text-xs font-semibold text-gray-900">{tripDetails.hotel}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between py-1.5 border-b border-gray-100">
+                      <span className="text-xs text-gray-700">Date</span>
+                      <span className="text-xs font-semibold text-gray-900">{tripDetails.startDate}</span>
+                    </div>
+                    <div className="flex justify-between py-1.5 border-b border-gray-100">
+                      <span className="text-xs text-gray-700">Start time</span>
+                      <span className="text-xs font-semibold text-gray-900">{tripDetails.startTime}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between py-1.5">
                   <span className="text-xs text-gray-700">Budget</span>
                   <span className="text-xs font-semibold text-gray-900">{preferences.budget}</span>
