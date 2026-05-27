@@ -9,12 +9,43 @@ export const formatDate = (date) => {
   })
 }
 
+// Format date to full readable string (e.g., "June 14, 2025")
+export const formatDateFull = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
 // Format time to readable string
 export const formatTime = (date) => {
   return new Date(date).toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+// Format time string from "HH:MM" format to "02:30 PM"
+export const formatTimeString = (timeString) => {
+  if (!timeString) return ''
+  const [hours, minutes] = timeString.split(':')
+  const hour = parseInt(hours)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const displayHour = hour % 12 || 12
+  return `${displayHour.toString().padStart(2, '0')}:${minutes} ${ampm}`
+}
+
+// Get pace label from pace level (1-3)
+export const getPaceLabel = (paceLevel) => {
+  const paceMap = { 1: 'Relaxed', 2: 'Moderate', 3: 'Fast' }
+  return paceMap[paceLevel] || 'Moderate'
+}
+
+// Calculate number of days between two dates
+export const calculateDays = (startDate, endDate) => {
+  if (!startDate || !endDate) return 1
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1
 }
 
  //Capitalize first letter of string
