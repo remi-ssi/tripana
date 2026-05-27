@@ -16,6 +16,12 @@ const initialFormState = {
   paceLevel: 2,
   interests: [],
   attractions: [], // selected attractions from AttractionsPage
+  includeBreaks: null, // true, false, or null
+  mealStates: {
+    breakfast: { checked: false, time: '08:00' },
+    lunch: { checked: false, time: '12:00' },
+    dinner: { checked: false, time: '18:00' },
+  },
 }
 
 export function TripPlanProvider({ children }) {

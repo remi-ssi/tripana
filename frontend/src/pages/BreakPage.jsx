@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageLayout from './PageLayout'
 import { validateBreaks } from '../validators/breakValidator'
+import { useTripPlan } from '../contexts/TripPlanContext'
 
 const MEALS = [
   {
@@ -40,20 +41,32 @@ function to12Hour(time24) {
 
 export default function BreakPage() {
   const navigate = useNavigate()
-  const [includeBreaks, setIncludeBreaks] = useState(null)
-  const [mealStates, setMealStates] = useState({
-    breakfast: { checked: false, time: '08:00' },
-    lunch: { checked: false, time: '12:00' },
-    dinner: { checked: false, time: '18:00' },
-  })
+  const { formData, updateFormData, updateMultipleFields } = useTripPlan()
+  const [includeBreaks, setIncludeBreaks] = useState(formData.includeBreaks)
+  const [mealStates, setMealStates] = useState(formData.mealStates)
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
+
+  // Load saved data from context on mount
+  useEffect(() => {
+    if (formData.includeBreaks !== null) {
+      setIncludeBreaks(formData.includeBreaks)
+    }
+    if (formData.mealStates) {
+      setMealStates(formData.mealStates)
+    }
+  }, [])
 
   const handleContinue = () => {
     setTouched({ breakChoice: true, meals: true, mealTime: true })
     const newErrors = validateBreaks(includeBreaks, mealStates)
     setErrors(newErrors)
     if (Object.keys(newErrors).length === 0) {
+      // Save to context before navigating
+      updateMultipleFields({
+        includeBreaks,
+        mealStates,
+      })
       navigate('/summary')
     }
   }
