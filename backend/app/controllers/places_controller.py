@@ -317,6 +317,8 @@ async def get_recommended_places(
             radius=radius,
             limit=limit,
         )
+        print(f"Controller received city: {city}, prefs: {user_preferences}, budget: {budget}")
+        print(f"Controller results count: {len(results)}")
         
         # Generate photo URLs from photos JSON
         import json

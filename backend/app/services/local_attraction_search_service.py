@@ -145,7 +145,7 @@ class LocalAttractionSearchService:
                         "lng": place.longitude,
                     },
                     "rating": place.rating,
-                    "user_ratings_total": place.userratinqtotal,
+                    "user_ratings_total": place.userratingtotal,
                     "opening_hours": place.openinghours,
                     "photos": place.photos,
                     "website": place.website,
@@ -359,17 +359,23 @@ class LocalAttractionSearchService:
     
     # Internal method to count how many user preferences match the place's Google types for relevance scoring.
     def _count_preference_matches(self, place: Dict, user_preferences: List[str]) -> int:
-        """Count how many user preferences match the place's Google types."""
+        """Count how many user preferences match the place's Google types or name/address."""
         place_types = [t.lower() for t in (place.get("types") or [])]
+        name_lower = (place.get("name") or "").lower()
+        address_lower = (place.get("address") or "").lower()
         match_count = 0
         
         for pref in user_preferences:
             pref_keywords = PREFERENCE_TO_KEYWORDS.get(pref, [])
-            has_match = any(
-                keyword in ptype
-                for keyword in pref_keywords
-                for ptype in place_types
-            )
+            has_match = False
+            for keyword in pref_keywords:
+                kw_lower = keyword.lower()
+                if (any(kw_lower in ptype for ptype in place_types) or 
+                    kw_lower in name_lower or 
+                    kw_lower in address_lower):
+                    has_match = True
+                    break
+            
             if has_match:
                 match_count += 1
         

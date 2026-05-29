@@ -27,7 +27,7 @@ class Place(Base):
     
     # Ratings and reviews
     rating: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    userratinqtotal: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    userratingtotal: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     
     # Additional details
     pricelevel: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)

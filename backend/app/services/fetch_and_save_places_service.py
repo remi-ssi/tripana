@@ -74,7 +74,7 @@ async def fetch_and_save_attractions(
                             latitude=coords.get("lat", 0.0),
                             longitude=coords.get("lng", 0.0),
                             rating=google_place.get("rating"),
-                            userratinqtotal=google_place.get("user_ratings_total"),
+                            userratingtotal=google_place.get("user_ratings_total"),
                             openinghours=str(google_place.get("opening_hours")) if google_place.get("opening_hours") else None,
                             is_open_now=google_place.get("is_open_now"),
                             photos=google_place.get("photos"),

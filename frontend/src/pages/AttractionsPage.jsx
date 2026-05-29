@@ -86,7 +86,7 @@ export default function AttractionsPage() {
     }
 
     fetchRecommendations()
-  }, [formData])
+  }, [formData.city, formData.budget, formData.interests?.join(',')])
 
   // Observe images when pagination changes
   useEffect(() => {

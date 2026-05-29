@@ -15,10 +15,10 @@ class PlaceRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
     
-    async def create(self, googleplaceid: str, destination: Optional[str] = None, 
+    async def create(self, googleplaceid: Optional[str] = None, destination: Optional[str] = None, 
                     address: Optional[str] = None, city: Optional[str] = None,
                     latitude: Optional[float] = None, longitude: Optional[float] = None, 
-                    rating: Optional[float] = None, userratinqtotal: Optional[int] = None, 
+                    rating: Optional[float] = None, userratingtotal: Optional[int] = None, 
                     openinghours: Optional[str] = None, is_open_now: Optional[bool] = None, 
                     photos: Optional[str] = None, website: Optional[str] = None, 
                     pricelevel: Optional[int] = None, phonenumber: Optional[str] = None,
@@ -31,7 +31,7 @@ class PlaceRepository:
         - googleplaceid / google_place_id
         - destination / name
         - openinghours / opening_hours
-        - userratinqtotal / user_ratings_total
+        - userratingtotal / user_ratings_total
         - pricelevel / price_level
         - photos: JSON array of photos with photo_reference for dynamic URL generation
         """
@@ -39,7 +39,7 @@ class PlaceRepository:
         final_googleplaceid = googleplaceid or google_place_id
         final_destination = destination or name
         final_openinghours = openinghours or opening_hours
-        final_userratinqtotal = userratinqtotal or user_ratings_total
+        final_userratingtotal = userratingtotal or user_ratings_total
         final_pricelevel = pricelevel or price_level
         
         place = Place(
@@ -50,7 +50,7 @@ class PlaceRepository:
             latitude=latitude,
             longitude=longitude,
             rating=rating,
-            userratinqtotal=final_userratinqtotal,
+            userratingtotal=final_userratingtotal,
             openinghours=final_openinghours,
             is_open_now=is_open_now,
             photos=photos,
