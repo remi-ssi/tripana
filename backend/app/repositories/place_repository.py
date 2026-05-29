@@ -57,6 +57,7 @@ class PlaceRepository:
             website=website,
             pricelevel=final_pricelevel,
             phonenumber=phonenumber,
+            types=types,  # Add types field
         )
         self.db.add(place)
         await self.db.flush()
@@ -112,7 +113,7 @@ class PlaceRepository:
         Search for places by city and user preferences.
         
         Args:
-            city: The city to search in (exact match)
+            city: The city to search in (case-insensitive)
             user_preferences: List of user preference names
             preference_to_keywords: Mapping of preferences to keywords
             limit: Maximum number of results
@@ -120,10 +121,10 @@ class PlaceRepository:
         Returns:
             List of Place objects matching the city and preferences
         """
-        # Get all places in the city first
+        # Get all places in the city first (case-insensitive search)
         result = await self.db.execute(
             select(Place)
-            .where(Place.city == city)
+            .where(Place.city.ilike(city))
             .limit(limit * 2)  # Get extra results to filter by preferences
         )
         all_places = result.scalars().all()

@@ -134,8 +134,17 @@ class LocalAttractionSearchService:
             )
             
             # Convert Place ORM objects to dictionaries
+            import json
             results = []
             for place in places:
+                # Parse types from JSON if stored
+                types_list = []
+                if place.types:
+                    try:
+                        types_list = json.loads(place.types) if isinstance(place.types, str) else place.types
+                    except (json.JSONDecodeError, TypeError):
+                        types_list = []
+                
                 results.append({
                     "id": place.googleplaceid,
                     "name": place.destination,
@@ -150,6 +159,7 @@ class LocalAttractionSearchService:
                     "photos": place.photos,
                     "website": place.website,
                     "price_level": place.pricelevel,
+                    "types": types_list,
                 })
             
             return results
@@ -210,6 +220,9 @@ class LocalAttractionSearchService:
         for place in places:
             try:
                 google_place_id = place.get("id")
+                if not google_place_id:
+                    logger.warning(f"Place has no ID, skipping: {place.get('name')}")
+                    continue
                 
                 # Check if already exists (deduplication)
                 try:
@@ -223,20 +236,35 @@ class LocalAttractionSearchService:
                 
                 # Create new place record
                 try:
+                    import json
+                    # Handle photos - convert to JSON string if it's a list
+                    photos_data = place.get("photos")
+                    if photos_data and isinstance(photos_data, list):
+                        photos_json = json.dumps(photos_data)
+                    else:
+                        photos_json = photos_data
+                    
+                    # Handle types - convert to JSON string if it's a list
+                    types_data = place.get("types", [])
+                    if types_data and isinstance(types_data, list):
+                        types_json = json.dumps(types_data)
+                    else:
+                        types_json = types_data if types_data else None
+                    
                     await self.place_repo.create(
-                        google_place_id=google_place_id,
-                        name=place.get("name", ""),
+                        googleplaceid=google_place_id,
+                        destination=place.get("name", ""),
                         address=place.get("address", ""),
                         city=location_city,
                         latitude=place.get("coordinates", {}).get("lat", 0.0),
                         longitude=place.get("coordinates", {}).get("lng", 0.0),
                         rating=place.get("rating"),
-                        user_ratings_total=place.get("user_ratings_total"),
-                        types=place.get("types", []),
-                        opening_hours=place.get("opening_hours"),
+                        userratingtotal=place.get("user_ratings_total"),
+                        openinghours=place.get("opening_hours"),
                         website=place.get("website"),
-                        price_level=place.get("price_level"),
-                        photos=place.get("photos"),
+                        pricelevel=place.get("price_level"),
+                        photos=photos_json,
+                        types=types_json,
                     )
                     await self.db.commit()
                     saved_count += 1
@@ -320,42 +348,64 @@ class LocalAttractionSearchService:
     
     # Internal method to calculate SAW score for a place based on relevance, rating, popularity, and price level.
     def _calculate_place_score(self, place: Dict, user_preferences: List[str]) -> float:
-        #Calculate SAW score for a place:
-        #Score = (0.35 × RelevanceScore) + (0.30 × RatingScore) + (0.25 × PopularityScore) + (0.10 × PriceLevelScore)
+        """
+        Calculate SAW score for a place:
+        Score = (0.35 × RelevanceScore) + (0.30 × RatingScore) + (0.25 × PopularityScore) + (0.10 × PriceLevelScore)
         
-        # Rating score (30%)
-        rating = place.get("rating") or 0
-        rating_score = (
-            ((rating - SCORING_WEIGHTS["RATING_MIN"]) / 
-             (SCORING_WEIGHTS["RATING_MAX"] - SCORING_WEIGHTS["RATING_MIN"])) * 100
-            if rating > 0 else 0
-        )
+        All component scores are normalized to 0-1 range before weighting.
+        """
+        import math
         
-        # Popularity score (25%)
-        review_count = place.get("user_ratings_total") or 0
-        popularity_score = (
-            min(((__import__('math').log10(review_count) / 
-                  __import__('math').log10(SCORING_WEIGHTS["POPULARITY_LOG_MAX"])) * 100), 100)
-            if review_count > 0 else 0
-        )
-        
-        # Relevance score (35%)
+        # Relevance score (35%) - how many preferences match
         matched_prefs = self._count_preference_matches(place, user_preferences)
-        relevance_score = (matched_prefs / len(user_preferences) * 100) if user_preferences else 0
+        relevance_score = (
+            (matched_prefs / len(user_preferences)) 
+            if user_preferences and len(user_preferences) > 0 else 0
+        )
         
+        # Early exit if no relevance - don't show unrelated places
         if relevance_score == 0:
             return 0
         
-        # Price level score (10%) — normalized inversely (higher price = lower score)
-        price_level = place.get("price_level") or 2  # Default to middle price level
-        price_level_score = ((SCORING_WEIGHTS["PRICE_LEVEL_MAX"] - price_level + 1) / SCORING_WEIGHTS["PRICE_LEVEL_MAX"]) * 100
+        # Rating score (30%) - normalize rating to 0-1 scale
+        rating = place.get("rating") or 0
+        rating_score = (
+            (rating - SCORING_WEIGHTS["RATING_MIN"]) / 
+            (SCORING_WEIGHTS["RATING_MAX"] - SCORING_WEIGHTS["RATING_MIN"])
+            if rating > 0 else 0
+        )
+        rating_score = min(max(rating_score, 0), 1)  # Clamp to 0-1
         
-        return (
+        # Popularity score (25%) - use logarithmic scale for review count
+        review_count = place.get("user_ratings_total") or 0
+        if review_count > 0:
+            popularity_score = min(
+                math.log10(review_count + 1) / math.log10(SCORING_WEIGHTS["POPULARITY_LOG_MAX"]),
+                1.0
+            )
+        else:
+            popularity_score = 0
+        
+        # Price level score (10%)
+        # If price_level is None, give neutral score of 0.5
+        # Otherwise, higher price level gets slightly lower score (but still positive if within budget)
+        price_level = place.get("price_level")
+        if price_level is None:
+            price_level_score = 0.5
+        else:
+            # Normalize price level: price 1 gets 1.0, price 2 gets 0.75, etc.
+            # This gives slight preference to lower prices, but all budget prices are acceptable
+            price_level_score = max(1.0 - (price_level - 1) * 0.25, 0.0)
+        
+        # Combine scores using weighted sum
+        final_score = (
             SCORING_WEIGHTS["WEIGHT_RELEVANCE"] * relevance_score +
             SCORING_WEIGHTS["WEIGHT_RATING"] * rating_score +
             SCORING_WEIGHTS["WEIGHT_POPULARITY"] * popularity_score +
             SCORING_WEIGHTS["WEIGHT_PRICE_LEVEL"] * price_level_score
         )
+        
+        return final_score
     
     # Internal method to count how many user preferences match the place's Google types for relevance scoring.
     def _count_preference_matches(self, place: Dict, user_preferences: List[str]) -> int:

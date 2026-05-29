@@ -19,7 +19,7 @@ class Place(Base):
     googleplaceid: Mapped[str] = mapped_column(String(300), unique=True, index=True, nullable=False)
     destination: Mapped[str] = mapped_column(String(255), nullable=False)
     address: Mapped[str] = mapped_column(String(255), nullable=False)
-    city: Mapped[str] = mapped_column(String(255), nullable=False)
+    city: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     
     # Coordinates
     latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
@@ -35,10 +35,10 @@ class Place(Base):
     is_open_now: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     website: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     phonenumber: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    photos: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Photos data from Google Places API
+    photos: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Photos data from Google Places API (JSON array)
+    types: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Google Place types (JSON array)
     
     # Metadata
     datefetched: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.utcnow, nullable=True)
     lastupdate: Mapped[Optional[datetime]] = mapped_column(DateTime, onupdate=datetime.utcnow, nullable=True)
     isactive: Mapped[bool] = mapped_column(Boolean, default=True)
-

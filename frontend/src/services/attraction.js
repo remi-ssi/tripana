@@ -46,7 +46,7 @@ export async function fetchAndSavePlaces({
     const response = await apiClient.post(
       `/api/v1/places/attractions/fetch-and-save?${params.toString()}`
     );
-    
+
     return response;
   } catch (error) {
     console.error("Error fetching and saving places:", error);
@@ -93,8 +93,30 @@ export async function getRecommendedPlaces({
     const response = await apiClient.get(
       `/api/v1/places/attractions/recommendations?${params.toString()}`
     );
-    
-    return response.results || [];
+
+    // The backend returns { results: [...] }, so extract the results array
+    const attractions = response.data?.results || response.results || [];
+
+    // Format attractions for UI display - tags will be formatted by the page
+    return attractions.map((place, index) => ({
+      id: place.id || `place_${index}`,
+      name: place.name || 'Unknown Place',
+      description: place.address || 'No description available',
+      types: place.types || [],  // Keep raw types for page to format
+      rating: place.rating || 0,
+      reviews: place.reviews || 0,
+      duration: '2-3 hours',
+      image:
+        place.photoUrl ||
+        (place.photos
+          ? place.photos
+          : 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&h=220&fit=crop'),
+      // Store full place data for modal
+      address: place.address,
+      coordinates: place.coordinates,
+      website: place.website,
+      price_level: place.price_level,
+    }));
   } catch (error) {
     console.error("Error getting recommendations:", error);
     throw error;
@@ -106,7 +128,7 @@ export async function searchAttractions({
   query,
   latitude = null,
   longitude = null,
-  radius = 5000, 
+  radius = 5000,
   limit = 20,
 }) {
   try {

@@ -79,6 +79,7 @@ async def search_attractions(
                     },
                     "rating": place.get("rating"),
                     "user_ratings_total": place.get("user_ratings_total"),
+                    "types": place.get("types", []),  # Google Place types for filtering
                     "is_open_now": opening_hours_data.get("open_now"),
                     "opening_hours": None,  # Full hours require Details API call
                     "photos": photos_json,  # Store photos JSON array with photo_reference for optimization
