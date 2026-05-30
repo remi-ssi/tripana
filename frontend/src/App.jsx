@@ -16,93 +16,102 @@ import TermsAndConditions from './pages/termsAndCondition'
 import TripanaAbout from './pages/aboutUs'
 import { AuthOnlyRoute, GuestOnlyRoute } from './routes/guards'
 import { TripPlanProvider } from './contexts/TripPlanContext'
+import Profile from './pages/profile'
 
 function App() {
   return (
     <TripPlanProvider>
       <BrowserRouter>
         <Routes>
-        <Route
-          path="/login"
-          element={
-            <GuestOnlyRoute>
-              <Auth />
-            </GuestOnlyRoute>
-          }
-        />
-        <Route
-          path="/forgot-password"
-          element={
-            <GuestOnlyRoute>
-              <ForgotPassword />
-            </GuestOnlyRoute>
-          }
-        />
-        {/* Added: shared change-password page for logged-in and forgot-password flows. */}
-        <Route path="/change-password" element={<ChangePasswordFull />} />
-        <Route
-          path="/user-preference"
-          element={
-            <AuthOnlyRoute requirePreferences={false}>
-              <TravelStylePage />
-            </AuthOnlyRoute>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <AuthOnlyRoute requirePreferences={true}>
-              <Dashboard />
-            </AuthOnlyRoute>
-          }
-        />
-        <Route
-          path="/trip-plan"
-          element={
-            <AuthOnlyRoute requirePreferences={true}>
-              <TripPlanPage />
-            </AuthOnlyRoute>
-          }
-        />
-        <Route
-          path="/attractions"
-          element={
-            <AuthOnlyRoute requirePreferences={true}>
-              <AttractionsPage />
-            </AuthOnlyRoute>
-          }
-        />
-        <Route
-          path="/preference"
-          element={
-            <AuthOnlyRoute requirePreferences={true}>
-              <PreferencePage />
-            </AuthOnlyRoute>
-          }
-        />
-        <Route
-          path="/break"
-          element={
-            <AuthOnlyRoute requirePreferences={true}>
-              <BreakPage />
-            </AuthOnlyRoute>
-          }
-        />
-        <Route
-          path="/summary"
-          element={
-            <AuthOnlyRoute requirePreferences={true}>
-              <SummaryPage />
-            </AuthOnlyRoute>
-          }
-        />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsAndConditions />} />
-        <Route path="/about" element={<TripanaAbout />} />
-        <Route path="/features" element={<div className="min-h-screen flex items-center justify-center"><h1>Features Page (Coming Soon)</h1></div>} />
-        <Route path="/" element={<LandingPage />} />
-      </Routes>
-    </BrowserRouter>
+          <Route
+            path="/login"
+            element={
+              <GuestOnlyRoute>
+                <Auth />
+              </GuestOnlyRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <GuestOnlyRoute>
+                <ForgotPassword />
+              </GuestOnlyRoute>
+            }
+          />
+          {/* Added: shared change-password page for logged-in and forgot-password flows. */}
+          <Route path="/change-password" element={<ChangePasswordFull />} />
+          <Route
+            path="/user-preference"
+            element={
+              <AuthOnlyRoute requirePreferences={false}>
+                <TravelStylePage />
+              </AuthOnlyRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <AuthOnlyRoute requirePreferences={true}>
+                <Dashboard />
+              </AuthOnlyRoute>
+            }
+          />
+          <Route
+            path="/trip-plan"
+            element={
+              <AuthOnlyRoute requirePreferences={true}>
+                <TripPlanPage />
+              </AuthOnlyRoute>
+            }
+          />
+          <Route
+            path="/attractions"
+            element={
+              <AuthOnlyRoute requirePreferences={true}>
+                <AttractionsPage />
+              </AuthOnlyRoute>
+            }
+          />
+          <Route
+            path="/preference"
+            element={
+              <AuthOnlyRoute requirePreferences={true}>
+                <PreferencePage />
+              </AuthOnlyRoute>
+            }
+          />
+          <Route
+            path="/break"
+            element={
+              <AuthOnlyRoute requirePreferences={true}>
+                <BreakPage />
+              </AuthOnlyRoute>
+            }
+          />
+          <Route
+            path="/summary"
+            element={
+              <AuthOnlyRoute requirePreferences={true}>
+                <SummaryPage />
+              </AuthOnlyRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <AuthOnlyRoute requirePreferences={true}>
+                <Profile />
+              </AuthOnlyRoute>
+            }
+          />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
+          <Route path="/about" element={<TripanaAbout />} />
+          <Route path="/features" element={<div className="min-h-screen flex items-center justify-center"><h1>Features Page (Coming Soon)</h1></div>} />
+          <Route path="/" element={<LandingPage />} />
+        </Routes>
+      </BrowserRouter>
     </TripPlanProvider>
   )
 }
