@@ -1,7 +1,7 @@
-import DeactivateModal from "./DeactivateModal";
+import DeactivateModal from "../components/deleteAccount";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { logo } from "../assets/logo.png";
+import logo from "../assets/logo.png";
 
 // ─── Brand colors ─────────────────────────────────────────────────────────────
 const BRAND = {
@@ -101,9 +101,7 @@ export default function ProfilePage() {
                         className="absolute top-4 left-5 flex items-center gap-2 focus:outline-none"
                         aria-label="Go to dashboard"
                     >
-                        {
-                            <img src={logo} alt="Tripana" className="h-8 w-auto" />
-                        }
+                        <img src={logo} alt="Tripana" className="h-8 w-auto" />
                     </button>
 
                     {/* ── Avatar ── */}

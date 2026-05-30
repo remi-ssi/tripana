@@ -17,6 +17,8 @@ import TripanaAbout from './pages/aboutUs'
 import { AuthOnlyRoute, GuestOnlyRoute } from './routes/guards'
 import { TripPlanProvider } from './contexts/TripPlanContext'
 import Profile from './pages/profile'
+import ItineraryPage from './pages/itineraryPage'
+import itinerary from './pages/itinerary'
 
 function App() {
   return (
@@ -105,6 +107,8 @@ function App() {
               </AuthOnlyRoute>
             }
           />
+          <Route path="/itineraryPage" element={<ItineraryPage />} />
+          <Route path="/itinerary" element={<itinerary />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsAndConditions />} />
           <Route path="/about" element={<TripanaAbout />} />
