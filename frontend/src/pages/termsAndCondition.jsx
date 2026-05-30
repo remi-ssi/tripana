@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Navbar } from "../components/landingNavBar";
+import { Footer } from "../components/footer"
 
 const sections = [
   {
@@ -109,7 +110,7 @@ export default function TermsAndConditions() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
       <Navbar />
 
       {/* Hero */}
@@ -157,8 +158,8 @@ export default function TermsAndConditions() {
         </div>
       </div>
 
-      {/* Main */}
-      <main className="max-w-5xl mx-auto px-6 py-12">
+      {/* Main content — grows to fill remaining space */}
+      <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
           {/* Sidebar */}
@@ -189,7 +190,7 @@ export default function TermsAndConditions() {
             </div>
           </aside>
 
-          {/* Cards */}
+          {/* Content cards */}
           <div className="lg:col-span-2 space-y-6">
             {sections.map((section, i) => (
               <section key={section.id} id={section.id}
@@ -235,13 +236,13 @@ export default function TermsAndConditions() {
                 </div>
               </div>
             </div>
-
-            <p className="text-xs text-gray-400 text-center pb-4 leading-relaxed">
-              © 2025 Tripana. All rights reserved. These Terms &amp; Conditions were last updated on April 16, 2025.
-            </p>
           </div>
+
         </div>
       </main>
+
+      {/* Footer — outside the grid and main, full width */}
+      <Footer />
     </div>
   );
 }

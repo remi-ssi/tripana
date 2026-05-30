@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Navbar } from "../components/landingNavBar";
 import fullLogo from "../assets/Logo.png";
+import { Footer } from "../components/footer";
 
 // ── Scroll-reveal hook ──────────────────────────────────────────────────────
 function useReveal(threshold = 0.15) {
@@ -37,9 +38,8 @@ function Reveal({ children, delay = 0, className = "", direction = "up" }) {
     <div
       ref={ref}
       style={{ transitionDelay: `${delay}ms` }}
-      className={`transition-all duration-700 ease-out ${
-        visible ? "opacity-100 translate-x-0 translate-y-0" : hiddenMap[direction]
-      } ${className}`}
+      className={`transition-all duration-700 ease-out ${visible ? "opacity-100 translate-x-0 translate-y-0" : hiddenMap[direction]
+        } ${className}`}
     >
       {children}
     </div>
@@ -399,75 +399,6 @@ function Commitments() {
   );
 }
 
-// ── CTA Banner ───────────────────────────────────────────────────────────────
-function CTABanner() {
-  return (
-    <section className="px-6 pb-24 max-w-5xl mx-auto">
-      <Reveal>
-        <div
-          className="relative rounded-3xl px-8 md:px-16 py-20 text-center overflow-hidden"
-          style={{ background: "linear-gradient(135deg, #1B3A6B 55%, #2651A0 100%)" }}
-        >
-          {/* Deco */}
-          <div
-            className="absolute top-[-60px] right-[-60px] w-64 h-64 rounded-full opacity-10"
-            style={{ background: "#F5820A" }}
-          />
-          <div
-            className="absolute bottom-[-40px] left-[-40px] w-48 h-48 rounded-full opacity-5"
-            style={{ background: "#fff" }}
-          />
-          {/* Dots */}
-          <div
-            className="absolute inset-0 pointer-events-none opacity-10"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px)",
-              backgroundSize: "24px 24px",
-            }}
-          />
-
-          <h2
-            className="relative z-10 text-3xl md:text-5xl font-black text-white mb-5 uppercase leading-tight"
-            style={{ fontFamily: "'Nunito', sans-serif" }}
-          >
-            Ready to Plan Your<br />Next Adventure?
-          </h2>
-          <p
-            className="relative z-10 text-sm md:text-base mb-8 max-w-md mx-auto leading-relaxed"
-            style={{ color: "rgba(255,255,255,0.72)", fontFamily: "'Poppins', sans-serif" }}
-          >
-            Join Tripana and experience a smarter, more enjoyable way to travel.
-            Your perfect itinerary is just a few clicks away.
-          </p>
-          <button
-            className="relative z-10 uppercase tracking-widest text-xs font-bold text-white px-10 py-4 rounded-full border-2 border-white/30 hover:bg-white hover:text-[#1B3A6B] transition-all duration-300 hover:scale-105 active:scale-95"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
-          >
-            Start Planning →
-          </button>
-        </div>
-      </Reveal>
-    </section>
-  );
-}
-
-// ── Footer ───────────────────────────────────────────────────────────────────
-function Footer() {
-  return (
-    <footer className="py-8 text-center" style={{ background: "#1B3A6B" }}>
-      <p
-        className="text-xs"
-        style={{ color: "rgba(255,255,255,0.4)", fontFamily: "'Poppins', sans-serif" }}
-      >
-        © 2025{" "}
-        <span style={{ color: "#F5820A", fontWeight: "700" }}>Tripana</span>
-        {" "}· Plan. Explore. Discover.
-      </p>
-    </footer>
-  );
-}
-
 // ── Root export ──────────────────────────────────────────────────────────────
 export default function TripanaAbout() {
   return (
@@ -477,7 +408,6 @@ export default function TripanaAbout() {
       <Mission />
       <Destinations />
       <Commitments />
-      <CTABanner />
       <Footer />
     </div>
   );

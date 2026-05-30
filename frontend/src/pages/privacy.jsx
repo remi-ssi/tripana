@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Navbar } from "../components/landingNavBar";
+import { Footer } from "../components/footer";
 
 const sections = [
   {
@@ -242,11 +243,10 @@ export default function PrivacyPolicy() {
                     key={s.id}
                     href={`#${s.id}`}
                     onClick={() => setActiveSection(s.id)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all group ${
-                      activeSection === s.id
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
-                    }`}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all group ${activeSection === s.id
+                      ? "bg-blue-50 text-blue-700"
+                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                      }`}
                   >
                     <span className={`flex-shrink-0 ${activeSection === s.id ? "text-blue-600" : "text-gray-400 group-hover:text-blue-500"}`}>
                       {s.icon}
@@ -320,14 +320,10 @@ export default function PrivacyPolicy() {
                 </div>
               </div>
             </div>
-
-            {/* Footer note */}
-            <p className="text-xs text-gray-400 text-center pb-4 leading-relaxed">
-              © 2025 Tripana. All rights reserved. This Privacy Policy was last updated on April 16, 2025.
-            </p>
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
