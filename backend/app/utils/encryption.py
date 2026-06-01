@@ -1,4 +1,4 @@
-"""Encryption/Decryption utilities for the backend."""
+#Encryption/Decryption utilities for the backend.
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import serialization
 from pathlib import Path
@@ -7,12 +7,9 @@ from pathlib import Path
 _private_key = None
 
 def _load_private_key():
-    """Load the private key from file."""
+    #Load the private key from file.
     global _private_key
     if _private_key is None:
-        # Path: backend/private_key.pem
-        # __file__ is at backend/app/utils/encryption.py
-        # So we go up 3 levels to backend, then access private_key.pem
         key_path = Path(__file__).parent.parent.parent / "private_key.pem"
         with open(key_path, "rb") as f:
             _private_key = serialization.load_pem_private_key(
@@ -22,15 +19,8 @@ def _load_private_key():
     return _private_key
 
 def decrypt_value(encrypted_value: str) -> str:
-    """
-    Decrypt an encrypted value using the private key.
-    
-    Args:
-        encrypted_value: Base64-encoded encrypted string from frontend
-        
-    Returns:
-        The decrypted plaintext string
-    """
+    #Decrypt an encrypted value using the private key.
+    #encrypted_value: Base64-encoded encrypted string from frontend
     import base64
     
     if not encrypted_value:
@@ -55,17 +45,7 @@ def decrypt_value(encrypted_value: str) -> str:
         raise ValueError(f"Decryption failed: {str(e)}")
 
 def decrypt_dict(encrypted_data: dict) -> dict:
-    """
-    Decrypt all string values in a dictionary.
-    Automatically detects if data is encrypted and decrypts it.
-    If data appears unencrypted, returns it as-is.
-    
-    Args:
-        encrypted_data: Dictionary with potentially encrypted string values
-        
-    Returns:
-        Dictionary with decrypted values (or original values if unencrypted)
-    """
+    #Decrypt all string values in a dictionary.    
     print(f"[Decryption] decrypt_dict called with keys: {list(encrypted_data.keys())}")
     decrypted = {}
     for key, value in encrypted_data.items():
@@ -91,15 +71,7 @@ def decrypt_dict(encrypted_data: dict) -> dict:
     return decrypted
 
 def get_public_key() -> str:
-    """
-    Load and return the public key in PEM format.
-    
-    Returns:
-        The public key as a PEM-formatted string
-    """
-    # Path: backend/public_key.pem
-    # __file__ is at backend/app/utils/encryption.py
-    # So we go up 3 levels to backend, then access public_key.pem
+    # Load and return the public key in PEM format.
     key_path = Path(__file__).parent.parent.parent / "public_key.pem"
     with open(key_path, "r") as f:
         return f.read()

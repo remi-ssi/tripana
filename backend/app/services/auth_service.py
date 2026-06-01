@@ -202,6 +202,7 @@ async def send_otp(email: str, db: AsyncSession, is_resend: bool = False) -> dic
     now = datetime.now(timezone.utc)
     await cleanup_old_used_otps(db, now)
 
+    
     block_error_result = await block_error(email, db, now)
     if block_error_result:
         return block_error_result

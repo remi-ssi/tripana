@@ -11,7 +11,7 @@ from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2 import id_token
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
-from app.database import get_db               # your existing DB session function
+from app.database import get_db               
 from app.models.user import User
 from app.schemas.user_schema import (
     UserCreate,
@@ -42,22 +42,25 @@ oauth.register(
     client_kwargs={"scope": "openid email profile"},
 )
 
+#Raise HTTP Exception based on result.
 def _raise_if_error(result: dict, *, default_status: int = 400, force_status: int | None = None):
     if "error" in result:
         status = force_status if force_status is not None else result.get("status_code", default_status)
         raise HTTPException(status_code=status, detail=result["error"])
 
-
+#Implement the Signup Route
 async def _register_impl(data: UserCreate, db: AsyncSession):
     result = await start_signup(data.email, db)
     _raise_if_error(result)
     return result
 
+#Implement the Resend OTP Route
 async def _resend_impl(data: ResendOTPRequest, db: AsyncSession):
     result = await send_otp(data.email, db, is_resend=True)
     _raise_if_error(result, force_status=429)
     return {"message": "New OTP sent."}
 
+#Implement the Verify OTP Route
 async def _verify_impl(data: VerifyOTPRequest, db: AsyncSession):
     result = await finish_signup(
         email=data.email,
@@ -70,38 +73,42 @@ async def _verify_impl(data: VerifyOTPRequest, db: AsyncSession):
     _raise_if_error(result)
     return result
 
+#Implement the Login Route
 async def _login_impl(data: LoginRequest, db: AsyncSession):
     result = await start_login(data.email, data.password, db)
     _raise_if_error(result)
 
     return result
 
+#Implement the Verify Login OTP Route
 async def _verify_login_impl(data: VerifyLoginOTPRequest, db: AsyncSession):
     result = await finish_login(email=data.email, code=data.code, db=db)
     _raise_if_error(result)
     return result
 
+#Implement the Cancel OTP Route
 async def _cancel_otp_impl(data: ResendOTPRequest, db: AsyncSession):
     return await cancel_active_otp(data.email, db)
 
-
+#Implement the Forgot Password Route
 async def _forgot_password_impl(data: ResendOTPRequest, db: AsyncSession):
     result = await start_forgot_password(data.email, db)
     _raise_if_error(result)
     return result
 
-
+#Implement the Verify Forgot OTP Route
 async def _verify_forgot_otp_impl(data: VerifyForgotOTPRequest, db: AsyncSession):
     result = await verify_forgot_password_otp(data.email, data.code, db)
     _raise_if_error(result)
     return result
 
-
+#Implement the Reset Password Route
 async def _reset_password_impl(data: ResetPasswordRequest, db: AsyncSession):
     result = await reset_password_with_token(data.reset_token, data.new_password, db)
     _raise_if_error(result)
     return result
 
+#Implement the User Payload Route
 def _user_payload(user: User) -> dict:
     return {
         "user_id": user.user_id,
@@ -110,7 +117,7 @@ def _user_payload(user: User) -> dict:
         "email": user.email,
     }
 
-
+#Implement the Attach Cookie and Strip Token Route
 def _attach_cookie_and_strip_token(response: Response, result: dict) -> dict:
     token = result.get("token")
     if token:
@@ -120,11 +127,11 @@ def _attach_cookie_and_strip_token(response: Response, result: dict) -> dict:
         "user": result.get("user"),
     }
 
-
+#Implement the Google OAuth Enabled Route
 def _google_oauth_enabled() -> bool:
     return bool(settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET)
 
-
+#Implement the Build Callback URL Route
 def _build_callback_url() -> str:
     base = settings.BACKEND_BASE_URL.rstrip("/")
     path = settings.GOOGLE_REDIRECT_PATH
@@ -132,7 +139,7 @@ def _build_callback_url() -> str:
         path = f"/{path}"
     return f"{base}{path}"
 
-
+#Implement the Frontend Login Redirect Route
 def _frontend_login_redirect(error: str | None = None) -> str:
     base_login = f"{settings.FRONTEND_ORIGIN.rstrip('/')}/login"
     if not error:
@@ -140,7 +147,7 @@ def _frontend_login_redirect(error: str | None = None) -> str:
     query = urlencode({"google_error": error})
     return f"{base_login}?{query}"
 
-
+#Implement the Extract Profile from Claims Route
 def _extract_profile_from_claims(claims: dict) -> tuple[str, str]:
     given_name = (claims.get("given_name") or "").strip()
     family_name = (claims.get("family_name") or "").strip()
@@ -157,7 +164,7 @@ def _extract_profile_from_claims(claims: dict) -> tuple[str, str]:
 
     return "Google", "User"
 
-
+#Implement the Verify Google ID Token Route 
 def _verify_google_id_token(raw_id_token: str) -> dict:
     claims = id_token.verify_oauth2_token(
         raw_id_token,
@@ -232,14 +239,16 @@ async def auth_callback(request: Request, db: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_302_FOUND,
         )
 
+#Implement the Public Key Route
 @router.get("/public-key")
 async def get_public_key_endpoint():
-    """Get the public key for frontend encryption."""
+    #Get the public key for frontend encryption.
     return {"public_key": get_public_key()}
 
+#Implement the Register Route
 @router.post("/register")
 async def register(request: Request, db: AsyncSession = Depends(get_db)):
-    """Step 1: User submits form -> send OTP email. Data may be encrypted."""
+    #Step 1: User submits form -> send OTP email. Data may be encrypted."""
     try:
         # Read raw JSON body
         body = await request.json()
@@ -294,7 +303,7 @@ async def verify_otp(
 
 @router.post("/login")
 async def login(request: Request, db: AsyncSession = Depends(get_db)):
-    """Step 1 login: validate credentials and send OTP to email. Data may be encrypted."""
+    #Step 1 login: validate credentials and send OTP to email. Data may be encrypted.
     try:
         # Read raw JSON body
         body = await request.json()

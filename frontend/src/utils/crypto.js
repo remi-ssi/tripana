@@ -4,9 +4,8 @@ import { apiClient } from '../api/apiClient'
 let encryptor = null
 let publicKeyPromise = null
 
-/**
- * Fetch and cache the public key from the backend.
- */
+
+//Fetch and cache the public key from the backend.
 async function fetchPublicKey() {
   if (publicKeyPromise === null) {
     publicKeyPromise = apiClient.get('/auth/public-key')
@@ -34,16 +33,16 @@ async function fetchPublicKey() {
  */
 export async function encryptValue(value) {
   if (!value) return value
-  
+
   try {
     const enc = await fetchPublicKey()
     const encrypted = enc.encrypt(value)
-    
+
     if (encrypted === false) {
       console.error('Encryption failed for value - JSEncrypt returned false')
       throw new Error('Encryption failed: JSEncrypt returned false')
     }
-    
+
     return encrypted
   } catch (error) {
     console.error('Encryption error:', error)
@@ -59,27 +58,27 @@ export async function encryptValue(value) {
 export async function encryptObject(data) {
   try {
     console.log('[Crypto] Starting encryption of object with keys:', Object.keys(data))
-    
+
     const enc = await fetchPublicKey()
     console.log('[Crypto] Public key ready for encryption')
-    
+
     const encryptedData = {}
-    
+
     for (const key in data) {
       if (Object.prototype.hasOwnProperty.call(data, key)) {
         const value = data[key]
-        
+
         // Only encrypt non-empty strings
         if (typeof value === 'string' && value.trim()) {
           try {
             console.log(`[Crypto] Encrypting field: ${key}`)
             const encrypted = enc.encrypt(value)
-            
+
             if (encrypted === false) {
               console.error(`[Crypto] Encryption failed for key: ${key} - JSEncrypt returned false`)
               throw new Error(`Encryption failed for field: ${key}`)
             }
-            
+
             console.log(`[Crypto] Successfully encrypted ${key}, length: ${encrypted.length}`)
             encryptedData[key] = encrypted
           } catch (encryptError) {
@@ -94,7 +93,7 @@ export async function encryptObject(data) {
         }
       }
     }
-    
+
     console.log('[Crypto] Encryption successful for all fields')
     return encryptedData
   } catch (error) {

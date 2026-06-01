@@ -6,8 +6,6 @@ from app.schemas.user_schema import UserCreate
 
 
 class UserRepository:
-    """Handles all database operations for the User model."""
-
     def __init__(self, db: AsyncSession):
         self.db = db
 
