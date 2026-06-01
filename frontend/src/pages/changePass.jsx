@@ -14,7 +14,7 @@ export default function ChangePasswordFull() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isLoading, isAuthenticated } = useAuthStatus();
-  const resetToken = new URLSearchParams(location.search).get("resetToken") || "";
+  const email = new URLSearchParams(location.search).get("email") || "";
   const [oldPassword, setOldPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -31,7 +31,7 @@ export default function ChangePasswordFull() {
     setError("");
     const nextFieldErrors = {};
 
-    if (!isAuthenticated && !resetToken) {
+    if (!isAuthenticated && !email) {
       setError(ERROR_MESSAGES.RESET_TOKEN_INVALID);
       return;
     }
@@ -71,11 +71,11 @@ export default function ChangePasswordFull() {
     try {
       setIsSubmitting(true);
 
-      // Added: route the request by flow type (logged-in vs forgot-password).
+      // Route the request by flow type (logged-in vs forgot-password)
       if (isAuthenticated) {
         await authService.changePassword(oldPassword, password);
       } else {
-        await authService.resetPassword(resetToken, password);
+        await authService.resetPassword(email, password);
       }
 
       setSubmitted(true);

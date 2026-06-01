@@ -144,7 +144,7 @@ export const authService = {
     }
   },
 
-  // Forgot-password step 2: verify OTP and receive reset token
+  // Forgot-password step 2: verify OTP (reset token stored server-side)
   verifyForgotOTP: async (email, otp) => {
     try {
       return await apiClient.post('/auth/verify-forgot-otp', { email, code: otp })
@@ -153,11 +153,11 @@ export const authService = {
     }
   },
 
-  // Forgot-password step 3: set a new password using reset token
-  resetPassword: async (resetToken, newPassword) => {
+  // Forgot-password step 3: reset password with email (no token in URL)
+  resetPassword: async (email, newPassword) => {
     try {
       return await apiClient.post('/auth/reset-password', {
-        reset_token: resetToken,
+        email,
         new_password: newPassword,
       })
     } catch (error) {

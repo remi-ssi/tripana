@@ -51,14 +51,10 @@ export default function ForgotPassword() {
 
   const handleVerifyOTP = async (otp) => {
     try {
-      // Added: verify forgot-password OTP and retrieve temporary reset token.
-      const result = await authService.verifyForgotOTP(email, otp);
-      const resetToken = result?.reset_token;
-      if (!resetToken) {
-        throw new Error(ERROR_MESSAGES.RESET_TOKEN_INVALID);
-      }
-
-      navigate(`/change-password?resetToken=${encodeURIComponent(resetToken)}`, {
+      // Verify forgot-password OTP (reset token stored server-side for security)
+      await authService.verifyForgotOTP(email, otp);
+      // Navigate to password reset page with email (no token in URL)
+      navigate(`/change-password?email=${encodeURIComponent(email)}`, {
         replace: true,
       });
     } catch (error) {

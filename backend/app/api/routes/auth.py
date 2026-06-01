@@ -104,7 +104,7 @@ async def _verify_forgot_otp_impl(data: VerifyForgotOTPRequest, db: AsyncSession
 
 #Implement the Reset Password Route
 async def _reset_password_impl(data: ResetPasswordRequest, db: AsyncSession):
-    result = await reset_password_with_token(data.reset_token, data.new_password, db)
+    result = await reset_password_with_token(data.email, data.new_password, db)
     _raise_if_error(result)
     return result
 

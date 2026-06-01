@@ -53,9 +53,9 @@ class VerifyForgotOTPRequest(BaseModel):
     code: str
 
 
-# Reset password using a temporary reset token
+# Reset password after OTP verification
 class ResetPasswordRequest(BaseModel):
-    reset_token: str
+    email: EmailStr
     new_password: str
 
 
