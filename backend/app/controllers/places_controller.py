@@ -400,3 +400,112 @@ async def google_places_usage():
     return get_google_places_usage()
 
 
+# ── NEW: Place Search Service with Staleness Checking ──────────────────────────────
+@router.get("/search-with-caching")
+async def search_places_with_caching(
+    city: str = Query(..., min_length=2, description="City name to search in"),
+    preferences: str = Query(None, description="Comma-separated list of user preferences"),
+    budget: str = Query(None, description="Budget tier: budget-friendly, balanced, or luxury"),
+    price_level: int = Query(None, ge=1, le=4, description="Preferred price level (1-4)"),
+    open_now: bool = Query(False, description="If True, only return currently open places"),
+    lat: float = Query(None, description="Latitude for location bias"),
+    lng: float = Query(None, description="Longitude for location bias"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Search for places with city-based caching and staleness checking.
+    
+    Implementation:
+    1. Check if places for the city exist in DB
+    2. If no places OR cache is stale (>50% older than 30 days):
+       - Fetch ~50 places from Google Places API (with preferences built into query)
+       - Save to DB with datefetched timestamp
+       - Mark old places as inactive (soft delete)
+    3. Rank places using multi-factor scoring:
+       - Relevance: 35% (preference matching)
+       - Rating: 30% (normalized 1-5)
+       - Popularity: 25% (logarithmic review count)
+       - Price Level: 10% (closeness to preference)
+    4. Return ALL ranked places (no pagination)
+    
+    Scoring weights:
+    - Relevance (0.35): How many user preferences match the place types
+    - Rating (0.30): Place rating normalized to 0-1 scale
+    - Popularity (0.25): Logarithmic scale capped at 1000 reviews
+    - Price Level (0.10): Closeness to user's preferred price level
+    
+    Args:
+        city: City name to search in
+        preferences: Comma-separated list of user preference categories
+        budget: Budget tier (budget-friendly, balanced, luxury)
+        price_level: Preferred price level (1-4, where 1=cheap, 4=expensive)
+        open_now: If True, only return places currently open
+        lat: Latitude for location bias (optional)
+        lng: Longitude for location bias (optional)
+    
+    Returns:
+        List of ALL ranked places (up to 50) with complete details including:
+        - placeid, name, city, address
+        - rating, score (rounded to 4 decimals)
+        - types (Google Place types), photos (JSON with photo references)
+        - is_open_now, price_level, user_ratings_total
+        - website, latitude, longitude, phone_number, opening_hours
+    """
+    try:
+        from app.services.place_search_service import PlaceSearchService
+        from app.utils.google_photo_utils import generate_google_photo_url
+        
+        # Parse preferences
+        user_preferences = None
+        if preferences:
+            user_preferences = [pref.strip() for pref in preferences.split(",") if pref.strip()]
+        
+        # Initialize search service
+        search_service = PlaceSearchService(db)
+        
+        # Search places with caching logic
+        results = await search_service.get_places_for_city(
+            city=city,
+            preferences=user_preferences,
+            budget=budget,
+            price_level_preference=price_level,
+            open_now_only=open_now,
+            latitude=lat,
+            longitude=lng,
+        )
+        
+        # Generate photo URLs for each result
+        import json
+        for result in results:
+            photos_json = result.get("photos")
+            if photos_json:
+                try:
+                    photos_list = json.loads(photos_json) if isinstance(photos_json, str) else photos_json
+                    if photos_list and len(photos_list) > 0:
+                        photo_reference = photos_list[0].get("photo_reference")
+                        if photo_reference:
+                            result["photoUrl"] = generate_google_photo_url(
+                                photo_reference,
+                                settings.GOOGLE_PLACES_API_KEY,
+                                max_width=400
+                            )
+                except (json.JSONDecodeError, TypeError, IndexError):
+                    pass  # Silently skip if photos_json is invalid
+        
+        return {
+            "results": results,
+            "count": len(results),
+            "city": city,
+            "preferences": user_preferences,
+            "budget": budget,
+        }
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        logger_import = __import__("logging").getLogger(__name__)
+        logger_import.error(f"Error searching places with caching: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error searching places: {str(e)}")
+
+
