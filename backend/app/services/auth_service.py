@@ -45,11 +45,11 @@ class OTPEmailState:
 OTP_STORE: dict[str, OTPEmailState] = {}
 OTP_STORE_LOCK = asyncio.Lock()
 
-
+# Normalize email by stripping whitespace and converting to lowercase for consistent handling.
 def _normalize_email(email: str) -> str:
     return email.strip().lower()
 
-
+# Get active (not used, not expired) OTP entries for an email.
 def _active_entries(state: OTPEmailState, now: datetime) -> list[InMemoryOTPCode]:
     return [entry for entry in state.entries if (not entry.is_used and entry.expires_at > now)]
 
@@ -169,7 +169,7 @@ def _build_auth_response(user: User) -> dict:
         },
     }
 
-
+# Create a reset token for the email, which can be used to verify password reset requests without exposing the token to the frontend.
 async def login_or_register_google_user(
     *,
     email: str,
@@ -197,7 +197,7 @@ async def login_or_register_google_user(
 def generate_otp() -> str:
     return ''.join(random.choices(string.digits, k=6))
 
-#send OTP email and save code to DB, enforcing resend cooldown
+#send OTP email and save code to in memory, enforcing resend cooldown
 async def send_otp(email: str, db: AsyncSession, is_resend: bool = False) -> dict:
     now = datetime.now(timezone.utc)
     await cleanup_old_used_otps(db, now)
@@ -208,7 +208,7 @@ async def send_otp(email: str, db: AsyncSession, is_resend: bool = False) -> dic
         return block_error_result
 
     normalized_email = _normalize_email(email)
-
+    # Record OTP generation and enforce resend limits/cooldown in-memory to prevent abuse and manage state.
     async with OTP_STORE_LOCK:
         state = OTP_STORE.setdefault(normalized_email, OTPEmailState())
 

@@ -1,7 +1,4 @@
-"""
-Safe wrapper for LocalAttractionSearchService with infinite loop protection
-Wraps the service with monitoring and circuit breaker pattern
-"""
+# SafeAttractionService: A protective wrapper around LocalAttractionSearchService
 
 import logging
 from typing import List, Optional, Dict
@@ -12,14 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class SafeLocalAttractionSearchService:
-    """
-    Wrapper around LocalAttractionSearchService with protection against:
-    - Infinite loops
-    - API quota exhaustion
-    - Transaction failures
-    - Redundant API calls
-    """
-    
+    # This service wraps the LocalAttractionSearchService with additional safety checks to prevent infinite loops and excessive API calls.
     def __init__(self, db):
         self.service = LocalAttractionSearchService(db)
         self.db = db
@@ -35,19 +25,7 @@ class SafeLocalAttractionSearchService:
         radius: int = 10000,
         limit: int = 30,
     ) -> List[Dict]:
-        """
-        Safe wrapper around search_attractions with loop detection
-        
-        Flow:
-        1. Check local database first (should succeed)
-        2. If results found, return immediately (no API call)
-        3. If not found, call Google API ONCE
-        4. Save results to database
-        5. Return from local database
-        
-        If any step fails repeatedly, raise error to stop infinite loops
-        """
-        
+        # Safe wrapper for searching attractions with loop and API call monitoring
         operation_id = f"search_{location_city}"
         self.operation_count += 1
         

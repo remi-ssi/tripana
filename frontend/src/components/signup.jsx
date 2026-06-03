@@ -59,26 +59,12 @@ export default function SignUp({ onSwitchToLogin }) {
     if (!formErrors) {
       setIsLoading(true);
       try {
-        // Encrypt sensitive data before sending
-        console.log('[Signup] Original data before encryption:', {
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          password: '***',
-        });
-        
+        // We encrypt the entire object to ensure all fields are protected in transit
         const encryptedData = await encryptObject({
           first_name: formData.firstName,
           last_name: formData.lastName,
           email: formData.email,
           password: formData.password,
-        });
-        
-        console.log('[Signup] Encrypted data to be sent:', {
-          first_name: encryptedData.first_name ? encryptedData.first_name.substring(0, 50) + '...' : null,
-          last_name: encryptedData.last_name ? encryptedData.last_name.substring(0, 50) + '...' : null,
-          email: encryptedData.email ? encryptedData.email.substring(0, 50) + '...' : null,
-          password: encryptedData.password ? encryptedData.password.substring(0, 50) + '...' : null,
         });
         
         // Call register endpoint with encrypted data

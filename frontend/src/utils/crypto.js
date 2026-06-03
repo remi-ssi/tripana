@@ -11,7 +11,6 @@ async function fetchPublicKey() {
     publicKeyPromise = apiClient.get('/auth/public-key')
       .then(response => {
         const publicKey = response.public_key
-        console.log('[Crypto] Public key fetched successfully, length:', publicKey.length)
         const jsEncrypt = new JSEncrypt()
         const setResult = jsEncrypt.setPublicKey(publicKey)
         console.log('[Crypto] JSEncrypt public key set, result:', setResult)

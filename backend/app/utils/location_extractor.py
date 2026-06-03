@@ -1,16 +1,7 @@
-"""
-Utility functions for location/address handling
-"""
+#utility function to extract city name from a formatted address string
 
 def extract_city_from_address(address: str) -> str:
-    """
-    Extract city name from a formatted address.
-    
-    Typical format: "Street Address, City, Region/State, Country"
-    or "Street Address, City, Country"
-    
-    Returns the city portion (usually second-to-last part before country).
-    """
+    # Extract the city name from a formatted address string.
     if not address:
         return ""
     

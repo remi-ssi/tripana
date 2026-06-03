@@ -9,7 +9,7 @@ from app.config import settings
 
 
 def setup_cors(app: FastAPI):
-    """Configure CORS middleware"""
+   #Configure CORS middleware"""
     allowed_origins = {
         settings.FRONTEND_ORIGIN,
         "http://localhost:5173",

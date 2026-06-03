@@ -248,7 +248,7 @@ async def get_public_key_endpoint():
 #Implement the Register Route
 @router.post("/register")
 async def register(request: Request, db: AsyncSession = Depends(get_db)):
-    #Step 1: User submits form -> send OTP email. Data may be encrypted."""
+    #Step 1: User submits form -> send OTP email. Data may be encrypted
     try:
         # Read raw JSON body
         body = await request.json()

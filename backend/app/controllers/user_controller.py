@@ -6,11 +6,11 @@ from app.services.user_service import UserService
 
 router = APIRouter()
 
+# User-related endpoints
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db)):
     service = UserService(db)
     return await service.create_user(payload)
-
 
 @router.get("/{user_id}", response_model=UserRead)
 async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):

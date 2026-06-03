@@ -51,6 +51,7 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db),
 ) -> User:
     token = bearer_token or request.cookies.get(settings.AUTH_COOKIE_NAME)
+    # If no token is provided, raise an authentication error
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -64,6 +65,7 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    # Decode the JWT token and extract the user ID, then retrieve the user from the database
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = payload.get("sub")

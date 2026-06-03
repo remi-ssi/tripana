@@ -1,7 +1,4 @@
-"""
-Real-time monitoring utility for detecting infinite loops
-Tracks API calls, database transactions, and execution patterns
-"""
+#loop detector for safe attraction service - monitors API calls, DB transactions, and detects potential infinite loops"
 
 import logging
 import time
@@ -13,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class LoopDetector:
-    """Detects potential infinite loops by monitoring execution patterns"""
+    #Detects potential infinite loops by monitoring execution patterns
     
     def __init__(self, max_calls_per_second: int = 10, max_iterations: int = 100):
         self.max_calls_per_second = max_calls_per_second
@@ -25,10 +22,7 @@ class LoopDetector:
         self.start_time = datetime.now()
     
     def record_call(self, operation_id: str, call_type: str = "api") -> bool:
-        """
-        Record an API/DB call and check for infinite loops
-        Returns True if safe, False if suspicious pattern detected
-        """
+        #Record a call for the given operation and check for potential loops
         now = time.time()
         self.call_history[operation_id].append((now, call_type))
         
@@ -50,10 +44,7 @@ class LoopDetector:
         return True
     
     def increment_iteration(self, operation_id: str) -> bool:
-        """
-        Track iteration count for loops
-        Returns True if safe, False if exceeds limit
-        """
+       #Increment iteration count and check for max iterations
         self.iteration_count[operation_id] += 1
         
         if self.iteration_count[operation_id] > self.max_iterations:
@@ -65,18 +56,18 @@ class LoopDetector:
         return True
     
     def start_operation(self, operation_id: str):
-        """Mark operation as active"""
+        #Mark the start of an operation
         self.active_operations.add(operation_id)
         logger.debug(f"Started operation: {operation_id}")
     
     def end_operation(self, operation_id: str):
-        """Mark operation as complete"""
+       #Mark operation as complete
         if operation_id in self.active_operations:
             self.active_operations.remove(operation_id)
         logger.debug(f"Ended operation: {operation_id}")
     
     def get_stats(self) -> Dict:
-        """Get current monitoring statistics"""
+        #Get current monitoring statistics
         return {
             "active_operations": list(self.active_operations),
             "total_calls": sum(len(v) for v in self.call_history.values()),
@@ -103,7 +94,7 @@ class LoopDetector:
 
 
 class TransactionMonitor:
-    """Monitors database transactions for issues"""
+    #Monitors database transactions for issues
     
     def __init__(self):
         self.transactions: Dict[str, Dict] = {}
@@ -111,7 +102,7 @@ class TransactionMonitor:
         self.successful_transactions = 0
     
     def begin_transaction(self, tx_id: str, operation: str):
-        """Record transaction start"""
+        #Record transaction start
         self.transactions[tx_id] = {
             "operation": operation,
             "started_at": datetime.now(),
@@ -119,24 +110,24 @@ class TransactionMonitor:
         }
     
     def commit_transaction(self, tx_id: str):
-        """Record successful commit"""
+        #Record successful commit
         if tx_id in self.transactions:
             self.transactions[tx_id]["status"] = "committed"
             self.successful_transactions += 1
     
     def rollback_transaction(self, tx_id: str, reason: str = ""):
-        """Record rollback"""
+        #Record transaction rollback and reason
         if tx_id in self.transactions:
             self.transactions[tx_id]["status"] = "rolled_back"
             self.transactions[tx_id]["error_reason"] = reason
             self.failed_transactions += 1
     
     def get_failed_count(self) -> int:
-        """Get count of failed transactions"""
+        #Get the number of failed transactions
         return self.failed_transactions
     
     def report(self):
-        """Generate transaction report"""
+        #Generate a transaction monitoring report
         logger.info("\n" + "=" * 60)
         logger.info("TRANSACTION MONITOR REPORT")
         logger.info("=" * 60)
@@ -152,7 +143,7 @@ class TransactionMonitor:
 
 
 class APICallCounter:
-    """Counts and monitors API calls to prevent quota waste"""
+    #Counts API calls and provides quota monitoring
     
     def __init__(self, warning_threshold: int = 50):
         self.call_count: Dict[str, int] = defaultdict(int)
@@ -160,10 +151,7 @@ class APICallCounter:
         self.blocked_calls = 0
     
     def record_call(self, api_name: str, service: str = "google") -> bool:
-        """
-        Record an API call
-        Returns False if should be blocked (quota protection)
-        """
+        #Ensure API call is recorded and check against quota
         self.call_count[f"{service}_{api_name}"] += 1
         total_calls = sum(self.call_count.values())
         
@@ -176,12 +164,12 @@ class APICallCounter:
         return True
     
     def should_use_cache(self, api_name: str) -> bool:
-        """Determine if cache should be used to save API quota"""
+        #Determine if cache should be used to save API quota"""
         total_calls = sum(self.call_count.values())
         return total_calls > 30  # Start using cache aggressively at 30 calls
     
     def report(self):
-        """Generate API usage report"""
+        #Generate API usage report"""
         logger.info("\n" + "=" * 60)
         logger.info("API USAGE REPORT")
         logger.info("=" * 60)
@@ -192,9 +180,9 @@ class APICallCounter:
             logger.info(f"  {api_name}: {count}")
         
         if total > self.warning_threshold:
-            logger.error(f"❌ Exceeded warning threshold of {self.warning_threshold}!")
+            logger.error(f" Exceeded warning threshold of {self.warning_threshold}!")
         else:
-            logger.info(f"✅ Within quota ({total}/{self.warning_threshold})")
+            logger.info(f"Within quota ({total}/{self.warning_threshold})")
         
         logger.info("=" * 60 + "\n")
 
@@ -206,12 +194,12 @@ api_call_counter = APICallCounter(warning_threshold=50)
 
 
 def check_infinite_loop(operation_id: str) -> bool:
-    """Quick check for infinite loops"""
+    #Quick check for infinite loops
     return loop_detector.record_call(operation_id)
 
 
 def generate_monitoring_report():
-    """Generate complete monitoring report"""
+    #Generate complete monitoring report
     logger.info("\n" + "=" * 80)
     logger.info("COMPREHENSIVE MONITORING REPORT")
     logger.info("=" * 80)

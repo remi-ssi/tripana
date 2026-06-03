@@ -1,9 +1,4 @@
-"""
-Utility for generating Google Places photo URLs dynamically.
-This approach optimizes API quota usage by storing only photo_reference
-and generating URLs on-demand rather than downloading full URLs.
-"""
-
+# utils google photos
 from typing import Optional
 
 
@@ -12,22 +7,7 @@ def generate_google_photo_url(
     api_key: str,
     max_width: int = 400,
 ) -> str:
-    """
-    Generate a Google Places photo URL from a photo_reference.
-    
-    This is more efficient than storing the full URL because:
-    - photo_reference is much smaller than full URLs
-    - URLs can expire over time
-    - Generating on-demand ensures fresh URLs
-    
-    Args:
-        photo_reference: The photo reference from Google Places API
-        api_key: Google Maps API key
-        max_width: Maximum width of the image (default 400px)
-    
-    Returns:
-        Full URL to the Google Places photo
-    """
+    # Generate a Google Photo URL using the photo_reference and API key.
     if not photo_reference or not api_key:
         return None
     
@@ -40,16 +20,7 @@ def generate_google_photo_url(
 
 
 def extract_photo_reference(photo_dict: dict) -> Optional[str]:
-    """
-    Extract photo_reference from a Google Places photo object.
-    
-    Args:
-        photo_dict: Photo object from Google Places API response
-        Example: {"photo_reference": "abc123...", "height": 1000, ...}
-    
-    Returns:
-        The photo_reference string or None if not found
-    """
+    # Extract the photo_reference from a photo dictionary returned by Google Places API.
     if not photo_dict:
         return None
     
@@ -57,15 +28,7 @@ def extract_photo_reference(photo_dict: dict) -> Optional[str]:
 
 
 def get_first_photo_reference(photos_list: list) -> Optional[str]:
-    """
-    Get the first valid photo_reference from a list of photos.
-    
-    Args:
-        photos_list: List of photo objects from Google Places API
-    
-    Returns:
-        The first photo_reference or None if list is empty
-    """
+    # Get the photo_reference of the first photo in the list, if available.
     if not photos_list or len(photos_list) == 0:
         return None
     
