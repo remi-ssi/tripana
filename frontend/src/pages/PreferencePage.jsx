@@ -5,7 +5,7 @@ import { validatePreferences } from '../validators/preferenceValidator'
 import { useTripPlan } from '../contexts/TripPlanContext'
 
 const INTEREST_TAGS = [
-  'Photography', 'Local Food', 'Hiking', 'Shopping', 'Nightlife', 'Art', 'Wildlife', 'Camping', 'Beaches', 'Food Trip', 'Historical Sites', 'Relaxation', 'Water Activities','Island Hopping',
+  'Photography', 'Local Food', 'Hiking', 'Shopping', 'Nightlife', 'Art', 'Wildlife', 'Camping', 'Beaches', 'Food Trip', 'Historical Sites', 'Relaxation', 'Water Activities', 'Island Hopping', 'Adventure', 'Amusement'
 ]
 
 const BUDGET_OPTIONS = [
@@ -123,11 +123,10 @@ export default function PreferencePage() {
                 key={option.value}
                 type="button"
                 onClick={() => handleBudget(option.value)}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-medium transition-all duration-200 ${
-                  budget === option.value
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-medium transition-all duration-200 ${budget === option.value
                     ? 'border-blue-700 bg-blue-700 text-white shadow-md shadow-blue-200'
                     : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300 hover:text-blue-700'
-                }`}
+                  }`}
               >
                 <span>{option.emoji}</span>
                 <span>{option.label}</span>

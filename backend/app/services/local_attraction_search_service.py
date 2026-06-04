@@ -47,6 +47,8 @@ PREFERENCE_TO_KEYWORDS = {
     "Camping": ["campground", "outdoor", "nature"],
     "Relaxation": ["spa", "wellness", "resort", "hot spring"],
     "Island Hopping": ["island", "ferry", "beach", "resort"],
+    "Adventure": ["zip line", "rock climbing", "rappelling", "obstacle course", "extreme sport", "adventure park", "off road", "bungee"],
+    "Amusement": ["amusement park", "theme park", "carnival", "roller coaster", "fairground", "entertainment park", "rides"],
 }
 
 # Note: This service is designed to be used by the API endpoint handler, which will pass in the database session and user query parameters. The service will handle all logic for searching the local database first, then falling back to Google API if needed, and scoring the results before returning them.

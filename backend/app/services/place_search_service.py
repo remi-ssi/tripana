@@ -52,6 +52,8 @@ CATEGORY_TO_GOOGLE_TYPES = {
     "Camping": ["campground", "park"],
     "Relaxation": ["spa", "beauty_salon", "lodging"],
     "Island Hopping": ["beach", "island", "resort", "lodging"],
+    "Adventure": ["zip line", "rock climbing", "rappelling", "obstacle course", "extreme sport", "adventure park", "off road", "bungee"],
+    "Amusement": ["amusement park", "theme park", "carnival", "roller coaster", "fairground", "entertainment park", "rides"],
 }
 
 # Price level mapping from user budget to Google API price levels (1-4)

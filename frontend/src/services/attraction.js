@@ -15,6 +15,8 @@ const PREFERENCE_TO_KEYWORDS = {
   "Camping": ["campground", "outdoor", "nature"],
   "Relaxation": ["spa", "wellness", "resort", "hot spring"],
   "Island Hopping": ["island", "ferry", "beach", "resort"],
+  "Adventure": ["zip line", "rock climbing", "rappelling", "obstacle course", "extreme sport", "adventure park", "off road", "bungee"],
+  "Amusement": ["amusement park", "theme park", "carnival", "roller coaster", "fairground", "entertainment park", "rides"],
 };
 
 /**
