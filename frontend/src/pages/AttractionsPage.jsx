@@ -74,6 +74,11 @@ export default function AttractionsPage() {
           photoUrl: place.photoUrl,
           photos: place.photos,
           types: place.types || [],
+          website: place.website,
+          phone_number: place.phone_number,
+          opening_hours: place.opening_hours,
+          price_level: place.price_level,
+          coordinates: place.coordinates,
         }))
 
         setAttractions(formattedAttractions)
@@ -363,15 +368,15 @@ export default function AttractionsPage() {
           place={{
             destination: selectedPlace.name,
             address: selectedPlace.description,
-            latitude: 0,
-            longitude: 0,
+            latitude: selectedPlace.coordinates?.lat || 0,
+            longitude: selectedPlace.coordinates?.lng || 0,
             rating: selectedPlace.rating,
             userratinqtotal: selectedPlace.reviews,
-            pricelevel: null,
-            phonenumber: null,
-            website: null,
-            openinghours: null,
-            photos: selectedPlace.image ? [selectedPlace.image] : [],
+            pricelevel: selectedPlace.price_level,
+            phonenumber: selectedPlace.phone_number,
+            website: selectedPlace.website,
+            openinghours: selectedPlace.opening_hours,
+            photos: selectedPlace.photoUrl ? [selectedPlace.photoUrl] : selectedPlace.image ? [selectedPlace.image] : [],
           }}
           isOpen={modalOpen}
           onClose={handleCloseModal}

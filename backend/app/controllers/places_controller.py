@@ -320,7 +320,7 @@ async def get_recommended_places(
         print(f"Controller received city: {city}, prefs: {user_preferences}, budget: {budget}")
         print(f"Controller results count: {len(results)}")
         
-        # Generate photo URLs from photos JSON
+        # Format photo URLs from photos JSON
         import json
         for result in results:
             photos_json = result.get("photos")
@@ -328,13 +328,17 @@ async def get_recommended_places(
                 try:
                     photos_list = json.loads(photos_json) if isinstance(photos_json, str) else photos_json
                     if photos_list and len(photos_list) > 0:
-                        photo_reference = photos_list[0].get("photo_reference")
-                        if photo_reference:
-                            result["photoUrl"] = generate_google_photo_url(
-                                photo_reference,
-                                settings.GOOGLE_PLACES_API_KEY,
-                                max_width=400
-                            )
+                        first_photo = photos_list[0]
+                        if isinstance(first_photo, str) and first_photo.startswith("http"):
+                            result["photoUrl"] = first_photo
+                        elif isinstance(first_photo, dict):
+                            photo_reference = first_photo.get("photo_reference")
+                            if photo_reference:
+                                result["photoUrl"] = generate_google_photo_url(
+                                    photo_reference,
+                                    settings.GOOGLE_PLACES_API_KEY,
+                                    max_width=400
+                                )
                 except (json.JSONDecodeError, TypeError, IndexError):
                     pass  # Silently skip if photos_json is invalid
         
@@ -352,6 +356,11 @@ async def get_attraction_details(
 ):
     # Get detailed information about a specific attraction by Google Place ID.
     details = await get_place_details(place_id)
+    if details is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Failed to retrieve place details or place not found"
+        )
     return details
 
 # Endpoint to fetch attractions from Google Places API based on city and preferences, save to local DB, and return stats
@@ -474,7 +483,7 @@ async def search_places_with_caching(
             longitude=lng,
         )
         
-        # Generate photo URLs for each result
+        # Format photo URLs for each result
         import json
         for result in results:
             photos_json = result.get("photos")
@@ -482,13 +491,17 @@ async def search_places_with_caching(
                 try:
                     photos_list = json.loads(photos_json) if isinstance(photos_json, str) else photos_json
                     if photos_list and len(photos_list) > 0:
-                        photo_reference = photos_list[0].get("photo_reference")
-                        if photo_reference:
-                            result["photoUrl"] = generate_google_photo_url(
-                                photo_reference,
-                                settings.GOOGLE_PLACES_API_KEY,
-                                max_width=400
-                            )
+                        first_photo = photos_list[0]
+                        if isinstance(first_photo, str) and first_photo.startswith("http"):
+                            result["photoUrl"] = first_photo
+                        elif isinstance(first_photo, dict):
+                            photo_reference = first_photo.get("photo_reference")
+                            if photo_reference:
+                                result["photoUrl"] = generate_google_photo_url(
+                                    photo_reference,
+                                    settings.GOOGLE_PLACES_API_KEY,
+                                    max_width=400
+                                )
                 except (json.JSONDecodeError, TypeError, IndexError):
                     pass  # Silently skip if photos_json is invalid
         

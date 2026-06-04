@@ -378,7 +378,7 @@ class PlaceSearchService:
                     "is_open_now": place.get("is_open_now"),
                     "openinghours": place.get("opening_hours"),
                     "website": place.get("website"),
-                    "phonenumber": None,
+                    "phonenumber": place.get("phone_number"),
                     "photos": place.get("photos"),  # Already in JSON format from google_places_service
                     "datefetched": datetime.utcnow(),
                 }
@@ -465,6 +465,7 @@ class PlaceSearchService:
                         "is_open_now": place.get("is_open_now"),
                         "openinghours": place.get("opening_hours"),
                         "website": place.get("website"),
+                        "phonenumber": place.get("phone_number"),
                         "photos": place.get("photos"),
                         "datefetched": datetime.utcnow(),
                     }

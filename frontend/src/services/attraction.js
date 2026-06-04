@@ -116,6 +116,8 @@ export async function getRecommendedPlaces({
       coordinates: place.coordinates,
       website: place.website,
       price_level: place.price_level,
+      phone_number: place.phone_number,
+      opening_hours: place.opening_hours,
     }));
   } catch (error) {
     console.error("Error getting recommendations:", error);

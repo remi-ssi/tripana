@@ -159,6 +159,7 @@ class LocalAttractionSearchService:
                     "photos": place.photos,
                     "website": place.website,
                     "price_level": place.pricelevel,
+                    "phone_number": place.phonenumber,
                     "types": types_list,
                 })
             
@@ -263,6 +264,7 @@ class LocalAttractionSearchService:
                         openinghours=place.get("opening_hours"),
                         website=place.get("website"),
                         pricelevel=place.get("price_level"),
+                        phonenumber=place.get("phone_number"),
                         photos=photos_json,
                         types=types_json,
                     )
@@ -447,6 +449,7 @@ class LocalAttractionSearchService:
                 "photos": place.get("photos"),
                 "website": place.get("website"),
                 "price_level": place.get("price_level"),
+                "phone_number": place.get("phone_number"),
                 "score": place.get("score"),
             }
             for place in scored_places

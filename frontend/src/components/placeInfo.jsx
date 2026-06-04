@@ -97,11 +97,21 @@ function AttractionModal({ place, isOpen, onClose, onSelect, isSelected }) {
   if (!isOpen || !place) return null;
 
   const imageUrl = getAttractionImageUrl(place);
-  const hours = Array.isArray(place.openinghours)
-    ? place.openinghours
-    : place.openinghours
-    ? [place.openinghours]
-    : [];
+  let hours = [];
+  if (Array.isArray(place.openinghours)) {
+    hours = place.openinghours;
+  } else if (typeof place.openinghours === "string" && place.openinghours.trim()) {
+    try {
+      const parsed = JSON.parse(place.openinghours);
+      if (Array.isArray(parsed)) {
+        hours = parsed;
+      } else {
+        hours = [place.openinghours];
+      }
+    } catch (e) {
+      hours = [place.openinghours];
+    }
+  }
 
   return (
     <div
