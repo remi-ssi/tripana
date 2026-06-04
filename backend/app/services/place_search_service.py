@@ -18,6 +18,8 @@ import math
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.place_repository import PlaceRepository
+from app.repositories.types_repository import TypesRepository
+from app.repositories.placetypes_repository import PlaceTypesRepository
 from app.services.google_places_service import search_attractions as search_google_attractions
 from app.utils.city_utils import normalize_city
 
@@ -66,6 +68,8 @@ class PlaceSearchService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.place_repo = PlaceRepository(db)
+        self.types_repo = TypesRepository(db)
+        self.placetypes_repo = PlaceTypesRepository(db)
     
     async def get_places_for_city(
         self,
@@ -340,6 +344,7 @@ class PlaceSearchService:
     ) -> List:
         """
         Save Google Places to database using upsert logic.
+        Properly handles types via the types table and placetypes junction table.
         
         Args:
             normalized_city: Normalized city name
@@ -360,7 +365,7 @@ class PlaceSearchService:
                 
                 active_google_ids.add(google_place_id)
                 
-                # Prepare place data
+                # Prepare place data (without types - those go in the junction table)
                 place_data = {
                     "destination": place.get("name", ""),
                     "address": place.get("address", ""),
@@ -375,13 +380,29 @@ class PlaceSearchService:
                     "website": place.get("website"),
                     "phonenumber": None,
                     "photos": place.get("photos"),  # Already in JSON format from google_places_service
-                    "types": json.dumps(place.get("types", [])) if place.get("types") else None,
                     "datefetched": datetime.utcnow(),
                 }
                 
                 # Upsert place
                 saved_place = await self.place_repo.upsert_place(google_place_id, place_data)
                 saved_places.append(saved_place)
+                
+                # Save types and create placetypes entries
+                place_types = place.get("types", [])
+                if place_types:
+                    for type_str in place_types:
+                        try:
+                            # Get or create the type
+                            type_obj = await self.types_repo.get_or_create_by_category(type_str)
+                            
+                            # Create placetypes entry if it doesn't exist
+                            exists = await self.placetypes_repo.exists(saved_place.placeid, type_obj.categoryid)
+                            if not exists:
+                                await self.placetypes_repo.create(saved_place.placeid, type_obj.categoryid)
+                        except Exception as e:
+                            logger.warning(f"Error saving type '{type_str}' for place {google_place_id}: {str(e)}")
+                            continue
+                
                 logger.debug(f"Saved place: {place.get('name')} ({google_place_id})")
             
             except Exception as e:
@@ -409,6 +430,7 @@ class PlaceSearchService:
     ) -> List:
         """
         Merge existing DB places with new Google places, deduplicating by googleplaceid.
+        Properly handles types via the types table and placetypes junction table.
         
         Args:
             normalized_city: Normalized city name
@@ -444,16 +466,29 @@ class PlaceSearchService:
                         "openinghours": place.get("opening_hours"),
                         "website": place.get("website"),
                         "photos": place.get("photos"),
-                        "types": json.dumps(place.get("types", [])) if place.get("types") else None,
                         "datefetched": datetime.utcnow(),
                     }
                     
                     saved_place = await self.place_repo.upsert_place(google_place_id, place_data)
+                    
+                    # Save types and create placetypes entries
+                    place_types = place.get("types", [])
+                    if place_types:
+                        for type_str in place_types:
+                            try:
+                                type_obj = await self.types_repo.get_or_create_by_category(type_str)
+                                exists = await self.placetypes_repo.exists(saved_place.placeid, type_obj.categoryid)
+                                if not exists:
+                                    await self.placetypes_repo.create(saved_place.placeid, type_obj.categoryid)
+                            except Exception as e:
+                                logger.warning(f"Error saving type '{type_str}' for place {google_place_id}: {str(e)}")
+                                continue
+                    
                     existing_by_id[google_place_id] = saved_place
                 except Exception as e:
                     logger.warning(f"Error merging place {google_place_id}: {str(e)}")
             else:
-                # Existing place, update it
+                # Existing place, mark as active
                 active_google_ids.add(google_place_id)
         
         # Mark places no longer in active set as inactive
@@ -478,6 +513,8 @@ class PlaceSearchService:
         """
         Score and convert Place ORM objects to dicts with scores.
         
+        Gets types from the place_types relationship (junction table) instead of a JSON column.
+        
         Args:
             places: List of Place ORM objects
             preferences: User preference categories
@@ -489,13 +526,12 @@ class PlaceSearchService:
         scored_places = []
         
         for place in places:
-            # Parse types from JSON
+            # Get types from the place_types relationship (junction table)
+            # place.place_types is a list of PlaceTypes objects
+            # Each PlaceTypes has a .category relationship that gives the Types object
             types_list = []
-            if place.types:
-                try:
-                    types_list = json.loads(place.types) if isinstance(place.types, str) else place.types
-                except (json.JSONDecodeError, TypeError):
-                    types_list = []
+            if place.place_types:
+                types_list = [pt.category.category for pt in place.place_types if pt.category]
             
             # Calculate score
             score = self._calculate_score(

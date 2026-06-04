@@ -1,9 +1,11 @@
-from typing import List
+from typing import List, TYPE_CHECKING
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.models.placeTypes import PlaceTypes
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.placeTypes import PlaceTypes
 
 
 class Types(Base):

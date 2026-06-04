@@ -22,7 +22,7 @@ class PlaceRepository:
                     openinghours: Optional[str] = None, is_open_now: Optional[bool] = None, 
                     photos: Optional[str] = None, website: Optional[str] = None, 
                     pricelevel: Optional[int] = None, phonenumber: Optional[str] = None,
-                    name: Optional[str] = None, types: Optional[list] = None,
+                    name: Optional[str] = None, 
                     opening_hours: Optional[str] = None, user_ratings_total: Optional[int] = None,
                     google_place_id: Optional[str] = None, price_level: Optional[int] = None) -> Place:
         """Create a new place record.
@@ -34,6 +34,9 @@ class PlaceRepository:
         - userratingtotal / user_ratings_total
         - pricelevel / price_level
         - photos: JSON array of photos with photo_reference for dynamic URL generation
+        
+        NOTE: Types are NOT saved here - they are handled separately via TypesRepository
+        and PlaceTypesRepository to maintain the junction table structure.
         """
         # Handle alternative parameter names for backward compatibility
         final_googleplaceid = googleplaceid or google_place_id
@@ -57,7 +60,6 @@ class PlaceRepository:
             website=website,
             pricelevel=final_pricelevel,
             phonenumber=phonenumber,
-            types=types,  # Add types field
         )
         self.db.add(place)
         await self.db.flush()

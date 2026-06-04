@@ -1,9 +1,12 @@
+from typing import TYPE_CHECKING
 from sqlalchemy import Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.models.place import place
-from app.models.types import types
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.place import Place
+    from app.models.types import Types
 
 
 class PlaceTypes(Base):
@@ -14,5 +17,5 @@ class PlaceTypes(Base):
     categoryid: Mapped[int] = mapped_column(ForeignKey("types.categoryid"), primary_key=True)
 
     # Relationships
-    place: Mapped["place"] = relationship("Place", back_populates="place_types")
-    category: Mapped["types"] = relationship("Types", back_populates="place_types")
+    place: Mapped["Place"] = relationship("Place", back_populates="place_types")
+    category: Mapped["Types"] = relationship("Types", back_populates="place_types")
