@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class PlaceTypes(Base):
-    """Junction table linking Places to their Types."""
+    #Junction table linking Places to their Types."""
     __tablename__ = "placetypes"
 
     placeid: Mapped[int] = mapped_column(ForeignKey("places.placeid"), primary_key=True)
