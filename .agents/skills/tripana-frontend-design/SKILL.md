@@ -49,12 +49,12 @@ Before editing any frontend code:
   - Size each landing page section to fit the user's viewport (`min-h-[100dvh]`, accounting for navbar height on the hero) using flex/grid centering (`flex flex-col justify-center`) so each section presents a focused, full-screen composition.
   - Prefer `min-h-[100dvh]` over rigid `h-screen overflow-hidden` so content never clips on smaller screens or when zoomed, and ensure zero horizontal overflow down to `375px`.
 - **On-Scroll Animations & Transitions**:
-  - Use `framer-motion` (`whileInView`, `viewport={{ once: true, amount: 0.2 }}`) for clean section reveals and staggered group entrances (subtle `opacity: 0 -> 1` and `y: 20 -> 0` transitions with modern ease-out curves such as `[0.22, 1, 0.36, 1]`).
+  - Use `framer-motion` (`whileInView`, `viewport={{ once: true, amount: 0.25 }}`) for clearly perceptible section reveals (`0.75s`–`0.95s` duration, `opacity: 0 -> 1`, `y: 28`–`36px -> 0`) and staggered group entrances (`staggerChildren: 0.14`, `delayChildren: 0.08`) with modern ease-out curves such as `[0.22, 1, 0.36, 1]`. Avoid overly fast `200ms`–`400ms` entrance animations that feel invisible.
   - Support smooth section-to-section scroll transitions (`scroll-smooth`) and scroll-linked visual progression where it clarifies hierarchy without blocking content.
 - **On-Hover Animations**:
-  - Apply crisp hover transitions (`transition-all duration-200 ease-out`) on interactive cards, buttons, links, and media: subtle lift (`-translate-y-0.5`), border/shadow elevation, icon nudges (`group-hover:translate-x-0.5`), and gentle image zoom (`scale-105` inside `overflow-hidden`).
+  - Apply responsive, tactile hover transitions (`transition-all duration-300 ease-out`) on interactive cards, buttons, links, and media: subtle lift (`-translate-y-1` or `translate-x-1` on list items), border/shadow elevation, icon nudges (`group-hover:translate-x-1`, `group-hover:scale-110`), and smooth image zoom (`scale-105 duration-700 ease-out` inside `overflow-hidden`).
 - **UI & State Transitions**:
-  - Use `AnimatePresence` and smooth transitions for tabs, accordions, drawers, modals, and multi-step flows.
+  - Use `AnimatePresence mode="wait"` (`~0.42s` ease-out, `y: 16 -> 0`) and smooth transitions for tabs, category switchers, accordions, drawers, modals, and multi-step flows.
   - Animate GPU-composited properties (`transform`, `opacity`) and always honor `prefers-reduced-motion` (`<MotionConfig reducedMotion="user">`, `motion-reduce:transition-none`).
 
 ---
