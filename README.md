@@ -2,13 +2,6 @@
 
 Tripana is a travel planning, place-discovery, and itinerary-management web application built with a React/Vite frontend, a FastAPI backend, and a PostgreSQL database. It guides travelers end-to-end from travel-style onboarding and preference-weighted attraction discovery to multi-day trip scheduling, break planning, and interactive map visualization.
 
-> [!NOTE]
-> The `main` branch currently contains only the initial repository files. The full application source code (`backend/`, `frontend/`, `compose.yaml`, and `.env.example`) resides on the `feat/revision-3` branch. Check out that branch before running the setup commands below:
->
-> ```sh
-> git checkout feat/revision-3
-> ```
-
 ---
 
 ## Features
