@@ -70,6 +70,11 @@ export default function AttractionsPage() {
         photoUrl: place.photoUrl,
         photos: place.photos,
         types: place.types || [],
+        coordinates: place.coordinates || (place.latitude != null && place.longitude != null ? { lat: place.latitude, lng: place.longitude } : null),
+        price_level: place.price_level,
+        opening_hours: place.opening_hours,
+        website: place.website,
+        phone_number: place.phone_number,
       }))
 
       setSearchResults(formattedResults)
@@ -134,6 +139,10 @@ export default function AttractionsPage() {
           photoUrl: place.photoUrl,
           photos: place.photos,
           types: place.types || [],
+          coordinates: place.coordinates,
+          price_level: place.price_level,
+          opening_hours: place.opening_hours,
+          website: place.website,
         }))
 
         setAttractions(formattedAttractions)
@@ -452,16 +461,21 @@ export default function AttractionsPage() {
       {selectedPlace && (
         <AttractionModal
           place={{
+            id: selectedPlace.id,
+            name: selectedPlace.name,
             destination: selectedPlace.name,
             address: selectedPlace.description,
-            latitude: 0,
-            longitude: 0,
+            latitude: selectedPlace.coordinates?.lat ?? 0,
+            longitude: selectedPlace.coordinates?.lng ?? 0,
             rating: selectedPlace.rating,
             userratinqtotal: selectedPlace.reviews,
-            pricelevel: null,
-            phonenumber: null,
-            website: null,
-            openinghours: null,
+            pricelevel: selectedPlace.price_level ?? null,
+            phonenumber: selectedPlace.phone_number ?? null,
+            website: selectedPlace.website ?? null,
+            openinghours: selectedPlace.opening_hours ?? null,
+            photoUrl: selectedPlace.photoUrl,
+            types: selectedPlace.types || [],
+            tags: selectedPlace.tags || [],
             photos: selectedPlace.image ? [selectedPlace.image] : [],
           }}
           isOpen={modalOpen}
