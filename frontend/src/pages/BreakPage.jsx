@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  Clock,
+  Sun,
+  Sunset,
+  Moon,
+  Check,
+  ArrowLeft,
+  Utensils,
+  FastForward,
+  AlertCircle,
+} from 'lucide-react'
 import PageLayout from './PageLayout'
 import { validateBreaks } from '../validators/breakValidator'
 import { useTripPlan } from '../contexts/TripPlanContext'
@@ -8,25 +19,22 @@ const MEALS = [
   {
     id: 'breakfast',
     label: 'Breakfast',
-    subtitle: 'Morning meal',
-    emoji: '☀️',
-    bgColor: 'bg-orange-100',
+    subtitle: 'Morning meal window',
+    Icon: Sun,
     defaultTime: '08:00',
   },
   {
     id: 'lunch',
     label: 'Lunch',
-    subtitle: 'Midday meal',
-    emoji: '🌤️',
-    bgColor: 'bg-yellow-100',
+    subtitle: 'Midday meal window',
+    Icon: Sunset,
     defaultTime: '12:00',
   },
   {
     id: 'dinner',
     label: 'Dinner',
-    subtitle: 'Evening meal',
-    emoji: '🌙',
-    bgColor: 'bg-indigo-100',
+    subtitle: 'Evening meal window',
+    Icon: Moon,
     defaultTime: '18:00',
   },
 ]
@@ -39,7 +47,6 @@ export default function BreakPage() {
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
 
-  // Load saved data from context on mount
   useEffect(() => {
     if (!formData.attractions || formData.attractions.length === 0) {
       navigate('/attractions')
@@ -58,7 +65,6 @@ export default function BreakPage() {
     const newErrors = validateBreaks(includeBreaks, mealStates)
     setErrors(newErrors)
     if (Object.keys(newErrors).length === 0) {
-      // Save to context before navigating
       updateMultipleFields({
         includeBreaks,
         mealStates,
@@ -112,179 +118,246 @@ export default function BreakPage() {
     }))
   }
 
+  const activeError =
+    (touched.breakChoice && errors.breakChoice) ||
+    (touched.meals && errors.meals) ||
+    (touched.mealTime && errors.mealTime)
+
   return (
     <PageLayout
       currentStep="break"
-      title="Break Preference"
-      subtitle="Select your travel preference for this trip"
+      title="Meal & Break Schedule"
+      subtitle="Decide whether to reserve dedicated meal breaks between your attraction visits"
+      contentClassName="max-w-2xl"
     >
-      <div className="space-y-6">
-
-        {/* Break Preference Toggle */}
-        <div>
-          <h2 className="text-base font-bold text-gray-800 flex items-center gap-2 mb-1">
-            <span>🕐</span> Break Preference
-          </h2>
-          <p className="text-xs text-gray-500 mb-3">
-            Would you like to include meal breaks or rest breaks between attractions?
-          </p>
-
-          <div className={`grid grid-cols-2 gap-3 rounded-2xl p-1 ${errors.breakChoice && touched.breakChoice ? 'ring-2 ring-red-500' : ''}`}>
-            {/* Yes */}
-            <button
-              type="button"
-              onClick={() => handleBreakChoice(true)}
-              className={`
-                relative rounded-2xl border-2 p-4 text-left transition-all duration-200
-                ${includeBreaks ? 'border-teal-400 bg-teal-50' : 'border-gray-200 bg-white hover:border-gray-300'}
-              `}
-            >
-              {/* top row */}
-              <div className="flex items-center justify-between mb-2">
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${includeBreaks ? 'border-teal-500 bg-teal-500' : 'border-gray-300'}`}>
-                  {includeBreaks && (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-white">
-                      <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </div>
-                {includeBreaks && (
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-teal-400">
-                    <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </div>
-              <p className={`text-sm font-bold mb-1 ${includeBreaks ? 'text-teal-700' : 'text-gray-700'}`}>
-                Yes, include breaks
-              </p>
-              <p className="text-xs text-gray-500 leading-relaxed">
-                Schedule meal times during your trip for a balanced itinerary
-              </p>
-            </button>
-
-            {/* No */}
-            <button
-              type="button"
-              onClick={() => handleBreakChoice(false)}
-              className={`
-                relative rounded-2xl border-2 p-4 text-left transition-all duration-200
-                ${includeBreaks === false ? 'border-teal-400 bg-teal-50' : 'border-gray-200 bg-white hover:border-gray-300'}
-              `}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${includeBreaks === false ? 'border-teal-500 bg-teal-500' : 'border-gray-300'}`}>
-                  {includeBreaks === false && (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-white">
-                      <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </div>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`w-4 h-4 ${includeBreaks === false ? 'text-teal-400' : 'text-gray-300'}`}>
-                  <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.72 6.97a.75.75 0 10-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 101.06 1.06L12 13.06l1.72 1.72a.75.75 0 101.06-1.06L13.06 12l1.72-1.72a.75.75 0 10-1.06-1.06L12 10.94l-1.72-1.72z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <p className={`text-sm font-bold mb-1 ${includeBreaks === false ? 'text-teal-700' : 'text-gray-700'}`}>
-                No, skip breaks
-              </p>
-              <p className="text-xs text-gray-500 leading-relaxed">
-                Maximize attraction visits without scheduled meal breaks
-              </p>
-            </button>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 sm:p-8">
+        {/* Card Header Bar */}
+        <div className="flex items-center justify-between pb-5 mb-6 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <Clock className="w-4 h-4 stroke-[2]" />
+            </div>
+            <div>
+              <h2
+                className="text-lg font-semibold text-slate-900"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              >
+                Break Preferences
+              </h2>
+            </div>
           </div>
-          {errors.breakChoice && touched.breakChoice && <p className="text-red-500 text-xs mt-2">{errors.breakChoice}</p>}
+          {formData.attractions?.length > 0 && (
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-medium tabular-nums">
+              {formData.attractions.length} attractions selected
+            </span>
+          )}
         </div>
 
-        {/* Meal Times — only shown if includeBreaks */}
-        {includeBreaks && (
+        <div className="space-y-8">
+          {/* Break Preference Toggle */}
           <div>
-            <h2 className="text-base font-bold text-gray-800 flex items-center gap-2 mb-1">
-              <span className="text-teal-500">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 inline">
-                  <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clipRule="evenodd" />
-                </svg>
-              </span>
-              Select Meal Times
-            </h2>
-            <p className="text-xs text-gray-500 mb-3">
-              Choose which meals you'd like to schedule and set your preferred times
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Include Scheduled Meal Breaks? <span className="text-red-600">*</span>
+            </label>
+            <p className="text-xs text-slate-500 mb-3.5">
+              Choose whether the itinerary planner should reserve blocks of time for meals.
             </p>
 
-            <div className={`space-y-2 rounded-2xl p-1 ${((errors.meals && touched.meals) || (errors.mealTime && touched.mealTime)) ? 'ring-2 ring-red-500' : ''}`}>
-              {MEALS.map((meal) => {
-                const state = mealStates[meal.id]
-                return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Yes */}
+              <button
+                type="button"
+                onClick={() => handleBreakChoice(true)}
+                aria-pressed={includeBreaks === true}
+                className={`relative rounded-xl border p-4 text-left transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+                  includeBreaks === true
+                    ? 'border-blue-600 bg-blue-50/60 ring-1 ring-blue-600'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
                   <div
-                    key={meal.id}
-                    className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3.5 transition-all duration-200 ${state.checked ? 'border-teal-400 bg-teal-50' : 'border-gray-200 bg-white'}`}
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                      includeBreaks === true
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
                   >
-                    {/* Checkbox */}
-                    <button
-                      type="button"
+                    <Utensils className="w-4 h-4 stroke-[1.75]" />
+                  </div>
+                  <div
+                    className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
+                      includeBreaks === true
+                        ? 'border-blue-600 bg-blue-600 text-white'
+                        : 'border-slate-300 bg-white'
+                    }`}
+                  >
+                    {includeBreaks === true && <Check className="w-3 h-3 stroke-[2.5]" />}
+                  </div>
+                </div>
+                <p className="text-sm font-semibold text-slate-900 mb-1">
+                  Yes, include breaks
+                </p>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Schedule meal windows during your trip for a balanced daily pace.
+                </p>
+              </button>
+
+              {/* No */}
+              <button
+                type="button"
+                onClick={() => handleBreakChoice(false)}
+                aria-pressed={includeBreaks === false}
+                className={`relative rounded-xl border p-4 text-left transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+                  includeBreaks === false
+                    ? 'border-blue-600 bg-blue-50/60 ring-1 ring-blue-600'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                      includeBreaks === false
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    <FastForward className="w-4 h-4 stroke-[1.75]" />
+                  </div>
+                  <div
+                    className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
+                      includeBreaks === false
+                        ? 'border-blue-600 bg-blue-600 text-white'
+                        : 'border-slate-300 bg-white'
+                    }`}
+                  >
+                    {includeBreaks === false && <Check className="w-3 h-3 stroke-[2.5]" />}
+                  </div>
+                </div>
+                <p className="text-sm font-semibold text-slate-900 mb-1">
+                  No, skip breaks
+                </p>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Focus strictly on attraction visits without scheduled meal blocks.
+                </p>
+              </button>
+            </div>
+          </div>
+
+          {/* Meal Times — only shown if includeBreaks */}
+          {includeBreaks === true && (
+            <div className="pt-6 border-t border-slate-100">
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Select Meal Windows <span className="text-red-600">*</span>
+              </label>
+              <p className="text-xs text-slate-500 mb-3.5">
+                Check the meals you want to include and set your preferred time for each.
+              </p>
+
+              <div className="space-y-3">
+                {MEALS.map((meal) => {
+                  const state = mealStates[meal.id]
+                  const MealIcon = meal.Icon
+                  return (
+                    <div
+                      key={meal.id}
                       onClick={() => toggleMeal(meal.id)}
-                      className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${state.checked ? 'bg-teal-500 border-teal-500' : 'border-gray-300 bg-white'}`}
+                      className={`flex items-center gap-3.5 rounded-xl border px-4 py-3.5 transition-all duration-150 cursor-pointer ${
+                        state.checked
+                          ? 'border-blue-600 bg-blue-50/40'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
                     >
+                      {/* Checkbox */}
+                      <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={state.checked}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleMeal(meal.id)
+                        }}
+                        className={`flex-shrink-0 w-5 h-5 rounded-md border flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 ${
+                          state.checked
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'border-slate-300 bg-white'
+                        }`}
+                      >
+                        {state.checked && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
+                      </button>
+
+                      {/* Icon */}
+                      <div
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                          state.checked
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        <MealIcon className="w-4 h-4 stroke-[1.75]" />
+                      </div>
+
+                      {/* Label */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900">{meal.label}</p>
+                        <p className="text-xs text-slate-500">{meal.subtitle}</p>
+                      </div>
+
+                      {/* Time input */}
                       {state.checked && (
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 text-white">
-                          <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </button>
-
-                    {/* Emoji icon */}
-                    <div className={`w-9 h-9 rounded-full ${meal.bgColor} flex items-center justify-center text-lg flex-shrink-0`}>
-                      {meal.emoji}
-                    </div>
-
-                    {/* Label */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-700">{meal.label}</p>
-                      <p className="text-xs text-gray-400">{meal.subtitle}</p>
-                    </div>
-
-                    {/* Time input — only when checked */}
-                    {state.checked && (
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-gray-400">
-                          <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clipRule="evenodd" />
-                        </svg>
-                        <div className="relative">
+                        <div
+                          className="flex items-center gap-2 flex-shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Clock className="w-4 h-4 text-slate-400 stroke-[1.75] hidden sm:block" />
                           <input
                             type="time"
                             value={state.time}
                             onChange={(e) => setMealTime(meal.id, e.target.value)}
-                            className={`border rounded-lg px-2 py-1 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 w-28 cursor-pointer ${errors.mealTime && touched.mealTime ? 'border-red-500 focus:ring-red-400' : 'border-gray-200 focus:ring-teal-400'}`}
+                            aria-label={`${meal.label} time`}
+                            className={`border rounded-lg px-2.5 py-1.5 text-sm text-slate-900 bg-white tabular-nums focus:outline-none focus:ring-2 cursor-pointer ${
+                              errors.mealTime && touched.mealTime
+                                ? 'border-red-500 focus:ring-red-500/20'
+                                : 'border-slate-200 focus:border-blue-600 focus:ring-blue-600/15'
+                            }`}
                           />
                         </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* View Summary */}
-        <div>
-          {(errors.breakChoice || errors.meals || errors.mealTime) && (
-            <div className="mb-3 p-3 bg-red-50 border border-red-300 rounded-lg">
-              <p className="text-red-500 text-sm">{errors.breakChoice || errors.meals || errors.mealTime}</p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
-          <button
-            onClick={handleContinue}
-            className="w-full py-4 rounded-full bg-blue-700 hover:bg-blue-800 text-white font-semibold text-base transition-colors shadow-md"
-          >
-            View Summary
-          </button>
-        </div>
 
-        <button
-          onClick={() => navigate('/attractions')}
-          className="w-full text-center text-sm text-gray-400 hover:text-blue-700 transition-colors"
-        >
-          ← Back to Attraction
-        </button>
+          {/* Error Alert */}
+          {activeError && (
+            <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 stroke-[2]" />
+              <p className="text-red-600 text-xs sm:text-sm font-medium">{activeError}</p>
+            </div>
+          )}
+
+          {/* Footer Navigation */}
+          <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/attractions')}
+              className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 text-sm font-medium transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+            >
+              <ArrowLeft className="w-4 h-4 stroke-[2]" />
+              <span>Back to Attractions</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleContinue}
+              className="sm:min-w-[220px] py-3.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium text-sm sm:text-base transition-all duration-200 flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+            >
+              Review Summary
+            </button>
+          </div>
+        </div>
       </div>
     </PageLayout>
   )
