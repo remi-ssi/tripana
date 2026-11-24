@@ -13,6 +13,9 @@ import {
 import { Navbar } from "../components/landingNavBar";
 import { Footer } from "../components/footer";
 import { useAuth } from "../hooks/AuthProfile";
+import luzon from "../assets/luzon.jpg";
+import visayas from "../assets/visayas.jpg";
+import mindanao from "../assets/mindanao.jpg";
 
 const EASE_OUT = [0.22, 1, 0.36, 1];
 const VIEWPORT_ONCE = { once: true, amount: 0.25 };
@@ -47,19 +50,19 @@ const DESTINATIONS = [
     name: "Luzon",
     region: "Northern & Central Archipelago",
     sub: "Cordillera mountain terraces, heritage towns, and vibrant urban districts.",
-    img: "https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=800&q=80",
+    img: luzon,
   },
   {
     name: "Visayas",
     region: "Central Island Groups",
     sub: "Coastal sanctuaries, limestone coves, and centuries-old cultural landmarks.",
-    img: "https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=800&q=80",
+    img: visayas,
   },
   {
     name: "Mindanao",
     region: "Southern Frontier",
     sub: "Highland rainforests, surf breaks, waterfalls, and diverse culinary traditions.",
-    img: "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?w=800&q=80",
+    img: mindanao,
   },
 ];
 
