@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, AlertTriangle } from 'lucide-react'
 import ProgressBar from '../components/ProgressBar'
 import { useTripPlan } from '../contexts/TripPlanContext'
 
@@ -28,25 +29,31 @@ export default function PageLayout({ currentStep, title, subtitle, contentClassN
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Back to Dashboard */}
-      <div className="px-6 pt-5">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      {/* Top Bar */}
+      <header className="max-w-6xl mx-auto px-4 sm:px-6 pt-6">
         <button
+          type="button"
           onClick={handleBackToDashboard}
-          className="flex items-center gap-2 text-gray-600 hover:text-blue-700 transition-colors text-sm font-medium"
+          className="group inline-flex items-center gap-2 px-3 py-2 -ml-3 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-          </svg>
+          <ArrowLeft className="w-4 h-4 stroke-[2] transition-transform duration-200 group-hover:-translate-x-0.5" />
           Back to Dashboard
         </button>
-      </div>
+      </header>
 
       {/* Page Header */}
-      <div className="text-center pt-4 pb-2">
-        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+      <div className="max-w-3xl mx-auto text-center px-4 pt-3 pb-2">
+        <h1
+          className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight"
+          style={{ fontFamily: "'Nunito', sans-serif" }}
+        >
+          {title}
+        </h1>
         {subtitle && (
-          <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+          <p className="text-sm sm:text-base text-slate-600 mt-1.5 max-w-xl mx-auto">
+            {subtitle}
+          </p>
         )}
       </div>
 
@@ -54,30 +61,50 @@ export default function PageLayout({ currentStep, title, subtitle, contentClassN
       <ProgressBar currentStep={currentStep} />
 
       {/* Page Content */}
-      <div className={`${currentStep === 'summary' ? 'max-w-6xl' : contentClassName} mx-auto px-4 pb-12`}>
+      <main className={`${currentStep === 'summary' ? 'max-w-6xl' : contentClassName} mx-auto px-4 sm:px-6 pb-16`}>
         {children}
-      </div>
+      </main>
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-lg p-6 max-w-sm mx-4">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Go Back to Dashboard?</h2>
-            <p className="text-gray-600 text-sm mb-6">
-              Are you sure you want to go back to the dashboard? Your trip plan data will be cleared.
-            </p>
-            <div className="flex gap-3">
+        <div
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4"
+          onClick={handleCancelBack}
+        >
+          <div
+            className="bg-white rounded-2xl border border-slate-200 shadow-xl p-6 max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center flex-shrink-0 text-red-600">
+                <AlertTriangle className="w-5 h-5 stroke-[1.75]" />
+              </div>
+              <div className="flex-1">
+                <h2
+                  className="text-lg font-semibold text-slate-900"
+                  style={{ fontFamily: "'Nunito', sans-serif" }}
+                >
+                  Return to Dashboard?
+                </h2>
+                <p className="text-slate-600 text-sm mt-1 leading-relaxed">
+                  Leaving now will clear your current trip setup progress. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
               <button
+                type="button"
                 onClick={handleCancelBack}
-                className="flex-1 px-4 py-2 rounded-lg border-2 border-gray-200 text-gray-700 font-semibold hover:border-gray-300 transition-colors"
+                className="px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 hover:border-slate-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
               >
-                Cancel
+                Keep Editing
               </button>
               <button
+                type="button"
                 onClick={handleConfirmBack}
-                className="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors"
+                className="px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
               >
-                Go Back
+                Discard &amp; Exit
               </button>
             </div>
           </div>

@@ -22,6 +22,7 @@ from app.repositories.types_repository import TypesRepository
 from app.repositories.placetypes_repository import PlaceTypesRepository
 from app.services.google_places_service import search_attractions as search_google_attractions
 from app.utils.city_utils import normalize_city
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -113,12 +114,13 @@ class PlaceSearchService:
             db_places = await self.place_repo.get_active_places_by_city(normalized_city, limit=100)
             logger.info(f"Found {len(db_places)} active places in DB for {normalized_city}")
             
-            # Check if cache is stale
-            is_stale = self._is_cache_stale(db_places)
+            # Check if cache is stale (only consider stale if Google Places API key is configured)
+            has_google_key = bool(settings.GOOGLE_PLACES_API_KEY)
+            is_stale = self._is_cache_stale(db_places) if has_google_key else False
             logger.info(f"Cache staleness check: {'STALE' if is_stale else 'FRESH'}")
             
-            # Step 2a: No results OR stale → Fetch from Google
-            if not db_places or is_stale:
+            # Step 2a: No results OR stale → Fetch from Google (only when API key is configured)
+            if (not db_places or is_stale) and has_google_key:
                 logger.info(f"Fetching from Google API for {normalized_city}")
                 google_places = await self._fetch_from_google_api(
                     normalized_city,
@@ -165,8 +167,8 @@ class PlaceSearchService:
                 logger.info(f"Enough good matches ({len(good_matches)}), returning all ranked results")
                 return scored_places
             
-            # Too few good matches: fetch from Google, merge, and re-rank
-            if len(scored_places) < 10:
+            # Too few good matches: fetch from Google, merge, and re-rank (only if API key is configured)
+            if len(scored_places) < 10 and has_google_key:
                 logger.info(f"Too few good matches ({len(good_matches)}), fetching more from Google")
                 google_places = await self._fetch_from_google_api(
                     normalized_city,
@@ -238,22 +240,27 @@ class PlaceSearchService:
             )
 
             google_places_by_id = {}
-            for query in self._build_free_search_queries(normalized_query, normalized_city):
-                logger.info(f"Free search Google query: {query}")
-                search_params = {
-                    "query": query,
-                    "limit": 20,
-                }
-                if latitude is not None and longitude is not None:
-                    search_params["location"] = (latitude, longitude)
+            if settings.GOOGLE_PLACES_API_KEY:
+                for query in self._build_free_search_queries(normalized_query, normalized_city):
+                    logger.info(f"Free search Google query: {query}")
+                    search_params = {
+                        "query": query,
+                        "limit": 20,
+                    }
+                    if latitude is not None and longitude is not None:
+                        search_params["location"] = (latitude, longitude)
 
-                for place in await search_google_attractions(**search_params):
-                    place_id = place.get("id")
-                    if place_id:
-                        google_places_by_id[place_id] = place
+                    try:
+                        for place in await search_google_attractions(**search_params):
+                            place_id = place.get("id")
+                            if place_id:
+                                google_places_by_id[place_id] = place
+                    except Exception as e:
+                        logger.warning(f"Skipping Google free search query '{query}': {str(e)}")
+                        break
 
-                if len(google_places_by_id) >= 50:
-                    break
+                    if len(google_places_by_id) >= 50:
+                        break
 
             if google_places_by_id:
                 saved_places = await self._save_places_to_db(

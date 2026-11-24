@@ -1,179 +1,281 @@
-import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Map, CalendarDays, LogOut, ChevronRight, User, FileText, ShieldCheck, Info } from "lucide-react";
-import logo from "../assets/white.png";
-import LogoutConfirmation from "./confirmLogout";
+import { useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import {
+  CalendarDays,
+  ChevronRight,
+  FileText,
+  Info,
+  LayoutDashboard,
+  LogOut,
+  Map,
+  ShieldCheck,
+  User,
+} from 'lucide-react'
+import tripanaLogo from '../assets/logo.png'
+import LogoutConfirmation from './confirmLogout'
 
-const NAV_ITEMS = [
-  { label: "Dashboard",   icon: LayoutDashboard, href: "/dashboard" },
-  { label: "Map",         icon: Map,             href: "/map" },
-  { label: "Itinerary",   icon: CalendarDays,    href: "/itineraryPage" },
-  { label: "About Us",    icon: Info,        href: "/about" },
-  { label: "Terms and Conditions", icon: FileText,   href: "/terms" },
-  { label: "Privacy Policy", icon: ShieldCheck,         href: "/privacy" },
-];
+const PRIMARY_NAV_ITEMS = [
+  { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+  { label: 'Map', icon: Map, href: '/map' },
+  { label: 'Itinerary', icon: CalendarDays, href: '/itineraryPage' },
+]
+
+const SECONDARY_NAV_ITEMS = [
+  { label: 'About Us', icon: Info, href: '/about' },
+  { label: 'Terms & Conditions', icon: FileText, href: '/terms' },
+  { label: 'Privacy Policy', icon: ShieldCheck, href: '/privacy' },
+]
 
 export default function Sidebar({ onLogout, user }) {
-  const navigate   = useNavigate();
-  const location   = useLocation();
-  const [expanded,               setExpanded]               = useState(false);
-  const [profileMenuOpen,        setProfileMenuOpen]        = useState(false);
-  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
-  const [isLoggingOut,           setIsLoggingOut]           = useState(false);
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [expanded, setExpanded] = useState(false)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const handleConfirmLogout = async () => {
     if (!onLogout) {
-      setShowLogoutConfirmation(false);
-      return;
+      setShowLogoutConfirmation(false)
+      return
     }
-    setIsLoggingOut(true);
+    setIsLoggingOut(true)
     try {
-      await onLogout();
+      await onLogout()
     } finally {
-      setIsLoggingOut(false);
-      setShowLogoutConfirmation(false);
+      setIsLoggingOut(false)
+      setShowLogoutConfirmation(false)
     }
-  };
+  }
 
   const initials = user
-    ? `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase()
-    : "?";
+    ? `${user.first_name?.[0] ?? ''}${user.last_name?.[0] ?? ''}`.toUpperCase() || 'U'
+    : 'U'
 
   const fullName = user
-    ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim()
-    : "User";
+    ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || 'Traveler'
+    : 'Traveler'
+
+  const isNavItemActive = (href) => {
+    if (href === '/itineraryPage') {
+      return (
+        location.pathname === '/itineraryPage' ||
+        location.pathname === '/itinerary' ||
+        location.pathname.startsWith('/itinerary/')
+      )
+    }
+    return location.pathname === href
+  }
 
   return (
     <>
-      {/* ── SIDEBAR ─────────────────────────────────────────────────────── */}
       <aside
-        className={`fixed left-0 top-0 h-full z-50 flex flex-col
-          bg-blue-700 shadow-2xl transition-all duration-300 ease-in-out overflow-hidden
-          ${expanded ? "w-56" : "w-16"}`}
-        onMouseEnter={() => { setExpanded(true);  }}
-        onMouseLeave={() => { setExpanded(false); setProfileMenuOpen(false); }}
+        aria-label="Primary navigation"
+        className={`fixed top-0 left-0 z-50 flex h-full flex-col overflow-hidden border-r border-slate-200 bg-white transition-all duration-300 ease-out motion-reduce:transition-none ${
+          expanded ? 'w-60 shadow-lg shadow-slate-900/5' : 'w-16'
+        }`}
+        onMouseEnter={() => setExpanded(true)}
+        onMouseLeave={() => {
+          setExpanded(false)
+          setProfileMenuOpen(false)
+        }}
       >
-        {/* Logo */}
-        <div className="flex items-center justify-center w-full pt-5 pb-0.5 relative">
-          <div
-            onClick={() => navigate("/dashboard")}
-            className={`flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out
-              ${expanded ? "w-20 h-20" : "w-9 h-9"}`}
+        {/* Brand Header */}
+        <div className="flex h-16 shrink-0 items-center justify-center border-b border-slate-100 px-2.5">
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard')}
+            aria-label="Go to Dashboard"
+            className="group flex w-full items-center justify-center rounded-xl p-1.5 transition-colors duration-200 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none"
           >
             <img
-              src={logo}
+              src={tripanaLogo}
               alt="Tripana"
-              className={`object-contain transition-all duration-300 ease-in-out
-                ${expanded ? "h-12" : "h-7"}`}
+              className={`w-auto select-none object-contain transition-all duration-300 ease-out ${
+                expanded ? 'h-9' : 'h-5'
+              }`}
             />
+          </button>
+        </div>
+
+        {/* Navigation Links */}
+        <div className="flex flex-1 flex-col justify-between overflow-x-hidden overflow-y-auto px-2.5 py-4">
+          <div className="space-y-1">
+            <p
+              className={`px-2.5 pb-1.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase transition-opacity duration-200 ${
+                expanded ? 'opacity-100' : 'sr-only opacity-0'
+              }`}
+            >
+              Workspace
+            </p>
+            <nav className="flex flex-col gap-1">
+              {PRIMARY_NAV_ITEMS.map((item) => {
+                const isActive = isNavItemActive(item.href)
+                const IconComponent = item.icon
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    title={!expanded ? item.label : undefined}
+                    onClick={() => navigate(item.href)}
+                    className={`group relative flex min-h-[42px] w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition-all duration-200 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none ${
+                      isActive
+                        ? 'bg-blue-50 font-semibold text-blue-600'
+                        : 'font-medium text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                    }`}
+                  >
+                    {isActive && (
+                      <span className="absolute top-2 bottom-2 left-0 w-1 rounded-r-full bg-blue-600" />
+                    )}
+                    <IconComponent
+                      size={20}
+                      strokeWidth={isActive ? 2.1 : 1.85}
+                      className={`shrink-0 transition-colors duration-200 ${
+                        isActive
+                          ? 'text-blue-600'
+                          : 'text-slate-500 group-hover:text-slate-800'
+                      }`}
+                    />
+                    <span
+                      className={` text-sm whitespace-nowrap transition-all duration-200 ${
+                        expanded
+                          ? 'opacity-100 delay-75'
+                          : 'w-0 overflow-hidden opacity-0'
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  </button>
+                )
+              })}
+            </nav>
+          </div>
+
+          <div className="space-y-1 pt-4">
+            <div className="mx-1.5 mb-3 border-t border-slate-100" />
+            <p
+              className={`px-2.5 pb-1.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase transition-opacity duration-200 ${
+                expanded ? 'opacity-100' : 'sr-only opacity-0'
+              }`}
+            >
+              Resources
+            </p>
+            <nav className="flex flex-col gap-1">
+              {SECONDARY_NAV_ITEMS.map((item) => {
+                const isActive = location.pathname === item.href
+                const IconComponent = item.icon
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    title={!expanded ? item.label : undefined}
+                    onClick={() => navigate(item.href)}
+                    className={`group relative flex min-h-[40px] w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-all duration-200 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none ${
+                      isActive
+                        ? 'bg-blue-50 font-semibold text-blue-600'
+                        : 'font-medium text-slate-500 hover:bg-slate-100/80 hover:text-slate-800'
+                    }`}
+                  >
+                    {isActive && (
+                      <span className="absolute top-2 bottom-2 left-0 w-1 rounded-r-full bg-blue-600" />
+                    )}
+                    <IconComponent
+                      size={18}
+                      strokeWidth={isActive ? 2 : 1.75}
+                      className={`shrink-0 transition-colors duration-200 ${
+                        isActive
+                          ? 'text-blue-600'
+                          : 'text-slate-400 group-hover:text-slate-700'
+                      }`}
+                    />
+                    <span
+                      className={`text-xs whitespace-nowrap transition-all duration-200 ${
+                        expanded
+                          ? 'opacity-100 delay-75'
+                          : 'w-0 overflow-hidden opacity-0'
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  </button>
+                )
+              })}
+            </nav>
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="mx-3 border-t border-white/20 flex-shrink-0" />
-
-        {/* Nav links */}
-        <nav className="flex flex-col gap-1 px-2 mt-3 flex-1">
-          {NAV_ITEMS.map(({ label, icon: ICON, href }) => {
-            const isActive = location.pathname === href;
-            return (
-              <button
-                key={label}
-                onClick={() => navigate(href)}
-                className={`flex items-center gap-3 px-2.5 py-2.5 rounded-xl w-full text-left
-                  transition-all duration-200 group
-                  ${isActive
-                    ? "bg-white/20 text-white"
-                    : "text-blue-200 hover:bg-white/10 hover:text-white"}`}
-              >
-                <ICON size={20} className="flex-shrink-0" strokeWidth={1.8} />
-                <span
-                  className={`text-sm font-medium whitespace-nowrap transition-all duration-200
-                    ${expanded ? "opacity-100 delay-75" : "opacity-0 w-0 overflow-hidden"}`}
-                >
-                  {label}
-                </span>
-                {/* Active indicator dot when collapsed */}
-                {isActive && !expanded && (
-                  <span className="absolute left-[52px] w-1.5 h-1.5 rounded-full bg-white" />
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Profile section */}
-        <div className="px-2 pb-4 flex-shrink-0">
-          <div className="mx-0 mb-2 border-t border-white/20" />
-
-          {/* Profile button */}
+        {/* User Profile Footer */}
+        <div className="shrink-0 border-t border-slate-200 bg-slate-50/60 p-2.5">
           <button
-            onClick={() => setProfileMenuOpen((o) => !o)}
-            className="relative flex items-center gap-3 px-2.5 py-2.5 rounded-xl w-full
-              text-blue-200 hover:bg-white/10 hover:text-white transition-all duration-200"
+            type="button"
+            onClick={() => {
+              if (!expanded) setExpanded(true)
+              setProfileMenuOpen((open) => !open)
+            }}
+            className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors duration-200 hover:bg-white hover:shadow-2xs focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none"
           >
-            {/* Avatar */}
-            <div className="w-8 h-8 rounded-full bg-blue-500 border-2 border-blue-400
-              flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-xs font-bold">{initials}</span>
+            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-blue-200 bg-blue-50 text-xs font-semibold text-blue-700">
+              {initials}
             </div>
 
             <div
-              className={`flex-1 text-left min-w-0 transition-all duration-200
-                ${expanded ? "opacity-100 delay-75" : "opacity-0 w-0 overflow-hidden"}`}
+              className={`min-w-0 flex-1 transition-all duration-200 ${
+                expanded ? 'opacity-100 delay-75' : 'w-0 overflow-hidden opacity-0'
+              }`}
             >
-              <p className="text-xs font-semibold text-white truncate">{fullName}</p>
-              <p className="text-[10px] text-blue-300">View profile</p>
+              <p className="truncate text-xs font-semibold text-slate-900">
+                {fullName}
+              </p>
+              <p className="truncate text-[11px] text-slate-500">
+                Account settings
+              </p>
             </div>
 
             {expanded && (
               <ChevronRight
-                size={14}
-                className={`flex-shrink-0 transition-transform duration-200
-                  ${profileMenuOpen ? "rotate-90" : ""}`}
+                size={15}
+                className={`shrink-0 text-slate-400 transition-transform duration-200 ${
+                  profileMenuOpen ? 'rotate-90 text-slate-700' : ''
+                }`}
               />
             )}
           </button>
 
-          {/* Profile sub-menu (inline, slides down) */}
+          {/* Expandable Profile Actions */}
           <div
-            className={`overflow-hidden transition-all duration-200
-              ${profileMenuOpen && expanded ? "max-h-24 mt-1" : "max-h-0"}`}
+            className={`overflow-hidden transition-all duration-200 ${
+              profileMenuOpen && expanded ? 'mt-1.5 max-h-28' : 'max-h-0'
+            }`}
           >
-            <div className="flex flex-col gap-0.5 px-1">
-               {/* View Profile */}
-                <button
-                  onClick={() => {
-                    setProfileMenuOpen(false);
-                    navigate("/profile");
-                  }}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg w-full text-left
-                    text-blue-200 hover:bg-white/10 hover:text-white transition-colors duration-150"
-                >
-                  <User size={15} className="flex-shrink-0" />
-                  <span className="text-xs font-medium whitespace-nowrap">
-                    View Profile
-                  </span>
-                </button>
-
-              {/* Log Out */}
+            <div className="flex flex-col gap-1 rounded-xl border border-slate-200/80 bg-white p-1.5 shadow-2xs">
               <button
+                type="button"
                 onClick={() => {
-                  setProfileMenuOpen(false);
-                  setShowLogoutConfirmation(true);
+                  setProfileMenuOpen(false)
+                  navigate('/profile')
                 }}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg w-full text-left
-                  text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-colors duration-150"
+                className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-slate-700 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-900"
               >
-                <LogOut size={15} className="flex-shrink-0" />
-                <span className="text-xs font-medium whitespace-nowrap">Log Out</span>
+                <User size={15} className="shrink-0 text-slate-500" />
+                <span className="whitespace-nowrap">View Profile</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileMenuOpen(false)
+                  setShowLogoutConfirmation(true)
+                }}
+                className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-red-600 transition-colors duration-150 hover:bg-red-50 hover:text-red-700"
+              >
+                <LogOut size={15} className="shrink-0" />
+                <span className="whitespace-nowrap">Log Out</span>
               </button>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* Logout confirmation modal (same as dashboardNav) */}
       {showLogoutConfirmation && (
         <LogoutConfirmation
           onConfirm={handleConfirmLogout}
@@ -182,5 +284,5 @@ export default function Sidebar({ onLogout, user }) {
         />
       )}
     </>
-  );
+  )
 }

@@ -1,26 +1,55 @@
-export default function LogoutConfirmation({ onConfirm, onCancel, isLoading = false }) {
+import { LogOut } from 'lucide-react'
+
+export default function LogoutConfirmation({
+  onConfirm,
+  onCancel,
+  isLoading = false,
+}) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/15 backdrop-blur-[1px]">
-      <div className="bg-gray-100 rounded-2xl shadow-2xl px-8 py-6 w-80 text-center border border-white/60">
-        <h2 className="text-xl font-bold text-gray-800 mb-1">Logout Confirmation</h2>
-        <p className="text-gray-500 text-sm mb-6">Are you sure you want to log out?</p>
-        <div className="flex gap-3 justify-center">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="logout-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]"
+    >
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+        <div className="flex items-start gap-4">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-red-50 text-red-600">
+            <LogOut size={20} strokeWidth={1.9} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2
+              id="logout-modal-title"
+              className="font-['Nunito'] text-lg font-semibold text-slate-900"
+            >
+              Log out of Tripana?
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              You can sign back in anytime to access your saved itineraries and
+              route maps.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-end gap-3">
           <button
-            onClick={onConfirm}
-            disabled={isLoading}
-            className="bg-red-800 hover:bg-red-900 text-white font-semibold px-6 py-2 rounded-lg transition-colors duration-200 cursor-pointer"
-          >
-            {isLoading ? "Logging out..." : "Confirm"}
-          </button>
-          <button
+            type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-2 rounded-lg transition-colors duration-200 cursor-pointer"
+            className="inline-flex min-h-[40px] items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-50 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none disabled:opacity-50"
           >
             Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="inline-flex min-h-[40px] items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-xs transition-colors duration-200 hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
+          >
+            {isLoading ? 'Logging out...' : 'Log Out'}
           </button>
         </div>
       </div>
     </div>
-  );
+  )
 }
