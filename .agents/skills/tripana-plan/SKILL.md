@@ -1,38 +1,51 @@
 ---
 name: tripana-plan
-description: Planning skill for Tripana. Inspects the codebase, designs an explicit step-by-step implementation plan aligned with design.md and AGENTS.md, and asks the user to review and approve the plan before any code is modified.
+description: >-
+  Token-efficient planning skill for Tripana. Always use FIRST before any feature, UI change, or refactor. Inspects only target files, asks focused clarifying questions via ask_question when decisions exist, writes a concise Markdown plan to docs/plans/YYYY-MM-DD-<slug>.md, and stops for user approval.
 ---
 
-# Tripana Planning Skill
+# Tripana Planning Skill (`tripana-plan`)
 
-Use this skill before implementing any feature, UI transformation, or multi-file change.
+Use this skill **before** implementing any feature, UI change, refactor, or multi-file edit.
+
+> **Hard Constraint**: Do not modify any application source files (`frontend/src/**`, `backend/app/**`) during planning. Only create or update `docs/plans/YYYY-MM-DD-<slug>.md`.
+
+## Token-Efficiency Rules
+
+- **No Double-Reading**: `AGENTS.md` is already in your system prompt—never call `read_file` on `AGENTS.md`. For frontend tasks, read `.agents/skills/tripana-frontend-design/SKILL.md` (which already summarizes `design.md`); only read `design.md` if you need a detail not in the skill.
+- **Read Only Target Files**: Read only the exact files being changed (batch all reads in one parallel turn). Do not scan the whole repository.
+- **Keep Plans Compact**: Write a tight, actionable `.md` plan (under 60 lines). Do not copy-paste boilerplate design rules into the plan file.
+
+---
 
 ## Procedure
 
-1. **Understand the Goal & Scope**
-   - Identify the exact user request, target pages/endpoints, and constraints.
-   - Read [`design.md`](../../../design.md) (for any UI work) and [`AGENTS.md`](../../../AGENTS.md) to verify preservation rules.
+### 1. Inspect Target Files (1 Turn)
+- Batch-read the specific target files (`frontend/src/pages/...`, `backend/app/...`) and `.agents/skills/tripana-frontend-design/SKILL.md` (if UI work) in a single parallel turn.
 
-2. **Inspect the Relevant Code**
-   - Locate and read only the relevant files (`frontend/src/pages/`, `frontend/src/components/`, `backend/app/`, etc.).
-   - Identify existing shared components, services, validators, and routes to reuse.
+### 2. Clarify Open Decisions (`ask_question`)
+- If inspecting the target code reveals genuine UX, layout, scope, or behavior choices (or if the user's request is ambiguous), call `ask_question` with 1–3 concise multiple-choice questions (recommended option first, prefixed with `(Recommended)`), **and stop your turn** to wait for the answer.
+- If the request is already 100% specific and unambiguous, skip `ask_question` and write the `.md` plan file directly so you don't waste an extra round-trip turn.
 
-3. **Interactive Alignment Interview ("Grill-Me" Check)**
-   - Before writing the final plan, resolve any open design, UX, scope, or priority decisions by asking the user focused questions (using `ask_question` for clear multiple-choice decisions, or concise direct questions when open-ended).
-   - Cover only genuine ambiguities found during code inspection, such as:
-     - Layout direction & primary focal point (e.g., split map+list vs. stacked, dense table vs. timeline).
-     - Content or sections to keep, simplify, or remove.
-     - Which shared components or flows should remain untouched vs. updated.
-     - Edge-case behavior (empty states, mobile layout priority, optional vs. required fields).
-   - Do not ask trivial questions whose answers are already fixed by `design.md` or `AGENTS.md`. Wait for the user's answers before finalizing the plan.
+### 3. Write Concise Markdown Plan (`docs/plans/YYYY-MM-DD-<slug>.md`)
+Call `write_file` to create `docs/plans/YYYY-MM-DD-<slug>.md` using this compact template:
 
-4. **Draft the Implementation Plan**
-   Present a clear, concise plan aligned with the user's answers covering:
-   - **Files to Modify / Create**: Exact paths and what changes in each.
-   - **Design Alignment** (if frontend): Which `design.md` tokens (typography, `#2563EB` single accent, 4px/8px spacing, `rounded-2xl`/`xl`/`lg` radii, surface hierarchy) apply and which prohibited patterns are being removed.
-   - **Preservation Checks**: Confirmation that auth (RSA/JWT/OTP/OAuth), routes, `TripPlanContext`, and API contracts remain intact.
-   - **Verification Steps**: Exact commands to run after building (`npm run lint && npm run build`, `pytest`, etc.).
+```markdown
+# Plan: <Title>
 
-5. **Gate on User Review**
-   - **Stop and ask the user to review and approve the plan** before editing any source files.
-   - Do not start writing application code until the user confirms or adjusts the plan.
+- **Date**: YYYY-MM-DD | **Status**: Draft
+
+## 1. Goal & Decisions
+- 1–3 bullets summarizing the change and any user-confirmed decisions.
+
+## 2. Files & Checklist
+- [ ] `path/to/file` — concise list of edits
+- [ ] `path/to/file2` — concise list of edits
+
+## 3. Guardrails
+- Preserves existing routes/auth/`TripPlanContext`/API contracts and follows `tripana-frontend-design`.
+```
+
+### 4. Gate on User Approval
+- Reply in 2–3 lines with a clickable link to `docs/plans/YYYY-MM-DD-<slug>.md` and ask: *"Ready to build?"*
+- **STOP.** Do not repeat the plan contents in chat, and do not edit application code until the user approves.

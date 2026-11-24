@@ -1,28 +1,36 @@
 ---
 name: tripana-build
-description: Implementation skill for Tripana. Executes an approved plan step-by-step while strictly following design.md, tripana-frontend-design, and AGENTS.md preservation rules.
+description: >-
+  Token-efficient implementation skill for Tripana. Use AFTER the user approves docs/plans/YYYY-MM-DD-<slug>.md. Applies planned edits in parallel batches while obeying tripana-frontend-design and AGENTS.md preservation rules, runs only the single relevant verification check once at the end, and marks the plan completed.
 ---
 
-# Tripana Build Skill
+# Tripana Build Skill (`tripana-build`)
 
-Use this skill only after the user has reviewed and approved the plan.
+Use this skill **only after** the user approves `docs/plans/YYYY-MM-DD-<slug>.md`.
+
+## Token-Efficiency Rules
+
+- **Never Re-Read Known Files**: Do not re-read files (`AGENTS.md`, `design.md`, target source files, or the plan file) that are already in your conversation context.
+- **Batch Edits**: Apply all independent file edits in parallel in a single turn.
+- **One Plan Update Only**: Do not edit the `.md` plan file multiple times during the build (`In Progress` -> `Built` -> `Completed`). Update it **once** at the very end when marking items `- [x]` and setting `Status: Completed`.
+- **No Redundant Verifications**:
+  - Do **not** run lint or build after every individual file edit—only once after all code edits are finished.
+  - Run **only** the check that matches what changed:
+    - CSS / UI / copy / minor JSX tweak: `cd frontend && npm run lint` (only add `&& npm run build` if imports, routes, dependencies, or Vite/build configs changed).
+    - Backend Python edit: `cd backend && pytest <target_test_file>` (only run the full test suite if shared core/auth/models changed).
+  - Do **not** launch a separate `tripana-review` phase or run `git diff` shell commands after building unless the user explicitly asks for an audit.
+
+---
 
 ## Procedure
 
-1. **Follow the Approved Plan**
-   - Implement each planned change in order without adding unrequested features or unrelated refactors.
-   - If a blocker or missing requirement forces a change to the plan, pause and inform the user before diverging.
-
-2. **Enforce Single Design Format (`design.md`)**
-   - Load [`.agents/skills/tripana-frontend-design/SKILL.md`](../tripana-frontend-design/SKILL.md) and [`design.md`](../../../design.md) for all UI edits.
-   - Apply the extracted `Nunito` + `Poppins` typography scale, neutral palette + `#2563EB` single accent, 4px/8px spacing system, and `rounded-2xl` / `rounded-xl` / `rounded-lg` / `rounded-full` radius hierarchy.
-   - Ensure zero prohibited patterns (no hero gradient text, emojis, colored card borders, eyebrow badges, cursor beams, inconsistent spacing, em dashes `—`, generic fonts, or flat design).
-
-3. **Preserve Existing Architecture**
-   - Reuse existing components, services, hooks, validators, and `apiClient.js`.
-   - Keep `AuthOnlyRoute`, `GuestOnlyRoute`, `TripPlanContext`, RSA encryption, and backend schemas intact.
-
-4. **Verify Locally**
-   - Frontend: `cd frontend && npm run lint && npm run build`
-   - Backend: `cd backend && pytest`
-   - Fix any lint, build, or test errors (invoking `tripana-debug` if needed) before handing off to `tripana-review`.
+1. **Pre-Flight Check**: Confirm `docs/plans/YYYY-MM-DD-<slug>.md` exists and was approved by the user. (If not, run `tripana-plan` first.)
+2. **Implement Planned Changes**:
+   - Execute the items in `docs/plans/YYYY-MM-DD-<slug>.md` cleanly.
+   - Follow `.agents/skills/tripana-frontend-design/SKILL.md` (`Nunito` + `Poppins`, `tabular-nums`, `#F8FAFC`/`#FFFFFF` surfaces, `#E2E8F0` borders, `#2563EB` single primary accent, 4px/8px spacing, `rounded-2xl`/`xl`/`lg`/`full`, zero prohibited patterns).
+   - Preserve existing routes, guards, `TripPlanContext`, `apiClient.js`, auth flows, and backend contracts.
+3. **Single Scoped Verification**:
+   - Run the minimal verification command once after your final code edit. If it fails, use `tripana-debug` to fix the root cause.
+4. **Finalize Plan**:
+   - In one `edit_file` call, check off `- [x]` in `docs/plans/YYYY-MM-DD-<slug>.md` and set `Status: Completed`.
+   - Report completion concisely to the user.

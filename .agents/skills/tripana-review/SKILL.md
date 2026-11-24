@@ -1,34 +1,19 @@
 ---
 name: tripana-review
-description: Verification and diff-review skill for Tripana. Audits implemented changes against the approved plan, design.md, and repository guardrails.
+description: >-
+  On-demand diff-review skill for Tripana. Use ONLY when the user explicitly asks to review or audit existing changes against a plan file in docs/plans/YYYY-MM-DD-<slug>.md and design.md. Do not run automatically after normal builds.
 ---
 
-# Tripana Review Skill
+# Tripana Review Skill (`tripana-review`)
 
-Use this skill after `tripana-build` completes to verify that the implementation matches the approved plan and adheres to Tripana's single design format.
+> **Token-Efficiency Note**: Do **not** invoke this skill automatically at the end of `tripana-build`. Only use it when the user explicitly asks for a code review or design audit.
 
-## Review Checklist
+## Procedure (Single Turn)
 
-1. **Plan Conformance**
-   - Inspect `git status` and `git diff` across all modified/created files.
-   - Verify every item in the approved plan was implemented completely.
-   - Flag any unplanned edits, missing requirements, or broken contracts (routes, `TripPlanContext`, `apiClient.js`, auth flows).
-
-2. **Design Format Audit (`design.md`)**
-   - Verify `Nunito` + `Poppins` typography scale and `tabular-nums` on numeric metadata.
-   - Verify neutral surface hierarchy (`#F8FAFC` canvas, `#FFFFFF` elevated cards, `#E2E8F0` hairline borders) and single `#2563EB` primary accent.
-   - Verify 4px/8px spacing rhythm and consistent `rounded-2xl` / `rounded-xl` / `rounded-lg` / `rounded-full` radii.
-   - Scan modified UI files for any prohibited patterns:
-     - Hero gradient text (`bg-clip-text text-transparent`)
-     - Decorative emojis
-     - Colored borders on static cards
-     - Eyebrow badges above headings
-     - Cursor-following beams or spotlights
-     - Em dashes (`—`) in UI copy
-     - Flat ungrouped layouts
-
-3. **Build & Test Verification**
-   - Confirm `cd frontend && npm run lint && npm run build` (and `cd backend && pytest` if backend changed) ran after the final edit and passed cleanly.
-
-4. **Report Findings**
-   - Summarize: (a) Plan items verified, (b) Any discrepancies or remaining issues, and (c) Observed check results.
+1. **Inspect Changes Once**:
+   - If the modified files are not already in your context, run `git status --short` and inspect only the changed lines. Do not re-read unmodified files or run redundant builds if verification already passed.
+2. **Check Against Plan & Design Rules**:
+   - Verify all checklist items in `docs/plans/YYYY-MM-DD-<slug>.md` are complete and no contracts (routes, `TripPlanContext`, `apiClient.js`, auth) were broken.
+   - Check modified UI code for prohibited patterns (gradient hero text, emojis, colored card borders, eyebrow badges, cursor beams, em dashes `—`, flat ungrouped layouts).
+3. **Report Concisely**:
+   - Output a short bulleted summary of findings without running extra shell commands unless a test hasn't been run yet.
