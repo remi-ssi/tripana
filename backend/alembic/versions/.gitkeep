@@ -1,0 +1,3 @@
+# Database migrations are managed by Alembic.
+# Run `alembic upgrade head` to apply all pending migrations.
+# Run `alembic revision --autogenerate -m "description"` to create a new migration.
