@@ -1,15 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import {
+  Calendar,
+  ClipboardList,
+  Cookie,
+  Fingerprint,
+  Mail,
+  RefreshCw,
+  Share2,
+  ShieldCheck,
+  UserCheck,
+} from "lucide-react";
 import { Navbar } from "../components/landingNavBar";
 import { Footer } from "../components/footer";
 
 const sections = [
   {
     id: "information-collected",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-      </svg>
-    ),
+    icon: UserCheck,
     title: "Information We Collect",
     content: [
       {
@@ -18,7 +25,7 @@ const sections = [
       },
       {
         subtitle: "Travel Preferences & Trip Data",
-        text: "To generate optimized itineraries, we collect travel details you provide — such as destinations, travel dates, budget range, preferred attractions, and activity preferences. This data is central to how Tripana's AI planning features work.",
+        text: "To generate optimized itineraries, we collect travel details you provide, such as destinations, travel dates, budget range, preferred attractions, and activity preferences. This data is central to how Tripana's AI planning features work.",
       },
       {
         subtitle: "Usage & Device Data",
@@ -32,11 +39,7 @@ const sections = [
   },
   {
     id: "how-we-use",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-      </svg>
-    ),
+    icon: ClipboardList,
     title: "How We Use Your Information",
     content: [
       {
@@ -59,11 +62,7 @@ const sections = [
   },
   {
     id: "data-sharing",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-      </svg>
-    ),
+    icon: Share2,
     title: "Data Sharing & Disclosure",
     content: [
       {
@@ -72,7 +71,7 @@ const sections = [
       },
       {
         subtitle: "Third-Party Service Providers",
-        text: "We may share limited data with trusted service providers — such as cloud hosting providers, map API services, and analytics platforms — strictly to operate and maintain Tripana. These providers are bound by confidentiality agreements and may not use your data for their own purposes.",
+        text: "We may share limited data with trusted service providers, such as cloud hosting providers, map API services, and analytics platforms, strictly to operate and maintain Tripana. These providers are bound by confidentiality agreements and may not use your data for their own purposes.",
       },
       {
         subtitle: "Legal Requirements",
@@ -82,11 +81,7 @@ const sections = [
   },
   {
     id: "data-security",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-      </svg>
-    ),
+    icon: ShieldCheck,
     title: "Data Security",
     content: [
       {
@@ -105,11 +100,7 @@ const sections = [
   },
   {
     id: "your-rights",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
-      </svg>
-    ),
+    icon: Fingerprint,
     title: "Your Rights & Controls",
     content: [
       {
@@ -132,12 +123,7 @@ const sections = [
   },
   {
     id: "cookies",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
-      </svg>
-    ),
+    icon: Cookie,
     title: "Cookies & Tracking",
     content: [
       {
@@ -156,11 +142,7 @@ const sections = [
   },
   {
     id: "changes",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-      </svg>
-    ),
+    icon: RefreshCw,
     title: "Changes to This Policy",
     content: [
       {
@@ -176,146 +158,231 @@ const sections = [
 ];
 
 export default function PrivacyPolicy() {
-  const [activeSection, setActiveSection] = useState(null);
+  const [activeSection, setActiveSection] = useState(sections[0].id);
+  const sectionRefs = useRef({});
+
+  useEffect(() => {
+    const observers = [];
+    sections.forEach((s) => {
+      const el = sectionRefs.current[s.id];
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) setActiveSection(s.id);
+        },
+        { threshold: 0.25, rootMargin: "-80px 0px -55% 0px" }
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+    return () => observers.forEach((o) => o.disconnect());
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div
+      className="flex min-h-screen flex-col bg-slate-50 text-slate-900"
+      style={{ fontFamily: "'Poppins', sans-serif" }}
+    >
       <Navbar />
 
-      {/* Hero */}
-      <div className="bg-white border-b border-gray-100 pt-16">
-        <div className="max-w-5xl mx-auto px-6 py-16 text-center">
-          <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 uppercase tracking-widest">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            Your Privacy Matters
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">Privacy Policy</h1>
-          <p className="text-gray-500 text-lg max-w-2xl mx-auto leading-relaxed">
-            Tripana is committed to protecting your personal data. This policy explains what we collect, how we use it, and the choices you have — clearly and without legal jargon.
-          </p>
-          <div className="mt-8 flex items-center justify-center gap-6 text-sm text-gray-400">
-            <span className="flex items-center gap-1.5">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Effective: April 16, 2025
-            </span>
-            <span className="text-gray-200">|</span>
-            <span className="flex items-center gap-1.5">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Last Updated: April 16, 2025
-            </span>
+      {/* Document Header */}
+      <div className="border-b border-slate-200 bg-white pt-24 pb-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <h1
+              className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl"
+              style={{ fontFamily: "'Nunito', sans-serif" }}
+            >
+              Privacy Policy
+            </h1>
+            <p className="mt-3 text-base leading-relaxed text-slate-600">
+              Tripana is committed to protecting your personal data. This policy explains what information we collect, how it powers your itineraries, and the controls you have over your account.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-6 text-xs font-medium tabular-nums text-slate-500">
+              <span className="inline-flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-blue-600" strokeWidth={1.75} />
+                Effective: April 16, 2025
+              </span>
+              <span className="text-slate-300" aria-hidden="true">
+                |
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 text-blue-600" strokeWidth={1.75} />
+                Last Updated: April 16, 2025
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Quick nav pills */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-6 py-4 overflow-x-auto">
+      {/* Mobile horizontal jump links */}
+      <div className="sticky top-16 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-sm lg:hidden">
+        <div className="mx-auto max-w-7xl overflow-x-auto px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2 min-w-max">
-            {sections.map((s) => (
-              <a
-                key={s.id}
-                href={`#${s.id}`}
-                className="text-xs text-gray-500 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-full border border-gray-200 hover:border-blue-200 transition-all whitespace-nowrap font-medium"
-              >
-                {s.title}
-              </a>
-            ))}
+            {sections.map((s, idx) => {
+              const isActive = activeSection === s.id;
+              return (
+                <a
+                  key={s.id}
+                  href={`#${s.id}`}
+                  onClick={() => setActiveSection(s.id)}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors ${
+                    isActive
+                      ? "border-blue-200 bg-blue-50 text-blue-600"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
+                >
+                  <span className="mr-1.5 tabular-nums text-slate-400">
+                    {String(idx + 1).padStart(2, "0")}
+                  </span>
+                  {s.title}
+                </a>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <main className="max-w-5xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Sidebar */}
-          <aside className="hidden lg:block">
-            <div className="sticky top-24">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4 px-2">Sections</p>
-              <nav className="space-y-1">
-                {sections.map((s) => (
-                  <a
-                    key={s.id}
-                    href={`#${s.id}`}
-                    onClick={() => setActiveSection(s.id)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all group ${activeSection === s.id
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
-                      }`}
-                  >
-                    <span className={`flex-shrink-0 ${activeSection === s.id ? "text-blue-600" : "text-gray-400 group-hover:text-blue-500"}`}>
-                      {s.icon}
-                    </span>
-                    <span className="font-medium leading-snug">{s.title}</span>
-                  </a>
-                ))}
-              </nav>
+      {/* Main Content */}
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+          {/* Desktop Sticky Sidebar */}
+          <aside className="hidden lg:col-span-4 lg:block">
+            <div className="sticky top-24 space-y-6">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+                <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  On This Page
+                </p>
+                <nav aria-label="Privacy sections" className="space-y-1">
+                  {sections.map((s, idx) => {
+                    const Icon = s.icon;
+                    const isActive = activeSection === s.id;
+                    return (
+                      <a
+                        key={s.id}
+                        href={`#${s.id}`}
+                        onClick={() => setActiveSection(s.id)}
+                        className={`group flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
+                          isActive
+                            ? "bg-blue-50 font-semibold text-blue-600"
+                            : "font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        }`}
+                      >
+                        <span className="flex items-center gap-3 min-w-0">
+                          <Icon
+                            className={`h-4 w-4 shrink-0 ${
+                              isActive
+                                ? "text-blue-600"
+                                : "text-slate-400 group-hover:text-slate-600"
+                            }`}
+                            strokeWidth={1.75}
+                          />
+                          <span className="truncate">{s.title}</span>
+                        </span>
+                        <span
+                          className={`text-xs tabular-nums ${
+                            isActive ? "text-blue-600" : "text-slate-400"
+                          }`}
+                        >
+                          {String(idx + 1).padStart(2, "0")}
+                        </span>
+                      </a>
+                    );
+                  })}
+                </nav>
+              </div>
 
-              <div className="mt-8 p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                <p className="text-xs font-semibold text-blue-700 mb-1">Questions?</p>
-                <p className="text-xs text-blue-600 leading-relaxed mb-3">We're here to help with any privacy concerns.</p>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+                <p className="text-sm font-semibold text-slate-900">
+                  Privacy Questions?
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                  We are here to help with any data requests or privacy questions.
+                </p>
                 <a
                   href="mailto:privacy@tripana.app"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-800 transition-colors"
+                  className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
+                  <Mail className="h-3.5 w-3.5" strokeWidth={1.75} />
                   privacy@tripana.app
                 </a>
               </div>
             </div>
           </aside>
 
-          {/* Main sections */}
-          <div className="lg:col-span-2 space-y-6">
-            {sections.map((section, i) => (
-              <section
-                key={section.id}
-                id={section.id}
-                className="bg-white rounded-2xl border border-gray-100 overflow-hidden scroll-mt-24"
-              >
-                <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-50">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
-                    {section.icon}
-                  </div>
-                  <div>
-                    <span className="text-xs text-gray-400 font-medium">Section {String(i + 1).padStart(2, "0")}</span>
-                    <h2 className="text-base font-semibold text-gray-900 leading-tight">{section.title}</h2>
-                  </div>
-                </div>
-                <div className="divide-y divide-gray-50">
-                  {section.content.map((item, j) => (
-                    <div key={j} className="px-6 py-5">
-                      <h3 className="text-sm font-semibold text-blue-700 mb-2">{item.subtitle}</h3>
-                      <p className="text-sm text-gray-500 leading-relaxed">{item.text}</p>
+          {/* Section Cards */}
+          <div className="space-y-6 lg:col-span-8">
+            {sections.map((section, i) => {
+              const Icon = section.icon;
+              return (
+                <section
+                  key={section.id}
+                  id={section.id}
+                  ref={(el) => (sectionRefs.current[section.id] = el)}
+                  className="scroll-mt-28 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs"
+                >
+                  <div className="flex items-center gap-3.5 border-b border-slate-200 px-6 py-5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                      <Icon className="h-5 w-5" strokeWidth={1.75} />
                     </div>
-                  ))}
-                </div>
-              </section>
-            ))}
+                    <div>
+                      <span className="text-xs font-semibold tabular-nums text-slate-400">
+                        Section {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <h2
+                        className="text-lg font-bold leading-snug text-slate-900"
+                        style={{ fontFamily: "'Nunito', sans-serif" }}
+                      >
+                        {section.title}
+                      </h2>
+                    </div>
+                  </div>
+                  <div className="divide-y divide-slate-200">
+                    {section.content.map((item, j) => (
+                      <div key={j} className="px-6 py-5">
+                        <h3 className="text-sm font-semibold text-slate-900">
+                          {item.subtitle}
+                        </h3>
+                        <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                          {item.text}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
 
-            {/* Contact card */}
-            <div className="bg-blue-700 rounded-2xl p-8 text-white">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
+            {/* Contact Summary Card */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                  <Mail className="h-5 w-5" strokeWidth={1.75} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold mb-1">Contact Us</h2>
-                  <p className="text-blue-200 text-sm leading-relaxed mb-4">
-                    If you have any questions, concerns, or requests regarding this Privacy Policy or the way we handle your data, please don't hesitate to reach out.
+                  <h2
+                    className="text-lg font-bold text-slate-900"
+                    style={{ fontFamily: "'Nunito', sans-serif" }}
+                  >
+                    Contact Us About Your Privacy
+                  </h2>
+                  <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                    If you have any questions, concerns, or requests regarding this Privacy Policy or the way we handle your personal data, please reach out to our team.
                   </p>
-                  <div className="space-y-1.5 text-sm text-blue-100">
-                    <p><span className="text-blue-300 font-medium">Email:</span> privacy@tripana.app</p>
-                    <p><span className="text-blue-300 font-medium">App:</span> Settings → Help & Support → Privacy</p>
+                  <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-slate-200 pt-4 text-xs text-slate-600">
+                    <p>
+                      <span className="font-semibold text-slate-900">Email:</span>{" "}
+                      <a
+                        href="mailto:privacy@tripana.app"
+                        className="font-medium text-blue-600 hover:text-blue-700"
+                      >
+                        privacy@tripana.app
+                      </a>
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-900">In-App:</span>{" "}
+                      Profile &amp; Account Settings
+                    </p>
                   </div>
                 </div>
               </div>
@@ -323,6 +390,7 @@ export default function PrivacyPolicy() {
           </div>
         </div>
       </main>
+
       <Footer />
     </div>
   );
