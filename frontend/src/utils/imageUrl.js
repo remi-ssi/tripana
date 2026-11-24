@@ -21,7 +21,7 @@ const UNSPLASH_FALLBACK_URLS = {
     'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=220&fit=crop',
   ],
   nature: [
-    'https://images.unsplash.com/photo-1469022563149-aa64e87c3duncan?w=400&h=220&fit=crop',
+    'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=220&fit=crop',
     'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=220&fit=crop',
     'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=220&fit=crop',
   ],
@@ -37,7 +37,7 @@ const UNSPLASH_FALLBACK_URLS = {
   ],
   default: [
     'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&h=220&fit=crop',
-    'https://images.unsplash.com/photo-1469022563149-aa64e87c3duncan?w=400&h=220&fit=crop',
+    'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=220&fit=crop',
     'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=220&fit=crop',
   ],
 };
@@ -67,35 +67,32 @@ export function getAttractionFallbackImage(attraction) {
 
   let category = 'default';
 
-  if (types.some(t => t.toLowerCase().includes('beach'))) {
+  if (
+    types.some(t => t.toLowerCase().includes('beach') || t.toLowerCase().includes('island') || t.toLowerCase().includes('snorkeling') || t.toLowerCase().includes('diving'))
+  ) {
     category = 'beaches';
   } else if (
-    types.some(t => t.toLowerCase().includes('restaurant')) ||
-    types.some(t => t.toLowerCase().includes('cafe')) ||
-    name.includes('food') || name.includes('restaurant')
+    types.some(t => t.toLowerCase().includes('restaurant') || t.toLowerCase().includes('cafe') || t.toLowerCase().includes('food') || t.toLowerCase().includes('bar')) ||
+    name.includes('food') || name.includes('restaurant') || name.includes('cafe')
   ) {
     category = 'food';
   } else if (
-    types.some(t => t.toLowerCase().includes('shopping')) ||
-    name.includes('mall') || name.includes('store')
+    types.some(t => t.toLowerCase().includes('shopping') || t.toLowerCase().includes('market') || t.toLowerCase().includes('boutique') || t.toLowerCase().includes('store')) ||
+    name.includes('mall') || name.includes('store') || name.includes('market')
   ) {
     category = 'shopping';
   } else if (
-    types.some(t => t.toLowerCase().includes('park')) ||
-    types.some(t => t.toLowerCase().includes('nature')) ||
+    types.some(t => t.toLowerCase().includes('park') || t.toLowerCase().includes('nature') || t.toLowerCase().includes('wildlife') || t.toLowerCase().includes('landscape') || t.toLowerCase().includes('viewpoint')) ||
     name.includes('park')
   ) {
     category = 'nature';
   } else if (
-    types.some(t => t.toLowerCase().includes('museum')) ||
-    types.some(t => t.toLowerCase().includes('temple')) ||
-    types.some(t => t.toLowerCase().includes('monument')) ||
+    types.some(t => t.toLowerCase().includes('museum') || t.toLowerCase().includes('temple') || t.toLowerCase().includes('monument') || t.toLowerCase().includes('historical') || t.toLowerCase().includes('art') || t.toLowerCase().includes('church')) ||
     name.includes('cultural')
   ) {
     category = 'cultural';
   } else if (
-    types.some(t => t.toLowerCase().includes('outdoor')) ||
-    types.some(t => t.toLowerCase().includes('activity'))
+    types.some(t => t.toLowerCase().includes('outdoor') || t.toLowerCase().includes('activity') || t.toLowerCase().includes('hiking') || t.toLowerCase().includes('mountain') || t.toLowerCase().includes('campground'))
   ) {
     category = 'adventure';
   }

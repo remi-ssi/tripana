@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.models.place import Place
 from app.models.placeTypes import PlaceTypes
 from app.models.types import Types
+from app.utils.city_utils import extract_city_search_tokens
 
 
 class PlaceRepository:
@@ -126,6 +127,20 @@ class PlaceRepository:
         )
         return result.scalars().all()
     
+    @staticmethod
+    def _build_city_filter(city: str):
+        """Build an OR filter matching any extracted city/province token against Place.city or Place.address."""
+        tokens = extract_city_search_tokens(city)
+        if not tokens:
+            cleaned = (city or "").strip()
+            return Place.city.ilike(f"%{cleaned}%")
+        clauses = []
+        for token in tokens:
+            clauses.append(Place.city.ilike(token))
+            clauses.append(Place.city.ilike(f"%{token}%"))
+            clauses.append(Place.address.ilike(f"%{token}%"))
+        return or_(*clauses)
+
     async def search_by_city_and_preferences(
         self, 
         city: str, 
@@ -135,32 +150,26 @@ class PlaceRepository:
     ) -> List[Place]:
         """
         Search for places by city and user preferences.
-        
-        Args:
-            city: The city to search in (case-insensitive)
-            user_preferences: List of user preference names
-            preference_to_keywords: Mapping of preferences to keywords
-            limit: Maximum number of results
-        
-        Returns:
-            List of Place objects matching the city and preferences
+        Supports full Mapbox strings (e.g. 'Baguio, Benguet, Philippines').
         """
-        # Get all places in the city first (case-insensitive search)
+        city_filter = self._build_city_filter(city)
         result = await self.db.execute(
             select(Place)
             .options(
                 selectinload(Place.place_types).selectinload(PlaceTypes.category)
             )
-            .where(Place.city.ilike(city))
-            .limit(limit * 2)  # Get extra results to filter by preferences
+            .where(Place.isactive == True)
+            .where(city_filter)
+            .limit(limit * 2)
         )
-        all_places = result.scalars().all()
+        all_places = result.scalars().unique().all()
         
         if not all_places:
             return []
         
         # Filter by preferences if any keywords match
         filtered_places = []
+        unmatched_places = []
         for place in all_places:
             destination_lower = (place.destination or "").lower()
             address_lower = (place.address or "").lower()
@@ -170,7 +179,7 @@ class PlaceRepository:
                 if place_type.category and place_type.category.category
             ]
             
-            # Check if any preference keywords match the place
+            matched = False
             for pref in user_preferences:
                 keywords = preference_to_keywords.get(pref, [pref.lower()])
                 for keyword in keywords:
@@ -181,10 +190,16 @@ class PlaceRepository:
                         or any(keyword_lower in place_type for place_type in place_types)
                     ):
                         filtered_places.append(place)
+                        matched = True
                         break
-                else:
-                    continue
-                break
+                if matched:
+                    break
+            if not matched:
+                unmatched_places.append(place)
+        
+        # If very few strict matches exist in the city, include remaining city places so SAW scoring can rank them
+        if len(filtered_places) < 5 and unmatched_places:
+            filtered_places.extend(unmatched_places)
         
         return filtered_places[:limit]
     
@@ -247,25 +262,19 @@ class PlaceRepository:
     
     async def get_active_places_by_city(self, normalized_city: str, limit: int = 100) -> List[Place]:
         """
-        Get active (isactive=True) places for a city.
-        
-        Args:
-            normalized_city: Already normalized city name
-            limit: Maximum number of results
-        
-        Returns:
-            List of active Place objects in the city
+        Get active (isactive=True) places for a city (supports full Mapbox destination strings).
         """
+        city_filter = self._build_city_filter(normalized_city)
         result = await self.db.execute(
             select(Place)
             .options(
                 selectinload(Place.place_types).selectinload(PlaceTypes.category)
             )
-            .where(Place.city == normalized_city)
+            .where(city_filter)
             .where(Place.isactive == True)
             .limit(limit)
         )
-        return result.scalars().all()
+        return result.scalars().unique().all()
 
     async def search_active_places_by_city_and_text(
         self,
@@ -275,23 +284,18 @@ class PlaceRepository:
     ) -> List[Place]:
         """
         Search active places in a city by free text, without preference filters.
-
-        This is used by the manual attraction search box. It intentionally
-        matches place name, address, and Google place types so queries like
-        "hike", "hiking", and "mountain" can return locally cached trails,
-        parks, viewpoints, and other outdoor places regardless of the user's
-        selected recommendation preferences.
         """
         query = (search_query or "").strip().lower()
         if not query:
             return []
 
+        city_filter = self._build_city_filter(normalized_city)
         result = await self.db.execute(
             select(Place)
             .options(
                 selectinload(Place.place_types).selectinload(PlaceTypes.category)
             )
-            .where(Place.city == normalized_city)
+            .where(city_filter)
             .where(Place.isactive == True)
             .where(
                 or_(

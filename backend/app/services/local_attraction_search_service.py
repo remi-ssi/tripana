@@ -9,6 +9,7 @@ from app.repositories.place_repository import PlaceRepository
 from app.repositories.placetypes_repository import PlaceTypesRepository
 from app.repositories.types_repository import TypesRepository
 from app.services.google_places_service import search_attractions as search_google_attractions
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +96,13 @@ class LocalAttractionSearchService:
                 scored_results = self._score_places(local_results, user_preferences, budget)
                 return self._format_results(scored_results[:limit])
             
-            # Step 2: If no local results, search Google API
+            # Step 2: If no local results, search Google API (only if API key is configured)
+            if not settings.GOOGLE_PLACES_API_KEY:
+                logger.info(
+                    f"No local results for {location_city} and GOOGLE_PLACES_API_KEY is not configured; skipping Google API fallback."
+                )
+                return []
+
             logger.info(f"No local results found. Searching Google API...")
             google_results = await self._search_google_api(
                 location_city,
@@ -346,19 +353,23 @@ class LocalAttractionSearchService:
         """Score places using SAW (Simple Additive Weighting) scoring system with budget filter."""
         allowed_price_levels = BUDGET_TO_PRICE_LEVEL.get(budget, [1, 2, 3, 4])
         scored_places = []
+        all_scored_fallback = []
         
         for place in places:
-            # Filter by price level if available
-            price_level = place.get("price_level")
-            if price_level and price_level not in allowed_price_levels:
-                continue
-                
             score = self._calculate_place_score(place, user_preferences)
             if score > 0:
-                scored_places.append({
+                scored_item = {
                     **place,
                     "score": score,
-                })
+                }
+                all_scored_fallback.append(scored_item)
+                price_level = place.get("price_level")
+                if not price_level or price_level in allowed_price_levels:
+                    scored_places.append(scored_item)
+        
+        # If strict budget filtering leaves fewer than 3 attractions in a city, include remaining city matches
+        if len(scored_places) < 3 and all_scored_fallback:
+            scored_places = all_scored_fallback
         
         # Filter by minimum rating threshold (unless we have few results)
         filtered = [
